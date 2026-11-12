@@ -43,7 +43,8 @@ export function ensurePool(state, species, { all = false } = {}) {
     }
   };
   if (all) add(species.length);
-  if (state.pool.length < START_POOL) add(START_POOL - state.pool.length);
+  const start = state.startPool || START_POOL; // set from the experience question
+  if (state.pool.length < start) add(start - state.pool.length);
   let guard = species.length;
   while (learningCount(state) < MIN_LEARNING && state.pool.length < species.length && guard-- > 0) {
     add(UNLOCK_STEP);

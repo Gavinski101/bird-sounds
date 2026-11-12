@@ -453,6 +453,7 @@ function currentRec() {
 }
 
 function newCard() {
+  if (overlayOpen()) return; // welcome or survey showing: start when it closes
   stopAudio();
   const c = L.nextCard(S.learn, species, Math.random, { intros: S.prefs.intros });
   save();
@@ -960,6 +961,11 @@ function renderSettings() {
     `<option value="${k}" ${k === S.prefs.nameSet ? 'selected' : ''}>${esc(v)}</option>`).join('');
   $('autoplay').checked = S.prefs.autoplay;
   $('intros').checked = S.prefs.intros;
+  $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
+    `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+  $('areaSel').innerHTML = Object.entries(AREAS).map(([k, v]) =>
+    `<option value="${k}" ${k === (S.prefs.area || 'george') ? 'selected' : ''}>${esc(v)}</option>`).join('')
+    + '<option disabled>More areas coming in the full app</option>';
   $('syncCode').value = exportCode();
   renderAccount();
   updateOfflineInfo();
@@ -969,6 +975,21 @@ $('nameSet').addEventListener('change', (e) => {
   S.prefs.nameSet = e.target.value;
   save();
   toast(`Names: ${nameSets[S.prefs.nameSet]}`);
+});
+
+$('levelSel').addEventListener('change', (e) => {
+  const before = S.learn.pool.length;
+  applyLevel(e.target.value);
+  save();
+  renderSettings();
+  renderTop();
+  const added = S.learn.pool.length - before;
+  toast(added > 0 ? `${LEVELS[e.target.value].label}: ${added} more birds added` : `${LEVELS[e.target.value].label}: birds already in play stay in play`);
+});
+
+$('areaSel').addEventListener('change', (e) => {
+  S.prefs.area = e.target.value;
+  save();
 });
 
 $('autoplay').addEventListener('change', (e) => {
@@ -1143,8 +1164,62 @@ function closeWelcome() {
   $('accountPanel').appendChild($('account'));
   $('welcome').hidden = true;
   renderAccount();
-  newCard();
+  if (needsSurvey()) openSurvey();
+  else newCard();
 }
+
+// ---------- survey (experience + area) ----------
+
+const LEVELS = {
+  new: { label: 'New to bird calls', desc: 'Start with the 10 commonest birds. Each new bird is introduced before you are tested on it.', pool: 10, intros: true },
+  some: { label: 'I know a few calls', desc: 'Start with the 20 commonest birds, with an introduction for each new one.', pool: 20, intros: true },
+  good: { label: 'I know most common calls', desc: 'Start with the 40 commonest birds, with introductions.', pool: 40, intros: true },
+  expert: { label: 'Experienced', desc: 'All birds in play from the start, no introductions: straight to testing.', pool: 0, intros: false },
+};
+const AREAS = { george: 'George / Wilderness: my Big Bird Day list (100 birds)' };
+
+const overlayOpen = () => !$('welcome').hidden || !$('survey').hidden;
+const needsSurvey = () => !S.prefs.surveyDone;
+let surveyPick = { level: 'some', area: 'george' };
+
+function openSurvey() {
+  surveyPick = { level: S.prefs.level || 'some', area: S.prefs.area || 'george' };
+  renderSurvey();
+  $('survey').hidden = false;
+}
+
+function renderSurvey() {
+  $('levelOpts').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
+    `<button class="opt ${k === surveyPick.level ? 'on' : ''}" data-level="${k}"><b>${esc(v.label)}</b><span>${esc(v.desc)}</span></button>`).join('');
+  $('areaOpts').innerHTML = Object.entries(AREAS).map(([k, v]) =>
+    `<button class="opt ${k === surveyPick.area ? 'on' : ''}" data-area="${k}"><b>${esc(v)}</b></button>`).join('')
+    + '<button class="opt" disabled><b>More areas</b><span>Cape Town, Kruger, Near me and others are coming in the full app.</span></button>';
+}
+
+function applyLevel(level) {
+  const L0 = LEVELS[level] || LEVELS.some;
+  S.prefs.level = level;
+  S.prefs.intros = L0.intros;
+  S.prefs.introsChosen = true;
+  S.learn.startPool = L0.pool || species.length;
+  L.ensurePool(S.learn, species, { all: !L0.pool });
+}
+
+$('survey').addEventListener('click', (e) => {
+  const lv = e.target.closest('[data-level]');
+  const ar = e.target.closest('[data-area]');
+  if (lv) surveyPick.level = lv.dataset.level;
+  if (ar) surveyPick.area = ar.dataset.area;
+  if (lv || ar) renderSurvey();
+  if (e.target.id === 'surveyDone') {
+    applyLevel(surveyPick.level);
+    S.prefs.area = surveyPick.area;
+    S.prefs.surveyDone = true;
+    save();
+    $('survey').hidden = true;
+    newCard();
+  }
+});
 
 $('skipSignIn').addEventListener('click', closeWelcome);
 
@@ -1168,6 +1243,7 @@ async function start() {
       toast('Signed in with Google');
     }
     if (needsWelcome()) openWelcome();
+    else if (needsSurvey()) openSurvey();
     else newCard();
     syncNow({ firstSignIn: fromGoogle });
   } catch (e) {

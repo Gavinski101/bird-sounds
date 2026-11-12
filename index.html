@@ -76,6 +76,14 @@
         <div id="account"></div>
       </div>
       <div class="panel">
+        <h2>Your level and area</h2>
+        <p class="muted small">Moving to a higher level adds birds straight away. Moving down keeps the birds already in play.</p>
+        <label class="small muted" for="levelSel">How well do you know bird calls?</label>
+        <select id="levelSel"></select>
+        <label class="small muted" for="areaSel" style="display:block;margin-top:10px">Area</label>
+        <select id="areaSel"></select>
+      </div>
+      <div class="panel">
         <h2>Bird names</h2>
         <p class="muted">Match the name set your Merlin app uses (Merlin → Settings → Language).</p>
         <select id="nameSet"></select>
@@ -134,6 +142,19 @@
       <button class="btn block ghost" id="skipSignIn">Continue without an account</button>
       <p class="small muted">Without an account your progress is saved on this device only.
         You can sign in any time later in Settings.</p>
+    </div>
+  </div>
+
+  <!-- Survey (first open, after sign-in) -->
+  <div class="welcome" id="survey" hidden>
+    <div class="welcome-box">
+      <h1>A bit about you</h1>
+      <p class="muted">So the app starts at the right level. You can change both later in Settings.</p>
+      <h2 class="survey-q">How well do you know bird calls?</h2>
+      <div class="opts" id="levelOpts"></div>
+      <h2 class="survey-q">Which birds do you want to learn?</h2>
+      <div class="opts" id="areaOpts"></div>
+      <button class="btn block" id="surveyDone">Start learning</button>
     </div>
   </div>
 

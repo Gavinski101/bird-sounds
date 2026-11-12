@@ -1,7 +1,7 @@
 // App shell and data: network first (so updates arrive), cache as the offline fallback.
 // Photos: served from the media cache filled by "Download for offline", else network.
 // Audio is not handled here; the app plays offline audio from blob URLs itself.
-const SHELL = 'bird-sounds-shell-v3';
+const SHELL = 'bird-sounds-shell-v5';
 const MEDIA = 'bird-sounds-media';
 const FILES = [
   './',
@@ -21,7 +21,7 @@ const FILES = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -38,8 +38,10 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
 
   if (url.origin === location.origin) {
+    // no-cache: always revalidate with the server, so app files from different versions
+    // never mix (GitHub Pages lets browsers reuse files for 10 minutes otherwise).
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();

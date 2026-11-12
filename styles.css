@@ -371,3 +371,20 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .welcome-box h1 { margin: 8px 0 4px; font-size: 28px; }
 .welcome-icon { width: 84px; height: 84px; border-radius: 20px; }
 .welcome #account { text-align: left; background: var(--surface); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0 8px; box-shadow: var(--shadow); }
+
+/* Survey */
+.survey-q { font-size: 17px; text-align: left; margin: 20px 0 8px; }
+.opts { display: grid; gap: 8px; }
+.opt {
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: grid; gap: 2px;
+}
+.opt b { font-weight: 650; }
+.opt span { color: var(--muted); font-size: 14px; }
+.opt.on { border-color: var(--accent); background: var(--accent-soft); }
+.opt:disabled { opacity: 0.55; cursor: default; }
+#surveyDone { margin-top: 20px; }

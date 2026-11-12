@@ -130,4 +130,15 @@ function play(state, knows, cards) {
   assert.equal(L.summary(s, species).met, 20);
 }
 
+// Starting pool follows the experience level.
+{
+  const s = L.newState();
+  s.startPool = 10;
+  L.ensurePool(s, species);
+  assert.equal(s.pool.length, 10);
+  s.startPool = 40;
+  L.ensurePool(s, species);
+  assert.equal(s.pool.length, 40);
+}
+
 console.log('learn.js: all checks passed');
