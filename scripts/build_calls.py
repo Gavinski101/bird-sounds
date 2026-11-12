@@ -239,7 +239,7 @@ def main():
         calls[b["id"]] = picks
         top = ", ".join(f"XC{p['xc']} {p['type']} {p['secs']}s" if "xc" in p else f"iNat {p['key']}" for p in picks[:2])
         print(f"{b['names']['en_ZA']:34} {len(uniq):4} found  -> {top or 'NONE'}")
-        out_path.write_text(json.dumps(calls, ensure_ascii=False, indent=1), encoding="utf-8")
+        out_path.write_text(json.dumps(calls, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     missing = [b["names"]["en_ZA"] for b in species if not calls.get(b["id"])]
     print(f"done; no recordings for: {missing or 'none'}")
 

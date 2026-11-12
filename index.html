@@ -100,7 +100,7 @@
       </div>
       <div class="panel">
         <h2>Offline</h2>
-        <p class="muted" id="offlineInfo">Save the recordings and photos to this device so the app works without signal.</p>
+        <p class="muted" id="offlineInfo">Save the sounds and photos of the birds in your study set to this device, so the app works without signal.</p>
         <div class="progress-line" id="dlProgress" hidden><div id="dlFill"></div></div>
         <div class="btn-row">
           <button class="btn" id="dlBtn">Download for offline</button>
@@ -155,10 +155,12 @@
   <div class="welcome" id="survey" hidden>
     <div class="welcome-box">
       <h1>A bit about you</h1>
-      <p class="muted">So the app starts at the right level. You can change both later in Settings.</p>
+      <p class="muted">So the app starts at the right level and region. You can change both later in Settings.</p>
       <h2 class="survey-q">How well do you know bird calls?</h2>
       <div class="opts" id="levelOpts"></div>
       <h2 class="survey-q">Which birds do you want to learn?</h2>
+      <p class="muted small" style="text-align:left;margin:-4px 0 8px">Pick a whole region or open it (▸) to choose a smaller area inside it.
+        The commonest birds there come first.</p>
       <div class="opts" id="areaOpts"></div>
       <button class="btn block" id="surveyDone">Start learning</button>
     </div>

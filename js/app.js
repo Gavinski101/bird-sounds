@@ -1639,6 +1639,14 @@ async function start() {
     calls = cl;
     knownIds = new Set(allSpecies.map((b) => b.id));
     await updateOwner();
+    // George / Wilderness used to be just the owner's 100 birds; with the full app it holds
+    // every bird recorded there, so move the owner to their practice list once.
+    if (isOwner && S.prefs.area === 'george' && !S.prefs.myListMoved) {
+      S.prefs.area = 'mylist';
+      S.prefs.myListMoved = true;
+      save(); // also syncs, so other devices don't move back
+      setTimeout(() => toast('Moved you to My practice list (your 100 birds). Change region in Settings.'), 1200);
+    }
     applyArea();
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
     let back = false;
