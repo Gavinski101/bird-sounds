@@ -330,7 +330,9 @@ $('account').addEventListener('click', async (e) => {
 // ---------- helpers ----------
 
 const nm = (sp) => sp.names[S.prefs.nameSet] || sp.names.en_ZA;
-const recPref = (r) => S.recs[r.xc] || {};
+// Ratings and flags are keyed by the recording: the XC number, or "inat-<id>" for iNaturalist.
+const recKey = (r) => (r.xc != null ? String(r.xc) : r.key);
+const recPref = (r) => S.recs[recKey(r)] || {};
 const isOff = (r) => !!recPref(r).flag || (recPref(r).stars ?? 3) <= 2;
 
 // The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first,
@@ -346,7 +348,10 @@ function activeRecs(id) {
 }
 
 function credit(r) {
-  return `${esc(r.rec)} · <a href="https://xeno-canto.org/${r.xc}" target="_blank" rel="noopener">XC${r.xc}</a> · ${esc(r.lic)}${r.cnt ? ' · ' + esc(r.cnt) : ''}`;
+  const link = r.src === 'inat'
+    ? `<a href="https://www.inaturalist.org/observations/${r.obs}" target="_blank" rel="noopener">iNaturalist</a>`
+    : `<a href="https://xeno-canto.org/${r.xc}" target="_blank" rel="noopener">XC${r.xc}</a>`;
+  return `${esc(r.rec)} · ${link} · ${esc(r.lic)}${r.cnt ? ' · ' + esc(r.cnt) : ''}`;
 }
 
 function toast(msg) {
@@ -482,7 +487,7 @@ async function srcFor(r) {
 }
 
 async function playRec(r, button) {
-  const key = `${r.xc}`;
+  const key = recKey(r);
   if (audioKey === key && audioOwner === button) {
     if (!audio.paused) return audio.pause();
     if (audio.ended) audio.currentTime = 0;
@@ -831,7 +836,7 @@ function openRate(rec, after) {
 function renderStars(el, rec, big) {
   const v = recPref(rec).stars || 0;
   el.innerHTML = [1, 2, 3, 4, 5].map((i) =>
-    `<button class="star ${i <= v ? 'on' : ''}" data-star="${i}" data-xc="${rec.xc}" role="radio" aria-checked="${i === v}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('');
+    `<button class="star ${i <= v ? 'on' : ''}" data-star="${i}" data-xc="${esc(recKey(rec))}" role="radio" aria-checked="${i === v}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('');
   el.classList.toggle('small', !big);
 }
 
@@ -851,7 +856,7 @@ $('stars').addEventListener('click', (e) => {
   const b = e.target.closest('[data-star]');
   if (!b || !rateTarget) return;
   const stars = +b.dataset.star;
-  setStars(rateTarget.rec.xc, stars);
+  setStars(recKey(rateTarget.rec), stars);
   renderStars($('stars'), rateTarget.rec, true);
   if (stars <= 2 && recPref(rateTarget.rec).stars) {
     toast('Rated low: swapped for another recording');
@@ -862,7 +867,7 @@ $('stars').addEventListener('click', (e) => {
 $('rateSheet').addEventListener('click', (e) => {
   const f = e.target.closest('[data-flag]');
   if (f && rateTarget) {
-    setFlag(rateTarget.rec.xc, f.dataset.flag);
+    setFlag(recKey(rateTarget.rec), f.dataset.flag);
     toast('Flagged: using another recording');
     closeRate(true);
   } else if (e.target === $('rateSheet') || e.target === $('rateClose')) {
@@ -1035,7 +1040,7 @@ function confusedHtml(id) {
 
 function openBird(id) {
   const sp = byId[id];
-  const active = new Set(activeRecs(id).map((r) => r.xc));
+  const active = new Set(activeRecs(id).map(recKey));
   const others = Object.entries(sp.names)
     .filter(([k, v]) => k !== S.prefs.nameSet && v !== nm(sp))
     .map(([k, v]) => `${esc(v)} (${esc(nameSets[k] || k)})`);
@@ -1053,19 +1058,19 @@ function openBird(id) {
     const pref = recPref(r);
     html += `<div class="rec-card ${isOff(r) ? 'off' : ''}">
       <div class="rc-top">
-        <button class="mini-play" id="dp-${r.xc}" data-dplay="${r.xc}" aria-label="Play">${PLAY_SVG}</button>
-        <div class="nm">${esc(r.type)} · ${r.secs}s ${active.has(r.xc) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
-          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${r.xc}">Restore</button>` : ''}</div>
+        <button class="mini-play" id="dp-${esc(recKey(r))}" data-dplay="${esc(recKey(r))}" aria-label="Play">${PLAY_SVG}</button>
+        <div class="nm">${esc(r.type)} · ${r.secs ? `${r.secs}s ` : ''}${active.has(recKey(r)) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
+          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}</div>
       </div>
-      <div class="stars small" data-rate="${r.xc}"></div>
+      <div class="stars small" data-rate="${esc(recKey(r))}"></div>
       <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
-      ${pref.flag ? '' : `<button class="link" data-flagrec="${r.xc}">⚑ Not distinctive</button>`}
+      ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Not distinctive</button>`}
     </div>`;
   }
   if (sp.photo) html += `<p class="credit">Photo: ${esc(sp.photo.attr)}</p>`;
   $('birdDetail').innerHTML = html;
   $('birdDetail').querySelectorAll('[data-rate]').forEach((el) => {
-    renderStars(el, (calls[id] || []).find((r) => r.xc === +el.dataset.rate), false);
+    renderStars(el, (calls[id] || []).find((r) => recKey(r) === el.dataset.rate), false);
   });
   $('birdDetail').dataset.bird = id;
   $('birdSheet').hidden = false;
@@ -1073,7 +1078,7 @@ function openBird(id) {
 
 $('birdDetail').addEventListener('click', (e) => {
   const id = $('birdDetail').dataset.bird;
-  const find = (xc) => (calls[id] || []).find((r) => r.xc === +xc);
+  const find = (k) => (calls[id] || []).find((r) => recKey(r) === k);
   const p = e.target.closest('[data-dplay]');
   if (p) return playRec(find(p.dataset.dplay), p);
   const cf = e.target.closest('[data-cfplay]');
@@ -1081,11 +1086,11 @@ $('birdDetail').addEventListener('click', (e) => {
   const op = e.target.closest('[data-open]');
   if (op) { stopAudio(); return openBird(op.dataset.open); }
   const s = e.target.closest('[data-star]');
-  if (s) { setStars(+s.dataset.xc, +s.dataset.star); return openBird(id); }
+  if (s) { setStars(s.dataset.xc, +s.dataset.star); return openBird(id); }
   const f = e.target.closest('[data-flagrec]');
-  if (f) { setFlag(+f.dataset.flagrec, 'indistinct'); return openBird(id); }
+  if (f) { setFlag(f.dataset.flagrec, 'indistinct'); return openBird(id); }
   const u = e.target.closest('[data-unflag]');
-  if (u) { setFlag(+u.dataset.unflag, undefined); return openBird(id); }
+  if (u) { setFlag(u.dataset.unflag, undefined); return openBird(id); }
 });
 
 $('birdSheet').addEventListener('click', (e) => {

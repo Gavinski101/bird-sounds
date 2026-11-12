@@ -9,7 +9,10 @@ Each bird gets up to 8 candidates, best first. The first two are the default
 or rated low.
 
 Needs the xeno-canto API key in .env (XC_API_KEY=...) or the environment:
-    python scripts/build_calls.py [--only ebirdcode,ebirdcode]
+    python scripts/build_calls.py [--only ebirdcode,ebirdcode] [--missing-only]
+
+--missing-only skips birds that already have recordings, so earlier picks (and the ratings
+people gave them, which are keyed by XC number) stay as they are.
 """
 import json
 import math
@@ -27,7 +30,7 @@ DATA = ROOT / "data"
 API = "https://xeno-canto.org/api/3/recordings"
 HOME = (-33.97, 22.52)  # George / Wilderness
 SOUTHERN_AFRICA = {"South Africa", "Namibia", "Botswana", "Zimbabwe", "Lesotho", "Eswatini", "Mozambique"}
-KEEP = 8
+KEEP = 6
 
 
 def api_key():
@@ -106,13 +109,9 @@ def usable(r):
 def score(r, common_kind):
     secs = seconds(r.get("length"))
     s = 3 if r.get("q") == "A" else 1
-    d = km(r.get("lat"), r.get("lon"))
-    if d is not None and d < 150:
-        s += 4  # local dialect
-    elif d is not None and d < 700:
-        s += 2.5
-    elif r.get("cnt") in SOUTHERN_AFRICA:
-        s += 1.5
+    # Birds sound different across their range: strongly prefer Southern African recordings.
+    if r.get("cnt") in SOUTHERN_AFRICA:
+        s += 4
     also = len(r.get("also") or [])
     s += 2 if also == 0 else -0.6 * also  # other birds in the clip make it ambiguous
     s += 2 if 4 <= secs <= 35 else 0.5 if secs <= 60 else 0
@@ -162,9 +161,57 @@ def pick(recs):
     return [slim(r, score(r, common)) for r in order[:KEEP]]
 
 
+INAT_PLACES = "6986,7140,7105,7146,8489,7143,7134"  # Southern African countries
+
+
+def inat_sounds(taxon_id):
+    """Fallback for birds xeno-canto has nothing usable for (often a naming difference, e.g. a
+    recent split): research-grade iNaturalist observations with a Creative Commons sound."""
+    picks = []
+    for place in (INAT_PLACES, None):
+        params = {"taxon_id": taxon_id, "sounds": "true", "quality_grade": "research", "per_page": 30, "order_by": "votes"}
+        if place:
+            params["place_id"] = place
+        url = "https://api.inaturalist.org/v1/observations?" + urllib.parse.urlencode(params)
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "bird-sounds-personal-app"}), timeout=60) as r:
+                data = json.load(r)
+        except Exception as e:
+            print(f"  iNat error: {e}")
+            data = {"results": []}
+        time.sleep(1.2)
+        for o in data["results"]:
+            for snd in o.get("sounds") or []:
+                lic = snd.get("license_code")
+                if not lic or not snd.get("file_url"):  # no licence = all rights reserved
+                    continue
+                if any(p["key"] == f"inat-{snd['id']}" for p in picks):
+                    continue
+                picks.append({
+                    "key": f"inat-{snd['id']}",
+                    "src": "inat",
+                    "obs": o["id"],
+                    "file": snd["file_url"],
+                    "rec": (snd.get("attribution") or "").replace("(c) ", "").split(",")[0],
+                    "lic": "CC " + lic.replace("cc-", "").upper(),
+                    "type": "sound",
+                    "rawType": "",
+                    "secs": 0,
+                    "loc": o.get("place_guess") or "",
+                    "cnt": "",
+                    "also": 0,
+                    "q": "",
+                    "score": 0,
+                })
+        if len(picks) >= 2:
+            break
+    return picks[:KEEP]
+
+
 def main():
     key = api_key()
     only = None
+    missing_only = "--missing-only" in sys.argv
     if "--only" in sys.argv:
         only = set(sys.argv[sys.argv.index("--only") + 1].split(","))
     species = json.loads((DATA / "species.json").read_text(encoding="utf-8"))["species"]
@@ -172,6 +219,8 @@ def main():
     calls = json.loads(out_path.read_text(encoding="utf-8")) if out_path.exists() else {}
     for b in species:
         if only and b["id"] not in only:
+            continue
+        if missing_only and calls.get(b["id"]):
             continue
         gen, sp = b["sci"].split()[:2]
         recs = search(f"gen:{gen} sp:{sp} area:africa", key)
@@ -185,8 +234,10 @@ def main():
                 seen.add(r["id"])
                 uniq.append(r)
         picks = pick(uniq)
+        if not picks and b.get("inat"):
+            picks = inat_sounds(b["inat"])
         calls[b["id"]] = picks
-        top = ", ".join(f"XC{p['xc']} {p['type']} {p['secs']}s" for p in picks[:2])
+        top = ", ".join(f"XC{p['xc']} {p['type']} {p['secs']}s" if "xc" in p else f"iNat {p['key']}" for p in picks[:2])
         print(f"{b['names']['en_ZA']:34} {len(uniq):4} found  -> {top or 'NONE'}")
         out_path.write_text(json.dumps(calls, ensure_ascii=False, indent=1), encoding="utf-8")
     missing = [b["names"]["en_ZA"] for b in species if not calls.get(b["id"])]
