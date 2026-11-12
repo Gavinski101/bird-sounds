@@ -159,6 +159,7 @@ let authMode = 'signin';
 function renderAccount() {
   const el = $('account');
   if (!el) return;
+  renderAvatar();
   $('accountPanel').hidden = !Sync.configured;
   if (Sync.signedIn()) {
     const st = S.sync || {};
@@ -171,7 +172,8 @@ function renderAccount() {
       <div class="btn-row">
         <button class="btn" id="syncNowBtn">Sync now</button>
         <button class="btn ghost" id="signOutBtn">Sign out</button>
-      </div>`;
+      </div>
+      <button class="link danger-link" id="deleteAccountBtn">Delete my account</button>`;
   } else {
     const typed = $('emailInput')?.value || '';
     if (authMode === 'reset' || authMode === 'resetSent') {
@@ -221,6 +223,7 @@ function friendly(err) {
   if (m.includes('email not confirmed')) return 'This account still needs its email confirmed';
   if (m.includes('rate limit')) return 'Too many tries: wait a minute and try again';
   if (m.includes('failed to fetch') || m.includes('network')) return "Couldn't reach the server. Check your connection.";
+  if (m.includes('delete_my_account') || m.includes('could not find the function')) return "Account deletion isn't set up on the server yet";
   return err.message && err.message.length < 120 ? err.message : 'Something went wrong. Try again.';
 }
 
@@ -285,6 +288,15 @@ $('account').addEventListener('click', async (e) => {
       e.target.disabled = true;
       await syncNow();
       toast('Synced');
+    } else if (id === 'deleteAccountBtn') {
+      if (!confirm(`Delete the account ${Sync.email()}?\n\nThis permanently removes the account and the progress saved in it. It cannot be undone.\n\nYour progress on this device stays, so you can keep studying without an account.`)) return;
+      if (!confirm('Are you sure? Tap OK to delete the account for good.')) return;
+      e.target.disabled = true;
+      await Sync.deleteAccount();
+      S.sync = {};
+      saveLocal();
+      renderAccount();
+      toast('Account deleted');
     } else if (id === 'signOutBtn') {
       if (!confirm('Sign out? Your progress stays on this device and in your account.')) return;
       await Sync.signOut();
@@ -855,7 +867,41 @@ function celebrate(kind, sp) {
 
 // ---------- top line ----------
 
+function initials(name, email) {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length) return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
+  return (email || '?')[0].toUpperCase();
+}
+
+function renderAvatar() {
+  const btn = $('avatarBtn');
+  const p = Sync.profile();
+  if (!p) {
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z"/></svg>';
+    btn.className = 'avatar signed-out';
+    btn.dataset.tip = 'Not signed in. Tap to sign in and keep your progress on all your devices.';
+    btn.setAttribute('aria-label', 'Sign in');
+    return;
+  }
+  const label = p.name ? `${p.name} (${p.email})` : p.email;
+  btn.className = 'avatar';
+  btn.dataset.tip = `Signed in as ${label}. Tap for your account.`;
+  btn.setAttribute('aria-label', `Account: ${label}`);
+  btn.innerHTML = p.avatar
+    ? `<img src="${esc(p.avatar)}" alt="" referrerpolicy="no-referrer">`
+    : `<span>${esc(initials(p.name, p.email))}</span>`;
+  const img = btn.querySelector('img');
+  if (img) img.addEventListener('error', () => { btn.innerHTML = `<span>${esc(initials(p.name, p.email))}</span>`; }, { once: true });
+}
+
+$('avatarBtn').addEventListener('click', () => {
+  if (overlayOpen()) return;
+  showView('settings');
+  $('accountPanel').scrollIntoView({ block: 'start' });
+});
+
 function renderTop() {
+  renderAvatar();
   const s = L.summary(S.learn, species);
   const st = currentStreak();
   $('topSub').innerHTML = `<span data-tip="${esc(TIPS.area)}">${esc(area)}</span> · `
@@ -1388,6 +1434,7 @@ async function start() {
     else newCard();
     if (back === 'recovery') openPwSheet();
     syncNow({ firstSignIn: !!back });
+    Sync.refreshProfile().then(renderAvatar).catch(() => {});
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
     console.error(e);

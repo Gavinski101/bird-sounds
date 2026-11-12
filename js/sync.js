@@ -51,13 +51,27 @@ async function call(path, { method = 'GET', body, token, headers = {} } = {}) {
 }
 
 function keepSession(d) {
+  const meta = d.user?.user_metadata || {};
   saveAuth({
     access: d.access_token,
     refresh: d.refresh_token,
     exp: Date.now() + (d.expires_in || 3600) * 1000,
     email: d.user?.email || auth?.email || '',
     uid: d.user?.id || auth?.uid,
+    name: meta.full_name || meta.name || auth?.name || '',
+    avatar: meta.avatar_url || meta.picture || auth?.avatar || '',
   });
+}
+
+// { name, email, avatar } of the signed-in person (name/avatar only for Google sign-in).
+export const profile = () => (auth ? { name: auth.name || '', email: auth.email || '', avatar: auth.avatar || '' } : null);
+
+// Sessions saved before name/photo were kept: fetch them once.
+export async function refreshProfile() {
+  if (!auth || auth.name !== undefined) return;
+  const user = await call('/auth/v1/user', { token: await token() });
+  const meta = user?.user_metadata || {};
+  saveAuth({ ...auth, name: meta.full_name || meta.name || '', avatar: meta.avatar_url || meta.picture || '' });
 }
 
 export async function signIn(address, password) {
@@ -125,6 +139,12 @@ async function token() {
     if (e.status === 400 || e.status === 401) saveAuth(null); // session revoked or expired
     throw e;
   }
+}
+
+// Deletes the account and its saved progress (database function delete_my_account).
+export async function deleteAccount() {
+  await call('/rest/v1/rpc/delete_my_account', { method: 'POST', token: await token(), body: {} });
+  saveAuth(null);
 }
 
 export async function signOut() {
