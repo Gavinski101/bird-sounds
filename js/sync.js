@@ -1,7 +1,10 @@
-// Email sign-in (6-digit code) and progress sync with Supabase, using its REST API directly.
-// A code is used instead of a magic link because on iPhone a link opens in Safari,
-// which does not share storage with the home-screen app.
-import { SUPABASE_URL, SUPABASE_KEY } from './config.js';
+// Sign-in (email + password, optional Google) and progress sync with Supabase,
+// using its REST API directly (no client library).
+// Email + password needs no outgoing email: "Confirm email" is off in the Supabase project,
+// because Supabase's built-in mailer only reaches the project owner's own address.
+import { SUPABASE_URL, SUPABASE_KEY, GOOGLE_ENABLED } from './config.js';
+
+export const googleEnabled = !!GOOGLE_ENABLED;
 
 const AUTH_KEY = 'bird-sounds-auth';
 
@@ -57,13 +60,41 @@ function keepSession(d) {
   });
 }
 
-export async function sendCode(address) {
-  await call('/auth/v1/otp', { method: 'POST', body: { email: address, create_user: true } });
+export async function signIn(address, password) {
+  const d = await call('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: address, password } });
+  keepSession(d);
 }
 
-export async function verifyCode(address, code) {
-  const d = await call('/auth/v1/verify', { method: 'POST', body: { type: 'email', email: address, token: code } });
-  keepSession(d);
+// Returns true when signed in straight away; false if the project still requires email confirmation.
+export async function signUp(address, password) {
+  const d = await call('/auth/v1/signup', { method: 'POST', body: { email: address, password } });
+  if (d?.access_token) {
+    keepSession(d);
+    return true;
+  }
+  return false;
+}
+
+// Google: send the browser to Supabase, which returns to this page with tokens in the URL hash.
+export function googleSignInUrl() {
+  const back = location.href.split('#')[0];
+  return `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back)}`;
+}
+
+// Call once on load. Returns true if this page load is the return from a Google sign-in.
+export async function takeRedirect() {
+  if (!location.hash.includes('access_token=')) return false;
+  const h = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, '', location.href.split('#')[0]);
+  const access = h.get('access_token');
+  const user = await call('/auth/v1/user', { token: access });
+  keepSession({
+    access_token: access,
+    refresh_token: h.get('refresh_token'),
+    expires_in: +h.get('expires_in') || 3600,
+    user,
+  });
+  return true;
 }
 
 async function token() {

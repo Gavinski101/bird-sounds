@@ -149,7 +149,7 @@ window.addEventListener('online', () => syncNow());
 
 // ---------- account panel ----------
 
-let pendingEmail = '';
+const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>';
 
 function renderAccount() {
   const el = $('account');
@@ -167,43 +167,56 @@ function renderAccount() {
         <button class="btn" id="syncNowBtn">Sync now</button>
         <button class="btn ghost" id="signOutBtn">Sign out</button>
       </div>`;
-  } else if (pendingEmail) {
-    el.innerHTML = `<p class="muted">We emailed a 6-digit code to <b>${esc(pendingEmail)}</b>. Enter it here. It can take a minute to arrive; check spam too.</p>
-      <input class="search" id="codeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6-digit code">
-      <div class="btn-row">
-        <button class="btn" id="verifyBtn">Sign in</button>
-        <button class="btn ghost" id="otherEmailBtn">Use a different email</button>
-      </div>`;
   } else {
-    el.innerHTML = `<p class="muted">Sign in to save your progress online and keep it the same on all your devices. No password: we email you a code.</p>
-      <input class="search" id="emailInput" type="email" autocomplete="email" placeholder="you@example.com">
-      <button class="btn block" id="sendCodeBtn">Email me a code</button>`;
+    el.innerHTML = `<p class="muted">Sign in to save your progress online and keep it the same on all your devices.</p>
+      ${Sync.googleEnabled ? `<button class="btn block ghost google" id="googleBtn">${GOOGLE_SVG} Continue with Google</button>
+      <div class="or"><span>or use email</span></div>` : ''}
+      <input class="search" id="emailInput" type="email" autocomplete="username" placeholder="Email address">
+      <input class="search" id="passwordInput" type="password" autocomplete="current-password" placeholder="Password (at least 6 characters)">
+      <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
+      <div class="btn-row">
+        <button class="btn" id="signInBtn">Sign in</button>
+        <button class="btn ghost" id="signUpBtn" data-tip="First time? Create an account with your email and a password of your choice.">Create account</button>
+      </div>`;
   }
 }
 
+function friendly(err) {
+  const m = (err.message || '').toLowerCase();
+  if (m.includes('invalid login')) return 'Wrong email or password';
+  if (m.includes('already registered') || m.includes('already been registered')) return 'That email already has an account: tap Sign in';
+  if (m.includes('password should be') || m.includes('weak')) return 'Choose a longer password (at least 6 characters)';
+  if (m.includes('email not confirmed')) return 'This account still needs its email confirmed';
+  if (m.includes('rate limit')) return 'Too many tries: wait a minute and try again';
+  if (m.includes('failed to fetch') || m.includes('network')) return "Couldn't reach the server. Check your connection.";
+  return err.message && err.message.length < 120 ? err.message : 'Something went wrong. Try again.';
+}
+
+$('account').addEventListener('change', (e) => {
+  if (e.target.id === 'showPw') $('passwordInput').type = e.target.checked ? 'text' : 'password';
+});
+
 $('account').addEventListener('click', async (e) => {
-  const id = e.target.id;
+  const id = e.target.closest('button')?.id;
+  if (!id) return;
   try {
-    if (id === 'sendCodeBtn') {
+    if (id === 'signInBtn' || id === 'signUpBtn') {
       const address = $('emailInput').value.trim();
+      const password = $('passwordInput').value;
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return toast('Enter your email address');
+      if (password.length < 6) return toast('Password needs at least 6 characters');
       e.target.disabled = true;
-      await Sync.sendCode(address);
-      pendingEmail = address;
-      renderAccount();
-      $('codeInput').focus();
-    } else if (id === 'verifyBtn') {
-      const code = $('codeInput').value.replace(/\D/g, '');
-      if (code.length < 6) return toast('Enter the code from the email');
-      e.target.disabled = true;
-      await Sync.verifyCode(pendingEmail, code);
-      pendingEmail = '';
-      toast('Signed in');
+      if (id === 'signInBtn') {
+        await Sync.signIn(address, password);
+      } else if (!(await Sync.signUp(address, password))) {
+        renderAccount();
+        return toast('Account created, but it needs email confirmation first');
+      }
+      toast(id === 'signInBtn' ? 'Signed in' : 'Account created');
       renderAccount();
       await syncNow({ firstSignIn: true });
-    } else if (id === 'otherEmailBtn') {
-      pendingEmail = '';
-      renderAccount();
+    } else if (id === 'googleBtn') {
+      location.href = Sync.googleSignInUrl();
     } else if (id === 'syncNowBtn') {
       e.target.disabled = true;
       await syncNow();
@@ -217,7 +230,7 @@ $('account').addEventListener('click', async (e) => {
       toast('Signed out');
     }
   } catch (err) {
-    toast(err.message && err.message.length < 120 ? `Couldn't do that: ${err.message}` : "Couldn't reach the server. Try again.");
+    toast(friendly(err));
     renderAccount();
   }
 });
@@ -1125,7 +1138,10 @@ async function start() {
     calls = cl;
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
     newCard();
-    syncNow();
+    let fromGoogle = false;
+    try { fromGoogle = await Sync.takeRedirect(); } catch { toast("Google sign-in didn't finish. Try again."); }
+    if (fromGoogle) toast('Signed in with Google');
+    syncNow({ firstSignIn: fromGoogle });
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
     console.error(e);

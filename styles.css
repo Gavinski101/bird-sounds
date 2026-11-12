@@ -353,3 +353,9 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .thought { text-align: left; }
 .thought-q { font-weight: 650; margin-bottom: 8px; }
 .thought .search { margin-bottom: 0; }
+
+/* Account */
+#account .search { margin-bottom: 8px; }
+.btn.google { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 12px 0; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
