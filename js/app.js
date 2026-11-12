@@ -25,7 +25,7 @@ let cur = null; // current study card
 // ---------- storage ----------
 
 function defaultStore() {
-  return { learn: L.newState(), prefs: { nameSet: 'en_ZA', autoplay: true, intros: true }, recs: {}, streak: { last: null, days: 0, best: 0 } };
+  return { learn: L.newState(), prefs: { nameSet: 'en_ZA', autoplay: true, intros: true }, recs: {}, streak: { run: 0, best: 0 } };
 }
 
 function loadStore() {
@@ -362,7 +362,7 @@ const TIPS = {
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
   confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
   mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
-  streak: "Days in a row you've studied at least one bird.",
+  streak: 'Birds right in a row. A miss starts it again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Which of this bird's 2 study recordings is playing, and what kind of sound it is (song, call, alarm...).",
   family: 'The bird family this species belongs to.',
@@ -429,29 +429,25 @@ window.addEventListener('scroll', hideTip, { passive: true });
 
 // ---------- streak ----------
 
-function dayKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// Streak = birds right in a row; best = the record run. (It used to count days; a saved
+// day-based streak has no `run` and simply starts again.)
+function streakState() {
+  if (!S.streak || S.streak.run === undefined) S.streak = { run: 0, best: 0 };
+  return S.streak;
 }
 
-function bumpStreak() {
-  const st = (S.streak ||= { last: null, days: 0, best: 0 });
-  const today = dayKey(new Date());
-  if (st.last === today) return false;
-  const y = new Date();
-  y.setDate(y.getDate() - 1);
-  st.days = st.last === dayKey(y) ? st.days + 1 : 1;
-  st.last = today;
-  st.best = Math.max(st.best || 0, st.days);
-  return st.days > 1;
+// Returns true when this answer sets a new record (worth a message once it's 5 or more).
+function bumpStreak(correct) {
+  const st = streakState();
+  st.run = correct ? st.run + 1 : 0;
+  if (st.run > st.best) {
+    st.best = st.run;
+    return st.best >= 5;
+  }
+  return false;
 }
 
-function currentStreak() {
-  const st = S.streak;
-  if (!st || !st.last) return 0;
-  const y = new Date();
-  y.setDate(y.getDate() - 1);
-  return st.last === dayKey(new Date()) || st.last === dayKey(y) ? st.days : 0;
-}
+const currentStreak = () => streakState().run;
 
 // ---------- audio ----------
 
@@ -695,9 +691,9 @@ function makeChoices() {
 async function grade(correct) {
   const hinted = cur.hint > 0;
   const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null });
-  const streakUp = bumpStreak();
+  const record = bumpStreak(correct);
   save();
-  if (streakUp) toast(`🔥 ${S.streak.days}-day streak!`);
+  if (record && !(S.streak.best % 5)) toast(`🔥 New record: ${S.streak.best} right in a row!`);
   renderTop();
   if (event === 'mastered' || event === 'remembered') await celebrate(event, byId[cur.id]);
   else if (event === 'lost') toast(`${nm(byId[cur.id])} is back in learning`);
@@ -960,7 +956,7 @@ function renderTop() {
     + `<span data-tip="${esc(birdListTip('inPlay'))}">${s.inPlay} birds in play</span> · `
     + `<span data-tip="${esc(birdListTip('met'))}">${s.met} met</span> · `
     + `<span data-tip="${esc(birdListTip('mastered'))}">${s.mastered} mastered</span>`
-    + (st ? ` · <span data-tip="${esc(TIPS.streak)}">🔥 ${st}</span>` : '');
+    + (st ? ` · <span data-tip="${esc(`${TIPS.streak} Your record is ${streakState().best}.`)}">🔥 ${st}</span>` : '');
 }
 
 // ---------- birds view ----------
@@ -1086,7 +1082,7 @@ function renderProgress() {
     <div class="stat" data-tip="${esc(birdListTip('inPlay'))}"><b>${s.inPlay}</b><span>in play</span></div>
     <div class="stat" data-tip="${esc(TIPS.accuracy)}"><b>${s.recentAccuracy == null ? '–' : Math.round(s.recentAccuracy * 100) + '%'}</b><span>last 20 right</span></div>
   </div>
-  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st ? `${st}-day streak` : 'No streak yet: answer a bird today to start one'}${S.streak?.best > 1 ? ` · best ${S.streak.best}` : ''}</div>`;
+  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st} right in a row · record ${streakState().best}</div>`;
   for (const tier of TIER_ORDER) {
     const t = s.tiers[tier];
     if (!t) continue;
