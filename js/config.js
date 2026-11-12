@@ -5,4 +5,4 @@ export const SUPABASE_URL = 'https://qeetmsapqnojsgnkmecx.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_fVymOiNU7iKVNQX_8kIWhQ_Bkbgs4vF';
 
 // Set to true once Google is configured in Supabase (Authentication -> Sign In / Providers -> Google).
-export const GOOGLE_ENABLED = false;
+export const GOOGLE_ENABLED = true;
