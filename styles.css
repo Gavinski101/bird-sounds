@@ -433,3 +433,14 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .area-opt { width: auto; }
 
 .danger-link { color: var(--bad); display: block; margin: 10px auto 0; }
+
+/* Desktop: profile circle in the page's top right corner; on phones it stays in the header row. */
+@media (min-width: 760px) {
+  .avatar {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    right: 20px;
+    z-index: 15;
+    width: 42px; height: 42px;
+  }
+}
