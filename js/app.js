@@ -1,4 +1,5 @@
 import * as L from './learn.js';
+import * as Sync from './sync.js';
 
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
@@ -37,9 +38,189 @@ function loadStore() {
   return defaultStore();
 }
 
-function save() {
+function saveLocal() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch { /* storage full or blocked */ }
 }
+
+function save() {
+  if (Sync.signedIn()) {
+    (S.sync ||= {}).dirty = true;
+    schedulePush();
+  }
+  saveLocal();
+}
+
+// ---------- sync ----------
+
+const syncPayload = () => ({ learn: S.learn, recs: S.recs, prefs: S.prefs, streak: S.streak });
+const answers = (d) => d?.learn?.answered || 0;
+let pushTimer = null;
+let syncing = false;
+
+function schedulePush() {
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => pushNow().catch(() => {}), 3000);
+}
+
+async function pushNow() {
+  if (!Sync.signedIn() || !navigator.onLine) return;
+  const ts = await Sync.push(syncPayload());
+  S.sync = { seen: ts, dirty: false, at: Date.now() };
+  saveLocal();
+  renderAccount();
+}
+
+function adopt(data, keepLocalRecs) {
+  const local = S;
+  S = {
+    ...defaultStore(),
+    ...data,
+    prefs: { ...defaultStore().prefs, ...data.prefs },
+    recs: keepLocalRecs ? { ...(data.recs || {}), ...(local.recs || {}) } : data.recs || {},
+    sync: local.sync,
+  };
+}
+
+// Pull the saved copy and reconcile it with this device. When both changed, the copy
+// with more answers wins; recording ratings and flags from both are kept.
+async function syncNow({ firstSignIn = false } = {}) {
+  if (!Sync.signedIn() || syncing || !navigator.onLine) return;
+  syncing = true;
+  try {
+    const remote = await Sync.pull();
+    const st = (S.sync ||= {});
+    if (!remote) {
+      await pushNow();
+    } else if (firstSignIn) {
+      const mine = answers(S);
+      const theirs = answers(remote.data);
+      let useCloud = mine === 0;
+      if (!useCloud && theirs > 0) {
+        useCloud = confirm(`Your account already has saved progress (${theirs} answers). This device has ${mine} answers.\n\nOK = use the account's progress\nCancel = keep this device's progress`);
+      }
+      if (useCloud) {
+        adopt(remote.data, true);
+        S.sync = { seen: remote.updated_at, dirty: false, at: Date.now() };
+        saveLocal();
+        afterAdopt();
+        if (Object.keys(S.recs).length) await pushNow();
+      } else {
+        S.recs = { ...(remote.data.recs || {}), ...S.recs };
+        await pushNow();
+      }
+    } else if (remote.updated_at !== st.seen) {
+      if (!st.dirty || answers(remote.data) > answers(S)) {
+        adopt(remote.data, st.dirty);
+        S.sync = { seen: remote.updated_at, dirty: !!st.dirty, at: Date.now() };
+        saveLocal();
+        afterAdopt();
+        if (S.sync.dirty) await pushNow();
+      } else {
+        S.recs = { ...(remote.data.recs || {}), ...S.recs };
+        await pushNow();
+      }
+    } else if (st.dirty) {
+      await pushNow();
+    }
+  } catch (e) {
+    if (!Sync.signedIn()) toast('Signed out: please sign in again to keep syncing');
+    console.warn('sync failed', e);
+  } finally {
+    syncing = false;
+    renderAccount();
+  }
+}
+
+function afterAdopt() {
+  if (!species.length) return;
+  renderTop();
+  const active = document.querySelector('.view.active')?.id;
+  if (active === 'view-study') newCard();
+  else if (active === 'view-progress') renderProgress();
+  else if (active === 'view-birds') renderBirds();
+  else if (active === 'view-settings') renderSettings();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') syncNow();
+  else if (S.sync?.dirty) pushNow().catch(() => {});
+});
+window.addEventListener('online', () => syncNow());
+
+// ---------- account panel ----------
+
+let pendingEmail = '';
+
+function renderAccount() {
+  const el = $('account');
+  if (!el) return;
+  $('accountPanel').hidden = !Sync.configured;
+  if (Sync.signedIn()) {
+    const st = S.sync || {};
+    const when = st.at ? new Date(st.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : null;
+    const state = !navigator.onLine ? 'Offline: changes will sync when you are back online.'
+      : st.dirty ? 'Saving your latest changes…'
+      : when ? `Last synced ${when}.` : 'Not synced yet.';
+    el.innerHTML = `<p>Signed in as <b>${esc(Sync.email())}</b></p>
+      <p class="muted small"><span data-tip="Your progress, recording ratings, flags and settings are saved to your account a few seconds after each change, and fetched when you open the app.">${esc(state)}</span></p>
+      <div class="btn-row">
+        <button class="btn" id="syncNowBtn">Sync now</button>
+        <button class="btn ghost" id="signOutBtn">Sign out</button>
+      </div>`;
+  } else if (pendingEmail) {
+    el.innerHTML = `<p class="muted">We emailed a 6-digit code to <b>${esc(pendingEmail)}</b>. Enter it here. It can take a minute to arrive; check spam too.</p>
+      <input class="search" id="codeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6-digit code">
+      <div class="btn-row">
+        <button class="btn" id="verifyBtn">Sign in</button>
+        <button class="btn ghost" id="otherEmailBtn">Use a different email</button>
+      </div>`;
+  } else {
+    el.innerHTML = `<p class="muted">Sign in to save your progress online and keep it the same on all your devices. No password: we email you a code.</p>
+      <input class="search" id="emailInput" type="email" autocomplete="email" placeholder="you@example.com">
+      <button class="btn block" id="sendCodeBtn">Email me a code</button>`;
+  }
+}
+
+$('account').addEventListener('click', async (e) => {
+  const id = e.target.id;
+  try {
+    if (id === 'sendCodeBtn') {
+      const address = $('emailInput').value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return toast('Enter your email address');
+      e.target.disabled = true;
+      await Sync.sendCode(address);
+      pendingEmail = address;
+      renderAccount();
+      $('codeInput').focus();
+    } else if (id === 'verifyBtn') {
+      const code = $('codeInput').value.replace(/\D/g, '');
+      if (code.length < 6) return toast('Enter the code from the email');
+      e.target.disabled = true;
+      await Sync.verifyCode(pendingEmail, code);
+      pendingEmail = '';
+      toast('Signed in');
+      renderAccount();
+      await syncNow({ firstSignIn: true });
+    } else if (id === 'otherEmailBtn') {
+      pendingEmail = '';
+      renderAccount();
+    } else if (id === 'syncNowBtn') {
+      e.target.disabled = true;
+      await syncNow();
+      toast('Synced');
+    } else if (id === 'signOutBtn') {
+      if (!confirm('Sign out? Your progress stays on this device and in your account.')) return;
+      await Sync.signOut();
+      S.sync = {};
+      saveLocal();
+      renderAccount();
+      toast('Signed out');
+    }
+  } catch (err) {
+    toast(err.message && err.message.length < 120 ? `Couldn't do that: ${err.message}` : "Couldn't reach the server. Try again.");
+    renderAccount();
+  }
+});
 
 // ---------- helpers ----------
 
@@ -766,6 +947,7 @@ function renderSettings() {
   $('autoplay').checked = S.prefs.autoplay;
   $('intros').checked = S.prefs.intros;
   $('syncCode').value = exportCode();
+  renderAccount();
   updateOfflineInfo();
 }
 
@@ -943,6 +1125,7 @@ async function start() {
     calls = cl;
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
     newCard();
+    syncNow();
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
     console.error(e);

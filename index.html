@@ -71,6 +71,10 @@
 
     <!-- Settings -->
     <section id="view-settings" class="view" aria-label="Settings">
+      <div class="panel" id="accountPanel">
+        <h2>Account</h2>
+        <div id="account"></div>
+      </div>
       <div class="panel">
         <h2>Bird names</h2>
         <p class="muted">Match the name set your Merlin app uses (Merlin → Settings → Language).</p>
@@ -91,7 +95,7 @@
         </div>
       </div>
       <div class="panel">
-        <h2>Move progress to another device</h2>
+        <h2>Move progress without an account</h2>
         <p class="muted">Copy this code, then paste it on the other device and tap Load.</p>
         <textarea id="syncCode" rows="3" spellcheck="false"></textarea>
         <div class="btn-row">
