@@ -597,6 +597,7 @@ function renderCard() {
   }
 
   // Reveal
+  $('card').classList.toggle('revealed', shown);
   $('reveal').hidden = !shown;
   if (shown) {
     const img = $('revealPhoto');
