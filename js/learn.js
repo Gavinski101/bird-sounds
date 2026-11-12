@@ -13,6 +13,7 @@ export const UNLOCK_STEP = 5;
 export const FIRST_INTERVAL = 15;
 export const MAX_INTERVAL = 400;
 export const REVIEW_SHARE = 0.25;
+export const MAX_STRUGGLING = 3; // no new birds while this many met birds are still a struggle
 export const PAIR_EVERY = 8;   // at most one compare card per this many cards
 export const PAIR_MIN = 2;     // mix-ups (either direction) before a pair gets compare cards
 export const PAIR_REST = 25;   // cards before the same pair comes up again
@@ -83,7 +84,10 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
   const masteredDue = due.filter(([, b]) => b.m);
   const fresh = pool.filter(([, b]) => !b.intro);
 
-  if (fresh.length && !learningDue.some(([, b]) => b.miss) && (learningDue.length === 0 || state.sinceIntro >= 3)) {
+  // Struggling = met, not mastered, and missed at least as often as got right.
+  const struggling = pool.filter(([, b]) => b.intro && !b.m && b.wrong > 0 && b.wrong >= b.right).length;
+  if (fresh.length && struggling < MAX_STRUGGLING && !learningDue.some(([, b]) => b.miss)
+      && (learningDue.length === 0 || state.sinceIntro >= 3)) {
     return { id: fresh[0][0], intro: true };
   }
   const missedDue = learningDue.filter(([, b]) => b.miss);

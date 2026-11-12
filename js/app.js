@@ -1,5 +1,6 @@
 import * as L from './learn.js';
 import * as Sync from './sync.js';
+import { OWNER_HASHES } from './config.js';
 
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
@@ -167,6 +168,14 @@ function renderAccount() {
   const el = $('account');
   if (!el) return;
   renderAvatar();
+  if (species.length) {
+    updateOwner().then((changed) => {
+      if (!changed) return;
+      applyArea();
+      renderTop();
+      if ($('view-settings').classList.contains('active')) renderSettings();
+    });
+  }
   $('accountPanel').hidden = !Sync.configured;
   if (Sync.signedIn()) {
     const st = S.sync || {};
@@ -453,6 +462,7 @@ const currentStreak = () => streakState().run;
 
 const audio = $('audio');
 let audioKey = null;
+let playSeq = 0; // bumps on every new play/stop, so a slow load from an earlier card can't take over
 let audioSecs = 0; // stored length of the playing clip, used until the browser knows the duration
 let audioOwner = null;
 let blobUrl = null;
@@ -478,12 +488,15 @@ async function playRec(r, button) {
     if (audio.ended) audio.currentTime = 0;
     return audio.play().catch(() => {});
   }
+  const seq = ++playSeq;
   audioKey = key;
   audioOwner = button;
   audioSecs = r.t ? r.t[1] - r.t[0] : r.secs || 0;
   $('recError').hidden = true;
   setPlaying(button, 'loading');
-  audio.src = await srcFor(r);
+  const src = await srcFor(r);
+  if (seq !== playSeq) return; // a newer card or sound started while this one was loading
+  audio.src = src;
   audio.play().catch((e) => {
     if (e.name !== 'NotAllowedError' && e.name !== 'AbortError' && button === $('playBtn')) $('recError').hidden = false;
     setPlaying(button, 'paused');
@@ -491,6 +504,7 @@ async function playRec(r, button) {
 }
 
 function stopAudio() {
+  playSeq++;
   audio.pause();
   audioKey = null;
   audioOwner = null;
@@ -543,6 +557,8 @@ function newCard() {
   cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.pair ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
   renderCard();
   renderTop();
+  const photo = byId[cur.id]?.photo?.url;
+  if (photo) new Image().src = photo; // fetch the answer photo while the sound plays
   setTimeout(prefetchSoon, 1500);
   if (!S.prefs.autoplay) return;
   if (cur.stage === 'compare') {
@@ -634,7 +650,17 @@ function renderCard() {
   $('reveal').hidden = !shown;
   if (shown) {
     const img = $('revealPhoto');
-    if (sp.photo) { img.src = sp.photo.url; img.alt = nm(sp); img.hidden = false; } else img.hidden = true;
+    if (sp.photo) {
+      // Hide until the new photo has loaded, so the previous bird's picture never shows.
+      if (img.dataset.src !== sp.photo.url) {
+        img.classList.add('loading');
+        img.onload = img.onerror = () => img.classList.remove('loading');
+        img.dataset.src = sp.photo.url;
+        img.src = sp.photo.url;
+      }
+      img.alt = nm(sp);
+      img.hidden = false;
+    } else img.hidden = true;
     $('revealName').textContent = nm(sp);
     $('revealSci').textContent = sp.sci;
     $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}`;
@@ -1122,8 +1148,7 @@ function renderSettings() {
   $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
   $('areaSel').innerHTML = areaTree().map(({ a, depth }) =>
-    `<option value="${a.id}" ${a.id === currentAreaId() ? 'selected' : ''}>${'\u00a0\u00a0\u00a0'.repeat(depth)}${esc(a.name)} (${Object.keys(a.ranks).length} birds)</option>`).join('')
-    + '<option disabled>More regions come with the full app</option>';
+    `<option value="${a.id}" ${a.id === currentAreaId() ? 'selected' : ''}>${'\u00a0\u00a0\u00a0'.repeat(depth)}${esc(a.name)}${a.near && !birdCount(a) ? '' : ` (${birdCount(a)} birds)`}</option>`).join('');
   $('syncCode').value = exportCode();
   renderAccount();
   updateOfflineInfo();
@@ -1145,26 +1170,105 @@ $('levelSel').addEventListener('change', (e) => {
   toast(added > 0 ? `${LEVELS[e.target.value].label}: ${added} more birds added` : `${LEVELS[e.target.value].label}: birds already in play stay in play`);
 });
 
-$('areaSel').addEventListener('change', (e) => {
-  S.prefs.area = e.target.value;
-  applyArea();
-  L.ensurePool(S.learn, species);
-  save();
-  renderTop();
-  cur = null;
-  toast(`Area: ${area}`);
+$('areaSel').addEventListener('change', async (e) => {
+  if (await chooseArea(e.target.value)) {
+    cur = null;
+    toast(`Region: ${area}`);
+  }
+  renderSettings();
 });
 
 // ---------- areas ----------
 
-const DEFAULT_AREA = 'george';
-const areaById = (id) => areas.find((a) => a.id === id);
+const DEFAULT_AREA = 'all';
+const NEAR_KEY = 'bird-sounds-near';
+const NEAR_KM = 50;
+let isOwner = false; // signed in with an account allowed to see private regions
+
+// "Near me" is built on the device from iNaturalist records around the person's location.
+function nearArea() {
+  let n = null;
+  try { n = JSON.parse(localStorage.getItem(NEAR_KEY)); } catch { /* none yet */ }
+  return { id: 'near', name: `Near me (${NEAR_KM} km)`, parent: null, near: true, ranks: n?.ranks || {}, totalSpecies: n?.total || 0, at: n?.at };
+}
+
+const visibleAreas = () => [nearArea(), ...areas.filter((a) => !a.private || isOwner)];
+const areaById = (id) => visibleAreas().find((a) => a.id === id);
 const currentAreaId = () => (areaById(S.prefs.area) ? S.prefs.area : DEFAULT_AREA);
+// Only birds we have recordings for count (allSpecies is already filtered to those).
+let knownIds = new Set();
+const birdCount = (a) => Object.keys(a.ranks).filter((id) => knownIds.has(id)).length;
+
+async function updateOwner() {
+  const before = isOwner;
+  isOwner = false;
+  const mail = Sync.signedIn() ? Sync.email().trim().toLowerCase() : '';
+  if (mail && crypto.subtle) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(mail));
+    const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    isOwner = OWNER_HASHES.includes(hex);
+  }
+  return before !== isOwner;
+}
 
 // Areas as a flat list in tree order (parents before children) with their depth.
-function areaTree(parent = null, depth = 0) {
-  return areas.filter((a) => a.parent === parent)
-    .flatMap((a) => [{ a, depth }, ...areaTree(a.id, depth + 1)]);
+// Top level: Near me, Southern Africa (with countries, provinces and areas below), private lists.
+function areaTree(parent = null, depth = 0, list = visibleAreas()) {
+  return list.filter((a) => a.parent === parent)
+    .flatMap((a) => [{ a, depth }, ...areaTree(a.id, depth + 1, list)]);
+}
+
+const areaPath = (a) => {
+  const names = [];
+  for (let x = a; x; x = areaById(x.parent)) names.unshift(x.name);
+  return names.join(' › ');
+};
+
+// Look up birds recorded within NEAR_KM of the device and rank them, then cache for a week.
+async function locateNear() {
+  if (!navigator.geolocation) throw new Error('Location is not available on this device');
+  const pos = await new Promise((ok, fail) => navigator.geolocation.getCurrentPosition(ok, fail, { timeout: 20000, maximumAge: 6e5 }));
+  const { latitude: lat, longitude: lng } = pos.coords;
+  const byInat = Object.fromEntries(allSpecies.map((b) => [b.inat, b.id]));
+  const ranks = {};
+  let total = 0;
+  for (let page = 1; page <= 3; page++) {
+    const q = new URLSearchParams({ iconic_taxa: 'Aves', quality_grade: 'research', rank: 'species', lat, lng, radius: NEAR_KM, per_page: 500, page });
+    const res = await fetch(`https://api.inaturalist.org/v1/observations/species_counts?${q}`);
+    if (!res.ok) throw new Error(`iNaturalist ${res.status}`);
+    const d = await res.json();
+    d.results.forEach((r, i) => {
+      const id = byInat[r.taxon.id];
+      if (id && ranks[id] == null) ranks[id] = (page - 1) * 500 + i + 1;
+    });
+    total = d.total_results;
+    if (page * 500 >= total) break;
+  }
+  try { localStorage.setItem(NEAR_KEY, JSON.stringify({ lat: +lat.toFixed(2), lng: +lng.toFixed(2), at: Date.now(), ranks, total })); } catch { /* storage full */ }
+  return Object.keys(ranks).length;
+}
+
+// Switch to an area. "Near me" fetches (or refreshes after a week) the local list first.
+async function chooseArea(id) {
+  if (id === 'near') {
+    const n = nearArea();
+    if (!birdCount(n) || Date.now() - (n.at || 0) > 7 * 864e5) {
+      toast('Finding birds recorded near you…');
+      try {
+        const found = await locateNear();
+        if (!found) throw new Error('No bird records near you yet');
+      } catch (err) {
+        toast(err.code === 1 ? 'Location permission is off, so Near me cannot be used' : `Near me didn't work: ${err.message || 'no location'}`);
+        return false;
+      }
+    }
+  }
+  S.prefs.area = id;
+  applyArea();
+  L.ensurePool(S.learn, species);
+  save();
+  renderTop();
+  return true;
 }
 
 function tierFor(rank) {
@@ -1173,7 +1277,8 @@ function tierFor(rank) {
 
 // Rebuild the study list for the chosen area: its birds, ranked and tiered for that area.
 function applyArea() {
-  const a = areaById(currentAreaId());
+  let a = areaById(currentAreaId());
+  if (!a || !birdCount(a)) a = areaById(DEFAULT_AREA); // e.g. Near me before the location is known
   area = a.name;
   areaTotal = a.totalSpecies;
   species = allSpecies
@@ -1235,14 +1340,24 @@ $('resetBtn').addEventListener('click', () => {
 
 // ---------- offline ----------
 
+// Offline saves the birds in the study set of the current region (not the whole region:
+// that could be ~1,700 files, and xeno-canto asks people not to bulk-download).
+function offlineBirds() {
+  const pool = new Set(S.learn.pool);
+  return species.filter((sp) => pool.has(sp.id));
+}
+
 function offlineItems() {
   const items = [];
-  for (const sp of species) {
-    for (const r of activeRecs(sp.id)) items.push({ url: r.file, audio: true });
+  for (const sp of offlineBirds()) {
+    for (const r of activeRecs(sp.id)) items.push({ url: r.file, audio: true, secs: r.secs });
     if (sp.photo) items.push({ url: sp.photo.url, audio: false });
   }
   return items;
 }
+
+// Rough size: MP3s are ~25 KB per second of sound, photos ~60 KB.
+const offlineMB = (items) => Math.max(1, Math.round(items.reduce((t, i) => t + (i.audio ? (i.secs || 20) * 25 : 60), 0) / 1024));
 
 async function updateOfflineInfo() {
   try {
@@ -1256,8 +1371,8 @@ async function updateOfflineInfo() {
       if (est.usage) size = ` · about ${Math.round(est.usage / 1e6)} MB used`;
     }
     $('offlineInfo').textContent = got
-      ? `${got} of ${items.length} sounds and photos saved on this device${size}.`
-      : 'Save the recordings and photos to this device so the app works without signal (roughly 100–200 MB).';
+      ? `${got} of ${items.length} sounds and photos for your ${offlineBirds().length} study birds in ${area} saved on this device${size}.${got < items.length ? ' Tap Download to save the rest.' : ''}`
+      : `Save the sounds and photos of the ${offlineBirds().length} birds in your study set for ${area}, so the app works without signal (about ${offlineMB(items)} MB). Download again when new birds are added.`;
   } catch {
     $('offlineInfo').textContent = "Offline saving isn't available in this browser.";
   }
@@ -1408,13 +1523,52 @@ function openSurvey() {
 }
 
 function renderSurvey() {
+  for (let a = areaById(surveyPick.area); a; a = areaById(a.parent)) if (a.parent) openAreas.add(a.parent);
   $('levelOpts').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<button class="opt ${k === surveyPick.level ? 'on' : ''}" data-level="${k}"><b>${esc(v.label)}</b><span>${esc(v.desc)}</span></button>`).join('');
-  $('areaOpts').innerHTML = areaTree().map(({ a, depth }) =>
-    `<button class="opt area-opt ${a.id === surveyPick.area ? 'on' : ''}" data-area="${a.id}" style="margin-left:${depth * 18}px">
-      <b>${esc(a.name)}</b><span>${Object.keys(a.ranks).length} birds · tiers based on records in ${esc(a.name)}</span></button>`).join('')
-    + '<button class="opt" disabled><b>More regions and Near me</b><span>Other provinces, countries and local areas come with the full app.</span></button>';
+  renderAreaPicker();
 }
+
+// Region picker: a tree that opens level by level (Southern Africa › country › province ›
+// area), plus a search box that lists matching regions directly.
+const openAreas = new Set(['all']);
+let areaQuery = '';
+
+function areaOpt(a, depth, showPath) {
+  const kids = visibleAreas().some((x) => x.parent === a.id);
+  const sub = a.near
+    ? (birdCount(a) ? `${birdCount(a)} birds recorded within ${NEAR_KM} km of you` : `Birds recorded within ${NEAR_KM} km of you (uses your location)`)
+    : `${birdCount(a)} birds${a.private ? ' · only you can see this' : ''}`;
+  return `<div class="area-row" style="margin-left:${depth * 16}px">
+    ${kids && !showPath ? `<button class="area-toggle" data-toggle="${a.id}" aria-label="${openAreas.has(a.id) ? 'Close' : 'Open'} ${esc(a.name)}">${openAreas.has(a.id) ? '▾' : '▸'}</button>` : '<span class="area-toggle-space"></span>'}
+    <button class="opt area-opt ${a.id === surveyPick.area ? 'on' : ''}" data-area="${a.id}">
+      <b>${esc(showPath ? areaPath(a) : a.name)}</b><span>${esc(sub)}</span></button>
+  </div>`;
+}
+
+function renderAreaPicker() {
+  const q = areaQuery.trim().toLowerCase();
+  let rows;
+  if (q) {
+    rows = visibleAreas().filter((a) => a.name.toLowerCase().includes(q)).map((a) => areaOpt(a, 0, true));
+    if (!rows.length) rows = ['<p class="muted small">No region matches that.</p>'];
+  } else {
+    const shown = (parent, depth) => visibleAreas().filter((a) => a.parent === parent).flatMap((a) =>
+      [areaOpt(a, depth, false), ...(openAreas.has(a.id) ? shown(a.id, depth + 1) : [])]);
+    rows = shown(null, 0);
+  }
+  $('areaOpts').innerHTML = `<input class="search" id="areaSearch" type="search" placeholder="Search regions, e.g. Kruger" value="${esc(areaQuery)}" autocomplete="off">`
+    + rows.join('');
+}
+
+$('areaOpts').addEventListener('input', (e) => {
+  if (e.target.id !== 'areaSearch') return;
+  areaQuery = e.target.value;
+  const pos = e.target.selectionStart;
+  renderAreaPicker();
+  $('areaSearch').focus();
+  $('areaSearch').setSelectionRange(pos, pos);
+});
 
 function applyLevel(level) {
   const L0 = LEVELS[level] || LEVELS.some;
@@ -1428,19 +1582,32 @@ function applyLevel(level) {
 $('survey').addEventListener('click', (e) => {
   const lv = e.target.closest('[data-level]');
   const ar = e.target.closest('[data-area]');
+  const tg = e.target.closest('[data-toggle]');
+  if (tg) {
+    if (openAreas.has(tg.dataset.toggle)) openAreas.delete(tg.dataset.toggle);
+    else openAreas.add(tg.dataset.toggle);
+    return renderAreaPicker();
+  }
   if (lv) surveyPick.level = lv.dataset.level;
   if (ar) surveyPick.area = ar.dataset.area;
-  if (lv || ar) renderSurvey();
-  if (e.target.id === 'surveyDone') {
-    S.prefs.area = surveyPick.area;
-    applyArea();
+  if (lv) renderSurvey();
+  if (ar) renderAreaPicker();
+  if (e.target.id === 'surveyDone') finishSurvey();
+});
+
+async function finishSurvey() {
+  {
+    $('surveyDone').disabled = true;
+    const ok = await chooseArea(surveyPick.area);
+    $('surveyDone').disabled = false;
+    if (!ok) return;
     applyLevel(surveyPick.level);
     S.prefs.surveyDone = true;
     save();
     $('survey').hidden = true;
     newCard();
   }
-});
+}
 
 $('skipSignIn').addEventListener('click', closeWelcome);
 
@@ -1465,6 +1632,8 @@ async function start() {
     areas = ar.areas;
     nameSets = sp.nameSets;
     calls = cl;
+    knownIds = new Set(allSpecies.map((b) => b.id));
+    await updateOwner();
     applyArea();
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
     let back = false;
@@ -1484,6 +1653,7 @@ async function start() {
     if (back === 'recovery') openPwSheet();
     syncNow({ firstSignIn: !!back });
     Sync.refreshProfile().then(renderAvatar).catch(() => {});
+    if (await updateOwner()) { applyArea(); renderTop(); }
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
     console.error(e);

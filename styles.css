@@ -448,3 +448,13 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 }
 
 .choice.out { opacity: 0.35; text-decoration: line-through; }
+
+/* Region picker */
+#areaOpts .search { margin-bottom: 4px; }
+.area-row { display: flex; align-items: stretch; gap: 6px; }
+.area-row .opt { flex: 1; min-width: 0; }
+.area-toggle, .area-toggle-space { flex: none; width: 32px; }
+.area-toggle { border: 0; background: none; color: var(--muted); font-size: 18px; border-radius: 10px; }
+.area-toggle:hover { background: var(--surface-2); }
+
+.photo.loading { visibility: hidden; min-height: 200px; }

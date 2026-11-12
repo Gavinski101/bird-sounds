@@ -152,4 +152,24 @@ function play(state, knows, cards) {
   assert.ok(s.pool.includes('b0'), 'birds from the first area are kept');
 }
 
+// No new birds while 3 met birds are still a struggle.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of ['b0', 'b1', 'b2']) { L.introduced(s, id); L.answer(s, species, id, { correct: false }, rand); }
+  for (let i = 0; i < 30; i++) {
+    const c = L.nextCard(s, species, rand, { intros: true });
+    assert.equal(c.intro, false, 'no introduction while struggling');
+    L.answer(s, species, c.id, { correct: false }, rand);
+  }
+  // Getting them right releases new birds again.
+  for (const id of ['b0', 'b1', 'b2']) for (let k = 0; k < 4; k++) L.answer(s, species, id, { correct: true }, rand);
+  let introduced = false;
+  for (let i = 0; i < 20 && !introduced; i++) {
+    const c = L.nextCard(s, species, rand, { intros: true });
+    if (c.intro) introduced = true; else L.answer(s, species, c.id, { correct: true }, rand);
+  }
+  assert.ok(introduced, 'new bird once no longer struggling');
+}
+
 console.log('learn.js: all checks passed');
