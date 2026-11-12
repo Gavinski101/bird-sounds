@@ -159,6 +159,20 @@
     </div>
   </div>
 
+  <!-- Choose a new password (opened by a reset link) -->
+  <div class="sheet-bg" id="pwSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+      <h2 id="pwTitle">Choose a new password</h2>
+      <form id="pwForm" method="post" action="#" novalidate>
+        <input type="email" name="email" autocomplete="username" hidden>
+        <input class="search" id="newPw" name="new-password" type="password" autocomplete="new-password" minlength="6" placeholder="New password (at least 6 characters)">
+        <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showNewPw"> Show password</label>
+        <button type="submit" class="btn block" id="pwSave">Save new password</button>
+      </form>
+      <button class="btn block ghost" id="pwCancel">Not now</button>
+    </div>
+  </div>
+
   <!-- Rate / flag sheet -->
   <div class="sheet-bg" id="rateSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rateTitle">

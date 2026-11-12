@@ -5,3 +5,7 @@ __pycache__/
 XenoTermsOfUse.txt
 # Local working notes, not published
 CLAUDE.md
+# Personal notes with credentials, never publish
+GoogleAuth.txt
+*.secret.txt
+client_secret*.json

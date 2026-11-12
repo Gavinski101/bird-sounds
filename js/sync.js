@@ -81,10 +81,27 @@ export function googleSignInUrl() {
   return `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(back)}`;
 }
 
-// Call once on load. Returns true if this page load is the return from a Google sign-in.
+// Password reset: Supabase emails a link back to this page, which signs the person in
+// for long enough to choose a new password (see takeRedirect and setPassword).
+export async function requestReset(address) {
+  const back = location.href.split('#')[0];
+  await call(`/auth/v1/recover?redirect_to=${encodeURIComponent(back)}`, { method: 'POST', body: { email: address } });
+}
+
+export async function setPassword(password) {
+  await call('/auth/v1/user', { method: 'PUT', token: await token(), body: { password } });
+}
+
+// Call once on load. Returns 'google' or 'recovery' when this page load is the return from a
+// Google sign-in or a password-reset link, otherwise false. Throws with Supabase's message
+// when the link failed (for example an expired reset link).
 export async function takeRedirect() {
-  if (!location.hash.includes('access_token=')) return false;
   const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get('error') || h.get('error_description')) {
+    history.replaceState(null, '', location.href.split('#')[0]);
+    throw new Error((h.get('error_description') || h.get('error')).replace(/\+/g, ' '));
+  }
+  if (!h.get('access_token')) return false;
   history.replaceState(null, '', location.href.split('#')[0]);
   const access = h.get('access_token');
   const user = await call('/auth/v1/user', { token: access });
@@ -94,7 +111,7 @@ export async function takeRedirect() {
     expires_in: +h.get('expires_in') || 3600,
     user,
   });
-  return true;
+  return h.get('type') === 'recovery' ? 'recovery' : 'google';
 }
 
 async function token() {

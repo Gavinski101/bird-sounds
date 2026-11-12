@@ -174,6 +174,23 @@ function renderAccount() {
       </div>`;
   } else {
     const typed = $('emailInput')?.value || '';
+    if (authMode === 'reset' || authMode === 'resetSent') {
+      el.innerHTML = authMode === 'reset'
+        ? `<p><b>Forgot your password?</b></p>
+          <p class="muted small">Enter your account's email and we'll send you a link to choose a new password.</p>
+          <form id="resetForm" method="post" action="#" novalidate>
+            <input class="search" id="emailInput" name="email" type="email" autocomplete="username" placeholder="Email address" value="${esc(typed)}" required>
+            <button type="submit" class="btn block" id="resetSubmit">Email me a reset link</button>
+          </form>
+          <button type="button" class="link" data-mode="signin">← Back to sign in</button>`
+        : `<p><b>Check your email</b></p>
+          <p class="muted small">If <b>${esc(typed)}</b> has an account, a reset link is on its way. Open it on this device
+          and the app will ask for your new password. It can take a minute to arrive; check spam too.
+          Signed up with Google? Then there's no password to reset: just use Continue with Google.</p>
+          <input type="hidden" id="emailInput" value="${esc(typed)}">
+          <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+      return;
+    }
     const signup = authMode === 'signup';
     // A real <form> with the right autocomplete values lets the browser's password manager
     // fill saved passwords on Sign in and suggest a strong one on Create account.
@@ -191,7 +208,8 @@ function renderAccount() {
           placeholder="${signup ? 'Choose a password (at least 6 characters)' : 'Password'}">
         <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
         <button type="submit" class="btn block" id="authSubmit">${signup ? 'Create account' : 'Sign in'}</button>
-      </form>`;
+      </form>
+      ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}`;
   }
 }
 
@@ -210,6 +228,19 @@ function friendly(err) {
 // and password managers that submit the form all take the same path.
 $('account').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (e.target.id === 'resetForm') {
+    const address = $('emailInput').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return toast('Enter your email address');
+    $('resetSubmit').disabled = true;
+    try {
+      await Sync.requestReset(address);
+      authMode = 'resetSent';
+    } catch (err) {
+      toast(friendly(err));
+    }
+    renderAccount();
+    return;
+  }
   const btn = $('authSubmit');
   try {
     const address = $('emailInput').value.trim();
@@ -1211,6 +1242,35 @@ document.addEventListener('keydown', (e) => {
 
 // ---------- start ----------
 
+// ---------- choose a new password (after a reset link) ----------
+
+function openPwSheet() {
+  $('newPw').value = '';
+  $('newPw').type = 'password';
+  $('showNewPw').checked = false;
+  $('pwSheet').hidden = false;
+  $('newPw').focus();
+}
+
+$('showNewPw').addEventListener('change', (e) => { $('newPw').type = e.target.checked ? 'text' : 'password'; });
+$('pwCancel').addEventListener('click', () => { $('pwSheet').hidden = true; });
+$('pwForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = $('newPw').value;
+  if (pw.length < 6) return toast('Password needs at least 6 characters');
+  $('pwSave').disabled = true;
+  try {
+    await Sync.setPassword(pw);
+    $('pwSheet').hidden = true;
+    toast('Password changed. You are signed in.');
+    renderAccount();
+  } catch (err) {
+    const m = (err.message || '').toLowerCase();
+    toast(m.includes('different') ? 'Choose a password different from your old one' : friendly(err));
+  }
+  $('pwSave').disabled = false;
+});
+
 // ---------- welcome (first open) ----------
 
 const welcomeOpen = () => !$('welcome').hidden;
@@ -1312,16 +1372,22 @@ async function start() {
     calls = cl;
     applyArea();
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
-    let fromGoogle = false;
-    try { fromGoogle = await Sync.takeRedirect(); } catch { toast("Google sign-in didn't finish. Try again."); }
-    if (fromGoogle) {
-      S.prefs.welcomeDone = true;
-      toast('Signed in with Google');
+    let back = false;
+    try {
+      back = await Sync.takeRedirect();
+    } catch (err) {
+      const m = (err.message || '').toLowerCase();
+      toast(m.includes('expired') || m.includes('invalid')
+        ? 'That link has expired or was already used. Ask for a new one.'
+        : "Sign-in didn't finish. Try again.");
     }
+    if (back) S.prefs.welcomeDone = true;
+    if (back === 'google') toast('Signed in with Google');
     if (needsWelcome()) openWelcome();
     else if (needsSurvey()) openSurvey();
     else newCard();
-    syncNow({ firstSignIn: fromGoogle });
+    if (back === 'recovery') openPwSheet();
+    syncNow({ firstSignIn: !!back });
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
     console.error(e);
