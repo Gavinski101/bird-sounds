@@ -161,11 +161,13 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 }
 .choice.right { background: var(--good-soft); border-color: var(--good); }
 .choice.wrong { background: var(--bad-soft); border-color: var(--bad); }
-.hint-photo { width: 100%; max-height: min(240px, 24dvh); object-fit: cover; border-radius: 10px; margin-top: 10px; }
+.hint-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: min(240px, 24dvh); margin: 10px auto 0; object-fit: contain; border-radius: 10px; }
 
 /* Reveal */
 .reveal { text-align: center; margin-top: 8px; }
-.photo { width: 100%; max-height: min(300px, 26dvh); object-fit: cover; border-radius: 14px; background: var(--surface-2); display: block; }
+/* Scale the whole photo down to fit (never crop it). */
+.photo { display: block; width: auto; height: auto; max-width: 100%; max-height: min(300px, 26dvh); margin: 0 auto; object-fit: contain; border-radius: 14px; }
+.sheet .photo { max-height: min(320px, 40dvh); }
 .reveal-name { font-size: 26px; font-weight: 700; margin-top: 12px; line-height: 1.15; }
 .reveal-sci { color: var(--muted); font-style: italic; }
 .reveal-meta { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
