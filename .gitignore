@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 # Copy of xeno-canto's terms, kept for reference only
 XenoTermsOfUse.txt
+# Local working notes, not published
+CLAUDE.md
