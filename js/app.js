@@ -55,6 +55,8 @@ function save() {
 
 // ---------- sync ----------
 
+// Supabase returns timestamps as "…+00:00", we send "…Z": compare the moments, not the text.
+const sameTime = (a, b) => !!a && !!b && Date.parse(a) === Date.parse(b);
 const syncPayload = () => ({ learn: S.learn, recs: S.recs, prefs: S.prefs, streak: S.streak });
 const answers = (d) => d?.learn?.answered || 0;
 let pushTimer = null;
@@ -111,8 +113,12 @@ async function syncNow({ firstSignIn = false } = {}) {
         S.recs = { ...(remote.data.recs || {}), ...S.recs };
         await pushNow();
       }
-    } else if (remote.updated_at !== st.seen) {
-      if (!st.dirty || answers(remote.data) > answers(S)) {
+    } else if (!sameTime(remote.updated_at, st.seen)) {
+      // Another device saved since we last synced. Take its copy unless that would lose
+      // answers made here (progress only ever grows, so fewer answers = older copy).
+      const theirs = answers(remote.data);
+      const mine = answers(S);
+      if (theirs > mine || (theirs === mine && !st.dirty)) {
         adopt(remote.data, st.dirty);
         S.sync = { seen: remote.updated_at, dirty: !!st.dirty, at: Date.now() };
         saveLocal();
@@ -138,7 +144,8 @@ function afterAdopt() {
   if (!species.length) return;
   renderTop();
   const active = document.querySelector('.view.active')?.id;
-  if (active === 'view-study') newCard();
+  // Keep the card the person is on; only start a new one if that bird is gone.
+  if (active === 'view-study') { if (cur && byId[cur.id]) renderCard(); else newCard(); }
   else if (active === 'view-progress') renderProgress();
   else if (active === 'view-birds') renderBirds();
   else if (active === 'view-settings') renderSettings();
@@ -450,6 +457,7 @@ function currentStreak() {
 
 const audio = $('audio');
 let audioKey = null;
+let audioSecs = 0; // stored length of the playing clip, used until the browser knows the duration
 let audioOwner = null;
 let blobUrl = null;
 
@@ -476,6 +484,7 @@ async function playRec(r, button) {
   }
   audioKey = key;
   audioOwner = button;
+  audioSecs = r.t ? r.t[1] - r.t[0] : r.secs || 0;
   $('recError').hidden = true;
   setPlaying(button, 'loading');
   audio.src = await srcFor(r);
@@ -511,7 +520,10 @@ audio.addEventListener('pause', () => setPlaying(playingBtn, 'paused'));
 audio.addEventListener('ended', () => setPlaying(playingBtn, 'paused'));
 audio.addEventListener('timeupdate', () => {
   if (playingBtn !== $('playBtn')) return;
-  const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  // xeno-canto doesn't send the file length up front, so the browser often only learns the
+  // duration at the end of the download.
+  const d = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs;
+  const p = d ? Math.min(100, (audio.currentTime / d) * 100) : 0;
   $('barFill').style.width = `${p}%`;
 });
 audio.addEventListener('error', () => {
@@ -535,11 +547,36 @@ function newCard() {
   cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.pair ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
   renderCard();
   renderTop();
+  setTimeout(prefetchSoon, 1500);
   if (!S.prefs.autoplay) return;
   if (cur.stage === 'compare') {
     const first = $('hintArea').querySelector('[data-cplay]');
     if (first) playRec(activeRecs(first.dataset.cplay)[0], first);
   } else playRec(currentRec(), $('playBtn'));
+}
+
+// Quietly save the recordings of the birds most likely to come up next, so the next card
+// starts playing straight away. One small file at a time; skipped on data-saver connections.
+let prefetching = false;
+async function prefetchSoon() {
+  if (prefetching || !navigator.onLine || navigator.connection?.saveData) return;
+  prefetching = true;
+  try {
+    const ids = new Set(species.map((b) => b.id));
+    const soon = S.learn.pool
+      .filter((id) => ids.has(id) && id !== cur?.id)
+      .map((id) => [id, S.learn.birds[id] || {}])
+      .sort((a, b) => (a[1].intro === b[1].intro ? (a[1].due || 0) - (b[1].due || 0) : a[1].intro ? -1 : 1))
+      .slice(0, 4);
+    const cache = await caches.open(MEDIA_CACHE);
+    for (const [id] of soon) {
+      const r = activeRecs(id)[0];
+      if (!r || (await cache.match(r.file))) continue;
+      const res = await fetch(r.file, { mode: 'cors' });
+      if (res.ok) await cache.put(r.file, res);
+    }
+  } catch { /* best effort */ }
+  prefetching = false;
 }
 
 function renderCard() {
@@ -901,14 +938,28 @@ $('avatarBtn').addEventListener('click', () => {
   $('accountPanel').scrollIntoView({ block: 'start' });
 });
 
+// Tooltip text for a count: the explanation, then the birds it counts (commonest first).
+function birdListTip(kind) {
+  const pool = new Set(S.learn.pool);
+  const pick = {
+    inPlay: (b) => pool.has(b.id),
+    met: (b) => pool.has(b.id) && S.learn.birds[b.id]?.intro,
+    mastered: (b) => pool.has(b.id) && S.learn.birds[b.id]?.m,
+  }[kind];
+  const names = species.filter(pick).map(nm);
+  return `${TIPS[kind]}
+
+${names.length ? names.join(', ') : 'None yet.'}`;
+}
+
 function renderTop() {
   renderAvatar();
   const s = L.summary(S.learn, species);
   const st = currentStreak();
   $('topSub').innerHTML = `<span data-tip="${esc(TIPS.area)}">${esc(area)}</span> · `
-    + `<span data-tip="${esc(TIPS.inPlay)}">${s.inPlay} birds in play</span> · `
-    + `<span data-tip="${esc(TIPS.met)}">${s.met} met</span> · `
-    + `<span data-tip="${esc(TIPS.mastered)}">${s.mastered} mastered</span>`
+    + `<span data-tip="${esc(birdListTip('inPlay'))}">${s.inPlay} birds in play</span> · `
+    + `<span data-tip="${esc(birdListTip('met'))}">${s.met} met</span> · `
+    + `<span data-tip="${esc(birdListTip('mastered'))}">${s.mastered} mastered</span>`
     + (st ? ` · <span data-tip="${esc(TIPS.streak)}">🔥 ${st}</span>` : '');
 }
 
@@ -1030,9 +1081,9 @@ function renderProgress() {
   const st = currentStreak();
   let html = days >= 0 ? `<div class="countdown">${days === 0 ? 'Big Bird Day is today!' : `${days} day${days === 1 ? '' : 's'} to Big Bird Day`}</div>` : '';
   html += `<div class="big-stats">
-    <div class="stat" data-tip="${esc(TIPS.mastered)}"><b>${s.mastered}</b><span>mastered</span></div>
-    <div class="stat" data-tip="${esc(TIPS.met)}"><b>${s.met}</b><span>met</span></div>
-    <div class="stat" data-tip="${esc(TIPS.inPlay)}"><b>${s.inPlay}</b><span>in play</span></div>
+    <div class="stat" data-tip="${esc(birdListTip('mastered'))}"><b>${s.mastered}</b><span>mastered</span></div>
+    <div class="stat" data-tip="${esc(birdListTip('met'))}"><b>${s.met}</b><span>met</span></div>
+    <div class="stat" data-tip="${esc(birdListTip('inPlay'))}"><b>${s.inPlay}</b><span>in play</span></div>
     <div class="stat" data-tip="${esc(TIPS.accuracy)}"><b>${s.recentAccuracy == null ? '–' : Math.round(s.recentAccuracy * 100) + '%'}</b><span>last 20 right</span></div>
   </div>
   <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st ? `${st}-day streak` : 'No streak yet: answer a bird today to start one'}${S.streak?.best > 1 ? ` · best ${S.streak.best}` : ''}</div>`;

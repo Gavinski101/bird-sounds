@@ -372,7 +372,9 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .tier-head .tier-name { color: var(--text); font-weight: 700; font-size: inherit; }
 .tip {
   position: fixed; z-index: 50;
-  max-width: min(300px, calc(100vw - 16px));
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: 70dvh; overflow: hidden;
+  white-space: pre-line;
   background: var(--text); color: var(--bg);
   padding: 8px 12px; border-radius: 10px;
   font-size: 13px; line-height: 1.4;
