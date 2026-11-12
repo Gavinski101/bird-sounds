@@ -11,11 +11,14 @@ const PAUSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v1
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-let species = [];
+let species = [];      // birds in the current area, commonest first (rank/tier for that area)
+let allSpecies = [];
+let areas = [];
 let byId = {};
 let calls = {};
 let nameSets = {};
 let area = '';
+let areaTotal = 0;
 let S = loadStore();
 let cur = null; // current study card
 
@@ -323,7 +326,7 @@ const TIPS = {
 };
 
 function tierTip(sp) {
-  return `${sp.tier}: how common this bird is around ${area} (number ${sp.rank} of the area's most recorded birds). Beginner = top 40, Easy = 41-100, Medium = 101-180, Hard = rarer.`;
+  return `${sp.tier} in ${area}: number ${sp.rank} of the ${areaTotal} birds recorded there, by how often they're recorded. Beginner = top 40, Easy = 41-100, Medium = 101-180, Hard = rarer.`;
 }
 
 function chip(status) {
@@ -992,9 +995,9 @@ function renderSettings() {
   $('intros').checked = S.prefs.intros;
   $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
-  $('areaSel').innerHTML = Object.entries(AREAS).map(([k, v]) =>
-    `<option value="${k}" ${k === (S.prefs.area || 'george') ? 'selected' : ''}>${esc(v)}</option>`).join('')
-    + '<option disabled>More areas coming in the full app</option>';
+  $('areaSel').innerHTML = areaTree().map(({ a, depth }) =>
+    `<option value="${a.id}" ${a.id === currentAreaId() ? 'selected' : ''}>${'\u00a0\u00a0\u00a0'.repeat(depth)}${esc(a.name)} (${Object.keys(a.ranks).length} birds)</option>`).join('')
+    + '<option disabled>More regions come with the full app</option>';
   $('syncCode').value = exportCode();
   renderAccount();
   updateOfflineInfo();
@@ -1018,8 +1021,41 @@ $('levelSel').addEventListener('change', (e) => {
 
 $('areaSel').addEventListener('change', (e) => {
   S.prefs.area = e.target.value;
+  applyArea();
+  L.ensurePool(S.learn, species);
   save();
+  renderTop();
+  cur = null;
+  toast(`Area: ${area}`);
 });
+
+// ---------- areas ----------
+
+const DEFAULT_AREA = 'george';
+const areaById = (id) => areas.find((a) => a.id === id);
+const currentAreaId = () => (areaById(S.prefs.area) ? S.prefs.area : DEFAULT_AREA);
+
+// Areas as a flat list in tree order (parents before children) with their depth.
+function areaTree(parent = null, depth = 0) {
+  return areas.filter((a) => a.parent === parent)
+    .flatMap((a) => [{ a, depth }, ...areaTree(a.id, depth + 1)]);
+}
+
+function tierFor(rank) {
+  return rank <= 40 ? 'Beginner' : rank <= 100 ? 'Easy' : rank <= 180 ? 'Medium' : 'Hard';
+}
+
+// Rebuild the study list for the chosen area: its birds, ranked and tiered for that area.
+function applyArea() {
+  const a = areaById(currentAreaId());
+  area = a.name;
+  areaTotal = a.totalSpecies;
+  species = allSpecies
+    .filter((b) => a.ranks[b.id] != null)
+    .map((b) => ({ ...b, rank: a.ranks[b.id], tier: tierFor(a.ranks[b.id]) }))
+    .sort((x, y) => x.rank - y.rank);
+  byId = { ...Object.fromEntries(allSpecies.map((b) => [b.id, b])), ...Object.fromEntries(species.map((b) => [b.id, b])) };
+}
 
 $('autoplay').addEventListener('change', (e) => {
   S.prefs.autoplay = e.target.checked;
@@ -1149,7 +1185,7 @@ function showView(name) {
   if (name === 'birds') renderBirds();
   if (name === 'progress') renderProgress();
   if (name === 'settings') renderSettings();
-  if (name === 'study' && cur) renderCard();
+  if (name === 'study') { if (cur) renderCard(); else newCard(); }
   window.scrollTo(0, 0);
 }
 
@@ -1205,14 +1241,13 @@ const LEVELS = {
   good: { label: 'I know most common calls', desc: 'Start with the 40 commonest birds, with introductions.', pool: 40, intros: true },
   expert: { label: 'Experienced', desc: 'All birds in play from the start, no introductions: straight to testing.', pool: 0, intros: false },
 };
-const AREAS = { george: 'George / Wilderness: my Big Bird Day list (100 birds)' };
 
 const overlayOpen = () => !$('welcome').hidden || !$('survey').hidden;
 const needsSurvey = () => !S.prefs.surveyDone;
-let surveyPick = { level: 'some', area: 'george' };
+let surveyPick = { level: 'some', area: DEFAULT_AREA };
 
 function openSurvey() {
-  surveyPick = { level: S.prefs.level || 'some', area: S.prefs.area || 'george' };
+  surveyPick = { level: S.prefs.level || 'some', area: currentAreaId() };
   renderSurvey();
   $('survey').hidden = false;
 }
@@ -1220,9 +1255,10 @@ function openSurvey() {
 function renderSurvey() {
   $('levelOpts').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<button class="opt ${k === surveyPick.level ? 'on' : ''}" data-level="${k}"><b>${esc(v.label)}</b><span>${esc(v.desc)}</span></button>`).join('');
-  $('areaOpts').innerHTML = Object.entries(AREAS).map(([k, v]) =>
-    `<button class="opt ${k === surveyPick.area ? 'on' : ''}" data-area="${k}"><b>${esc(v)}</b></button>`).join('')
-    + '<button class="opt" disabled><b>More areas</b><span>Cape Town, Kruger, Near me and others are coming in the full app.</span></button>';
+  $('areaOpts').innerHTML = areaTree().map(({ a, depth }) =>
+    `<button class="opt area-opt ${a.id === surveyPick.area ? 'on' : ''}" data-area="${a.id}" style="margin-left:${depth * 18}px">
+      <b>${esc(a.name)}</b><span>${Object.keys(a.ranks).length} birds · tiers based on records in ${esc(a.name)}</span></button>`).join('')
+    + '<button class="opt" disabled><b>More regions and Near me</b><span>Other provinces, countries and local areas come with the full app.</span></button>';
 }
 
 function applyLevel(level) {
@@ -1241,8 +1277,9 @@ $('survey').addEventListener('click', (e) => {
   if (ar) surveyPick.area = ar.dataset.area;
   if (lv || ar) renderSurvey();
   if (e.target.id === 'surveyDone') {
-    applyLevel(surveyPick.level);
     S.prefs.area = surveyPick.area;
+    applyArea();
+    applyLevel(surveyPick.level);
     S.prefs.surveyDone = true;
     save();
     $('survey').hidden = true;
@@ -1264,16 +1301,16 @@ $('replayWelcome').addEventListener('click', () => {
 
 async function start() {
   try {
-    const [sp, cl] = await Promise.all([
+    const [sp, cl, ar] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),
       fetch('data/calls.json').then((r) => r.json()),
+      fetch('data/areas.json').then((r) => r.json()),
     ]);
-    species = sp.species.filter((b) => (cl[b.id] || []).length);
-    species.sort((a, b) => a.rank - b.rank);
-    byId = Object.fromEntries(species.map((b) => [b.id, b]));
+    allSpecies = sp.species.filter((b) => (cl[b.id] || []).length);
+    areas = ar.areas;
     nameSets = sp.nameSets;
-    area = sp.area;
     calls = cl;
+    applyArea();
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
     let fromGoogle = false;
     try { fromGoogle = await Sync.takeRedirect(); } catch { toast("Google sign-in didn't finish. Try again."); }

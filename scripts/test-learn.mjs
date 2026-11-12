@@ -141,4 +141,15 @@ function play(state, knows, cards) {
   assert.equal(s.pool.length, 40);
 }
 
+// Switching area: cards come only from that area; its commonest birds are added.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  const other = species.slice(50, 70);          // a different "area" with 20 birds
+  const c = L.nextCard(s, other, rand);
+  assert.ok(other.some((sp) => sp.id === c.id), 'card from the current area');
+  assert.equal(L.summary(s, other).inPlay, 20);
+  assert.ok(s.pool.includes('b0'), 'birds from the first area are kept');
+}
+
 console.log('learn.js: all checks passed');

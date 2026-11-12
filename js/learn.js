@@ -43,16 +43,22 @@ export function ensurePool(state, species, { all = false } = {}) {
     }
   };
   if (all) add(species.length);
-  const start = state.startPool || START_POOL; // set from the experience question
-  if (state.pool.length < start) add(start - state.pool.length);
+  // Pool size and unlocking are judged within the current area (species), so switching
+  // area gives you that area's commonest birds without losing progress on the others.
+  const ids = new Set(species.map((sp) => sp.id));
+  const inArea = () => state.pool.filter((id) => ids.has(id)).length;
+  const start = Math.min(state.startPool || START_POOL, species.length); // set from the experience question
+  if (inArea() < start) add(start - inArea());
   let guard = species.length;
-  while (learningCount(state) < MIN_LEARNING && state.pool.length < species.length && guard-- > 0) {
+  while (learningCount(state, species) < MIN_LEARNING && inArea() < species.length && guard-- > 0) {
     add(UNLOCK_STEP);
   }
 }
 
-export function learningCount(state) {
-  return state.pool.filter((id) => !bird(state, id).m).length;
+// species: when given, count only birds in that list (the current area).
+export function learningCount(state, species = null) {
+  const ids = species ? new Set(species.map((sp) => sp.id)) : null;
+  return state.pool.filter((id) => (!ids || ids.has(id)) && !bird(state, id).m).length;
 }
 
 function pickFrom(list, rand) {
@@ -69,7 +75,8 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
       if (!b.intro) { b.intro = true; b.due = state.n; }
     }
   }
-  const pool = state.pool.map((id) => [id, bird(state, id)]);
+  const inArea = new Set(species.map((sp) => sp.id));
+  const pool = state.pool.filter((id) => inArea.has(id)).map((id) => [id, bird(state, id)]);
   const notLast = pool.filter(([id]) => id !== state.lastId || pool.length === 1);
   const due = notLast.filter(([, b]) => b.intro && b.due <= state.n);
   const learningDue = due.filter(([, b]) => !b.m).sort((a, b) => a[1].due - b[1].due);
@@ -225,8 +232,8 @@ export function summary(state, species) {
   return {
     tiers,
     mastered: species.filter((sp) => status(state, sp.id) === 'mastered').length,
-    inPlay: state.pool.length,
-    met: state.pool.filter((id) => state.birds[id]?.intro).length,
+    inPlay: species.filter((sp) => state.pool.includes(sp.id)).length,
+    met: species.filter((sp) => state.pool.includes(sp.id) && state.birds[sp.id]?.intro).length,
     answered: state.answered || 0,
     recentAccuracy: recent.length ? recent.filter((h) => h.correct).length / recent.length : null,
   };
