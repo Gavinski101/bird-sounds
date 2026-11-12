@@ -124,6 +124,19 @@
     <button class="tab" data-view="settings">Settings</button>
   </nav>
 
+  <!-- Welcome (first open) -->
+  <div class="welcome" id="welcome" hidden>
+    <div class="welcome-box">
+      <img src="icons/icon.svg" alt="" class="welcome-icon">
+      <h1>Bird Sounds</h1>
+      <p class="muted">Learn the birds around George and Wilderness by ear.</p>
+      <div id="welcomeSlot"></div>
+      <button class="btn block ghost" id="skipSignIn">Continue without an account</button>
+      <p class="small muted">Without an account your progress is saved on this device only.
+        You can sign in any time later in Settings.</p>
+    </div>
+  </div>
+
   <!-- Rate / flag sheet -->
   <div class="sheet-bg" id="rateSheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rateTitle">

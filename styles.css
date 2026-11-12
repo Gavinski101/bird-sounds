@@ -359,3 +359,15 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .btn.google { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 12px 0; }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Welcome */
+.welcome {
+  position: fixed; inset: 0; z-index: 25;
+  background: var(--bg);
+  overflow-y: auto;
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+}
+.welcome-box { max-width: 420px; margin: 0 auto; text-align: center; }
+.welcome-box h1 { margin: 8px 0 4px; font-size: 28px; }
+.welcome-icon { width: 84px; height: 84px; border-radius: 20px; }
+.welcome #account { text-align: left; background: var(--surface); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0 8px; box-shadow: var(--shadow); }

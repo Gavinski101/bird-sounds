@@ -215,6 +215,7 @@ $('account').addEventListener('click', async (e) => {
       toast(id === 'signInBtn' ? 'Signed in' : 'Account created');
       renderAccount();
       await syncNow({ firstSignIn: true });
+      if (welcomeOpen()) closeWelcome();
     } else if (id === 'googleBtn') {
       location.href = Sync.googleSignInUrl();
     } else if (id === 'syncNowBtn') {
@@ -1124,6 +1125,29 @@ document.addEventListener('keydown', (e) => {
 
 // ---------- start ----------
 
+// ---------- welcome (first open) ----------
+
+const welcomeOpen = () => !$('welcome').hidden;
+const needsWelcome = () => Sync.configured && !Sync.signedIn() && !S.prefs.welcomeDone;
+
+// The sign-in form is one element (#account), moved between the welcome screen and Settings.
+function openWelcome() {
+  $('welcomeSlot').appendChild($('account'));
+  $('welcome').hidden = false;
+  renderAccount();
+}
+
+function closeWelcome() {
+  S.prefs.welcomeDone = true;
+  save();
+  $('accountPanel').appendChild($('account'));
+  $('welcome').hidden = true;
+  renderAccount();
+  newCard();
+}
+
+$('skipSignIn').addEventListener('click', closeWelcome);
+
 async function start() {
   try {
     const [sp, cl] = await Promise.all([
@@ -1137,10 +1161,14 @@ async function start() {
     area = sp.area;
     calls = cl;
     if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
-    newCard();
     let fromGoogle = false;
     try { fromGoogle = await Sync.takeRedirect(); } catch { toast("Google sign-in didn't finish. Try again."); }
-    if (fromGoogle) toast('Signed in with Google');
+    if (fromGoogle) {
+      S.prefs.welcomeDone = true;
+      toast('Signed in with Google');
+    }
+    if (needsWelcome()) openWelcome();
+    else newCard();
     syncNow({ firstSignIn: fromGoogle });
   } catch (e) {
     $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
