@@ -356,7 +356,7 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 
 /* Account */
 #account .search { margin-bottom: 8px; }
-.btn.google { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.btn.google { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; border: 1px solid #dadce0; }
 .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 12px 0; }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
@@ -388,3 +388,7 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .opt.on { border-color: var(--accent); background: var(--accent-soft); }
 .opt:disabled { opacity: 0.55; cursor: default; }
 #surveyDone { margin-top: 20px; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 10px; }
+.seg button { border: 0; background: none; padding: 9px 6px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
