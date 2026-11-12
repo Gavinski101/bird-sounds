@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+# Copy of xeno-canto's terms, kept for reference only
+XenoTermsOfUse.txt

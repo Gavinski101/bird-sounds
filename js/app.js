@@ -1,0 +1,956 @@
+import * as L from './learn.js';
+
+const STORE_KEY = 'bird-sounds-v1';
+const MEDIA_CACHE = 'bird-sounds-media';
+const BIG_DAY = new Date('2026-12-05T00:00:00');
+const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
+const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const PAUSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let species = [];
+let byId = {};
+let calls = {};
+let nameSets = {};
+let area = '';
+let S = loadStore();
+let cur = null; // current study card
+
+// ---------- storage ----------
+
+function defaultStore() {
+  return { learn: L.newState(), prefs: { nameSet: 'en_ZA', autoplay: true, intros: true }, recs: {}, streak: { last: null, days: 0, best: 0 } };
+}
+
+function loadStore() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      const prefs = { ...defaultStore().prefs, ...s.prefs };
+      if (!prefs.introsChosen) prefs.intros = true; // intros were briefly off by default; restore unless the user chose
+      return { ...defaultStore(), ...s, prefs };
+    }
+  } catch { /* private mode or corrupt: start fresh */ }
+  return defaultStore();
+}
+
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch { /* storage full or blocked */ }
+}
+
+// ---------- helpers ----------
+
+const nm = (sp) => sp.names[S.prefs.nameSet] || sp.names.en_ZA;
+const recPref = (r) => S.recs[r.xc] || {};
+const isOff = (r) => !!recPref(r).flag || (recPref(r).stars ?? 3) <= 2;
+
+// The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first,
+// otherwise in the order the build script ranked them.
+function activeRecs(id) {
+  const all = calls[id] || [];
+  const ok = all.filter((r) => !isOff(r));
+  return (ok.length ? ok : all)
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => (recPref(b.r).stars ?? 3) - (recPref(a.r).stars ?? 3) || a.i - b.i)
+    .slice(0, 2)
+    .map((x) => x.r);
+}
+
+function credit(r) {
+  return `${esc(r.rec)} · <a href="https://xeno-canto.org/${r.xc}" target="_blank" rel="noopener">XC${r.xc}</a> · ${esc(r.lic)}${r.cnt ? ' · ' + esc(r.cnt) : ''}`;
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const TIPS = {
+  area: 'Your home area. Beginner to Hard tiers are based on how often each bird is recorded around here.',
+  inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
+  met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
+  confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
+  mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
+  streak: "Days in a row you've studied at least one bird.",
+  accuracy: 'How many of your last 20 answers were right.',
+  recInfo: "Which of this bird's 2 study recordings is playing, and what kind of sound it is (song, call, alarm...).",
+  family: 'The bird family this species belongs to.',
+  inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',
+  status: {
+    mastered: 'Mastered: you know this one. It comes back less and less often to check you still remember it.',
+    learning: "Learning: you've met this bird and are being tested on it.",
+    new: "New: in your study set, but you haven't met it yet. It will be introduced soon.",
+    locked: 'Not yet: not in your study set. Added as you master other birds, or use Progress, Add all birds now.',
+  },
+};
+
+function tierTip(sp) {
+  return `${sp.tier}: how common this bird is around ${area} (number ${sp.rank} of the area's most recorded birds). Beginner = top 40, Easy = 41-100, Medium = 101-180, Hard = rarer.`;
+}
+
+function chip(status) {
+  const label = { mastered: 'Mastered', learning: 'Learning', new: 'New', locked: 'Not yet' }[status];
+  return `<span class="chip ${status}" data-tip="${esc(TIPS.status[status])}">${label}</span>`;
+}
+
+// ---------- tooltips (hover on a computer, tap on a phone) ----------
+
+const tipEl = document.createElement('div');
+tipEl.className = 'tip';
+tipEl.hidden = true;
+document.body.appendChild(tipEl);
+let tipTimer = null;
+
+function showTip(el) {
+  tipEl.textContent = el.dataset.tip;
+  tipEl.hidden = false;
+  const r = el.getBoundingClientRect();
+  const w = tipEl.offsetWidth;
+  const h = tipEl.offsetHeight;
+  const x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+  let y = r.bottom + 8;
+  if (y + h > innerHeight - 76) y = r.top - h - 8;
+  tipEl.style.left = `${x}px`;
+  tipEl.style.top = `${Math.max(8, y)}px`;
+}
+
+function hideTip() {
+  tipEl.hidden = true;
+  clearTimeout(tipTimer);
+}
+
+document.addEventListener('mouseover', (e) => {
+  const el = e.target.closest('[data-tip]');
+  if (el) showTip(el);
+});
+document.addEventListener('mouseout', (e) => {
+  if (e.target.closest('[data-tip]')) hideTip();
+});
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-tip]');
+  if (el) {
+    showTip(el);
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(hideTip, 4000);
+  } else hideTip();
+}, true);
+window.addEventListener('scroll', hideTip, { passive: true });
+
+// ---------- streak ----------
+
+function dayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function bumpStreak() {
+  const st = (S.streak ||= { last: null, days: 0, best: 0 });
+  const today = dayKey(new Date());
+  if (st.last === today) return false;
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  st.days = st.last === dayKey(y) ? st.days + 1 : 1;
+  st.last = today;
+  st.best = Math.max(st.best || 0, st.days);
+  return st.days > 1;
+}
+
+function currentStreak() {
+  const st = S.streak;
+  if (!st || !st.last) return 0;
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  return st.last === dayKey(new Date()) || st.last === dayKey(y) ? st.days : 0;
+}
+
+// ---------- audio ----------
+
+const audio = $('audio');
+let audioKey = null;
+let audioOwner = null;
+let blobUrl = null;
+
+async function srcFor(r) {
+  try {
+    const cache = await caches.open(MEDIA_CACHE);
+    const hit = await cache.match(r.file);
+    if (hit) {
+      // Offline copy: play from a blob URL (works on iOS, which rejects cached media through a service worker).
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      blobUrl = URL.createObjectURL(await hit.blob());
+      return blobUrl + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+    }
+  } catch { /* Cache API unavailable */ }
+  return r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+}
+
+async function playRec(r, button) {
+  const key = `${r.xc}`;
+  if (audioKey === key && audioOwner === button) {
+    if (!audio.paused) return audio.pause();
+    if (audio.ended) audio.currentTime = 0;
+    return audio.play().catch(() => {});
+  }
+  audioKey = key;
+  audioOwner = button;
+  $('recError').hidden = true;
+  setPlaying(button, 'loading');
+  audio.src = await srcFor(r);
+  audio.play().catch((e) => {
+    if (e.name !== 'NotAllowedError' && e.name !== 'AbortError' && button === $('playBtn')) $('recError').hidden = false;
+    setPlaying(button, 'paused');
+  });
+}
+
+function stopAudio() {
+  audio.pause();
+  audioKey = null;
+  audioOwner = null;
+  setPlaying(null);
+  $('barFill').style.width = '0';
+}
+
+let playingBtn = null;
+function setPlaying(btn, mode) {
+  if (playingBtn && playingBtn !== btn) {
+    playingBtn.classList.remove('playing', 'loading');
+    if (playingBtn.classList.contains('mini-play')) playingBtn.innerHTML = PLAY_SVG;
+  }
+  playingBtn = btn;
+  if (!btn) return;
+  btn.classList.toggle('loading', mode === 'loading');
+  btn.classList.toggle('playing', mode === 'playing');
+  if (btn.classList.contains('mini-play')) btn.innerHTML = mode === 'playing' ? PAUSE_SVG : PLAY_SVG;
+}
+
+audio.addEventListener('playing', () => setPlaying(playingBtn, 'playing'));
+audio.addEventListener('pause', () => setPlaying(playingBtn, 'paused'));
+audio.addEventListener('ended', () => setPlaying(playingBtn, 'paused'));
+audio.addEventListener('timeupdate', () => {
+  if (playingBtn !== $('playBtn')) return;
+  const p = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  $('barFill').style.width = `${p}%`;
+});
+audio.addEventListener('error', () => {
+  if (!audioKey) return;
+  if (audioOwner === $('playBtn')) $('recError').hidden = false;
+  setPlaying(playingBtn, 'paused');
+});
+
+// ---------- study ----------
+
+function currentRec() {
+  const recs = activeRecs(cur.id);
+  return recs[Math.min(cur.recIdx, recs.length - 1)];
+}
+
+function newCard() {
+  stopAudio();
+  const c = L.nextCard(S.learn, species, Math.random, { intros: S.prefs.intros });
+  save();
+  cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.pair ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
+  renderCard();
+  renderTop();
+  if (!S.prefs.autoplay) return;
+  if (cur.stage === 'compare') {
+    const first = $('hintArea').querySelector('[data-cplay]');
+    if (first) playRec(activeRecs(first.dataset.cplay)[0], first);
+  } else playRec(currentRec(), $('playBtn'));
+}
+
+function renderCard() {
+  const sp = byId[cur.id];
+  const recs = activeRecs(cur.id);
+  const r = currentRec();
+  const shown = cur.stage !== 'guess' && cur.stage !== 'compare';
+
+  const label = $('cardLabel');
+  label.className = 'card-label' + (cur.intro || cur.stage === 'compare' ? ' new' : '');
+  label.textContent = cur.intro ? 'New bird: listen and learn'
+    : cur.stage === 'compare' ? 'You mix these two up: compare'
+    : shown ? 'Answer'
+    : cur.pair ? 'Which of the two is this?'
+    : "Who's calling?";
+  document.querySelector('.player').hidden = cur.stage === 'compare';
+
+  $('recInfo').dataset.tip = TIPS.recInfo;
+  $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${recs.length} · ${r ? r.type : ''}`;
+  $('otherRecBtn').disabled = recs.length < 2;
+  $('recError').hidden = true;
+  $('bar').hidden = false;
+
+  // Hints
+  const ha = $('hintArea');
+  if (cur.stage === 'compare') {
+    ha.innerHTML = '<p class="small muted" style="margin:0 0 6px">Listen to both, then test yourself on which is which.</p>'
+      + [cur.id, cur.pair].map((id) => {
+        const b = byId[id];
+        return `<div class="compare-row">
+          <button class="mini-play" id="cmp-${id}" data-cplay="${id}" aria-label="Play ${esc(nm(b))}">${PLAY_SVG}</button>
+          ${b.photo ? `<img src="${esc(b.photo.url)}" alt="">` : ''}
+          <div class="nm">${esc(nm(b))}</div>
+        </div>`;
+      }).join('');
+    ha.hidden = false;
+  } else if (!shown && cur.hint > 0) {
+    let h = cur.pair ? '' : `<div class="hint-text">Family: <b>${esc(sp.family)}</b></div>`;
+    if (cur.hint >= 2) {
+      h += '<div class="choices">' + cur.choices.map((id) =>
+        `<button class="choice" data-choice="${id}">${esc(nm(byId[id]))}</button>`).join('') + '</div>';
+    }
+    if (cur.hint >= 3 && sp.photo) h += `<img class="hint-photo" src="${esc(sp.photo.url)}" alt="Photo hint">`;
+    ha.innerHTML = h;
+    ha.hidden = false;
+  } else if (cur.stage === 'graded' && cur.choices) {
+    ha.innerHTML = '<div class="choices">' + cur.choices.map((id) => {
+      const cls = id === cur.id ? 'right' : id === cur.chose ? 'wrong' : '';
+      return `<button class="choice ${cls}" disabled>${esc(nm(byId[id]))}</button>`;
+    }).join('') + '</div>';
+    ha.hidden = false;
+  } else {
+    ha.hidden = true;
+    ha.innerHTML = '';
+  }
+
+  // Reveal
+  $('reveal').hidden = !shown;
+  if (shown) {
+    const img = $('revealPhoto');
+    if (sp.photo) { img.src = sp.photo.url; img.alt = nm(sp); img.hidden = false; } else img.hidden = true;
+    $('revealName').textContent = nm(sp);
+    $('revealSci').textContent = sp.sci;
+    $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}`;
+    $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? `Photo: ${esc(sp.photo.attr)}` : '');
+  }
+
+  // Buttons
+  const a = $('actions');
+  if (cur.stage === 'intro') {
+    a.innerHTML = '<button class="btn wide" data-act="introDone">Got it, next bird</button>';
+  } else if (cur.stage === 'compare') {
+    a.innerHTML = '<button class="btn wide" data-act="pairTest">Test me on these two</button>';
+  } else if (cur.stage === 'guess' && cur.pair) {
+    a.innerHTML = '<button class="btn ghost wide" data-act="reveal">Reveal</button>';
+  } else if (cur.stage === 'thought') {
+    a.innerHTML = renderThought();
+  } else if (cur.stage === 'guess') {
+    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 3 ? 'disabled' : ''}>${cur.hint ? 'More hint' : 'Hint'}</button>
+      <button class="btn" data-act="reveal">Reveal</button>`;
+  } else if (cur.stage === 'revealed') {
+    a.innerHTML = '<button class="btn bad" data-act="missed">Missed it</button><button class="btn good" data-act="got">Got it</button>';
+  } else {
+    a.innerHTML = '<button class="btn wide" data-act="next">Next bird</button>';
+  }
+  $('skipBtn').hidden = cur.stage !== 'guess';
+}
+
+function renderThought() {
+  const q = cur.thought.trim().toLowerCase();
+  const hits = q
+    ? species.filter((x) => x.id !== cur.id && [...Object.values(x.names), x.listName].some((v) => v.toLowerCase().includes(q))).slice(0, 5)
+    : L.confusedWith(S.learn, cur.id).map((c) => byId[c.id]).filter(Boolean).slice(0, 3);
+  return `<div class="wide thought">
+    <div class="thought-q">What did you think it was?</div>
+    <input class="search" id="thoughtInput" type="search" placeholder="Type a few letters" autocomplete="off" value="${esc(cur.thought)}">
+    <div class="choices">${hits.map((x) => `<button class="choice" data-thought="${x.id}">${esc(nm(x))}</button>`).join('')}</div>
+  </div>
+  <button class="btn ghost wide" data-act="next">Skip, I had no idea</button>`;
+}
+
+function makeChoices() {
+  const sp = byId[cur.id];
+  const pool = new Set(S.learn.pool);
+  const confused = L.confusedWith(S.learn, sp.id).map((c) => byId[c.id]).filter(Boolean);
+  const confusedIds = new Set(confused.map((x) => x.id));
+  const others = species.filter((x) => x.id !== sp.id && !confusedIds.has(x.id));
+  const sameFam = shuffle(others.filter((x) => x.familySci === sp.familySci));
+  const inPlay = shuffle(others.filter((x) => pool.has(x.id) && x.familySci !== sp.familySci));
+  const rest = shuffle(others.filter((x) => !pool.has(x.id) && x.familySci !== sp.familySci));
+  const pick = [...confused.slice(0, 2), ...sameFam, ...inPlay, ...rest].slice(0, 3).map((x) => x.id);
+  return shuffle([sp.id, ...pick]);
+}
+
+async function grade(correct) {
+  const hinted = cur.hint > 0;
+  const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null });
+  const streakUp = bumpStreak();
+  save();
+  if (streakUp) toast(`🔥 ${S.streak.days}-day streak!`);
+  renderTop();
+  if (event === 'mastered' || event === 'remembered') await celebrate(event, byId[cur.id]);
+  else if (event === 'lost') toast(`${nm(byId[cur.id])} is back in learning`);
+}
+
+async function onAction(act) {
+  if (act === 'introDone') {
+    L.introduced(S.learn, cur.id);
+    save();
+    newCard();
+  } else if (act === 'hint') {
+    cur.hint++;
+    if (cur.hint === 2) cur.choices = makeChoices();
+    renderCard();
+  } else if (act === 'reveal') {
+    cur.stage = 'revealed';
+    renderCard();
+  } else if (act === 'got') {
+    await grade(true);
+    newCard();
+  } else if (act === 'missed') {
+    await grade(false);
+    cur.stage = 'thought';
+    renderCard();
+  } else if (act === 'pairTest') {
+    stopAudio();
+    cur.stage = 'guess';
+    cur.hint = 2;
+    cur.choices = shuffle([cur.id, cur.pair]);
+    renderCard();
+    playRec(currentRec(), $('playBtn'));
+  } else if (act === 'next') {
+    newCard();
+  }
+}
+
+$('actions').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-thought]');
+  if (t) {
+    L.recordMix(S.learn, cur.id, t.dataset.thought);
+    save();
+    toast(`Noted: heard ${nm(byId[cur.id])}, thought ${nm(byId[t.dataset.thought])}`);
+    newCard();
+    return;
+  }
+  const b = e.target.closest('[data-act]');
+  if (b && !b.disabled) onAction(b.dataset.act);
+});
+
+$('actions').addEventListener('input', (e) => {
+  if (e.target.id !== 'thoughtInput') return;
+  cur.thought = e.target.value;
+  const pos = e.target.selectionStart;
+  $('actions').innerHTML = renderThought();
+  const inp = $('thoughtInput');
+  inp.focus();
+  inp.setSelectionRange(pos, pos);
+});
+
+$('hintArea').addEventListener('click', async (e) => {
+  const cp = e.target.closest('[data-cplay]');
+  if (cp) {
+    const r = activeRecs(cp.dataset.cplay)[0];
+    if (r) playRec(r, cp);
+    return;
+  }
+  const b = e.target.closest('[data-choice]');
+  if (!b || cur.stage !== 'guess') return;
+  cur.chose = b.dataset.choice;
+  const correct = cur.chose === cur.id;
+  if (!correct) L.recordMix(S.learn, cur.id, cur.chose);
+  cur.stage = 'graded';
+  renderCard();
+  await grade(correct);
+  renderCard();
+});
+
+$('playBtn').addEventListener('click', () => {
+  const r = currentRec();
+  if (r) playRec(r, $('playBtn'));
+});
+
+$('otherRecBtn').addEventListener('click', () => {
+  const n = activeRecs(cur.id).length;
+  if (n < 2) return;
+  stopAudio();
+  cur.recIdx = (cur.recIdx + 1) % n;
+  renderCard();
+  playRec(currentRec(), $('playBtn'));
+});
+
+$('skipBtn').addEventListener('click', () => {
+  L.skip(S.learn, cur.id);
+  save();
+  newCard();
+});
+
+// ---------- rate / flag ----------
+
+let rateTarget = null; // { rec, after }
+
+function openRate(rec, after) {
+  rateTarget = { rec, after };
+  renderStars($('stars'), rec, true);
+  $('rateSheet').hidden = false;
+}
+
+function renderStars(el, rec, big) {
+  const v = recPref(rec).stars || 0;
+  el.innerHTML = [1, 2, 3, 4, 5].map((i) =>
+    `<button class="star ${i <= v ? 'on' : ''}" data-star="${i}" data-xc="${rec.xc}" role="radio" aria-checked="${i === v}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('');
+  el.classList.toggle('small', !big);
+}
+
+function setStars(xc, stars) {
+  const p = (S.recs[xc] ||= {});
+  p.stars = p.stars === stars ? undefined : stars; // tap the same star again to clear
+  save();
+}
+
+function setFlag(xc, flag) {
+  const p = (S.recs[xc] ||= {});
+  p.flag = flag;
+  save();
+}
+
+$('stars').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-star]');
+  if (!b || !rateTarget) return;
+  const stars = +b.dataset.star;
+  setStars(rateTarget.rec.xc, stars);
+  renderStars($('stars'), rateTarget.rec, true);
+  if (stars <= 2 && recPref(rateTarget.rec).stars) {
+    toast('Rated low: swapped for another recording');
+    closeRate(true);
+  }
+});
+
+$('rateSheet').addEventListener('click', (e) => {
+  const f = e.target.closest('[data-flag]');
+  if (f && rateTarget) {
+    setFlag(rateTarget.rec.xc, f.dataset.flag);
+    toast('Flagged: using another recording');
+    closeRate(true);
+  } else if (e.target === $('rateSheet') || e.target === $('rateClose')) {
+    closeRate(false);
+  }
+});
+
+function closeRate(changed) {
+  $('rateSheet').hidden = true;
+  if (rateTarget?.after) rateTarget.after(changed);
+  rateTarget = null;
+}
+
+$('rateBtn').addEventListener('click', () => {
+  const r = currentRec();
+  if (!r) return;
+  openRate(r, (changed) => {
+    if (!changed) return;
+    stopAudio();
+    cur.recIdx = Math.min(cur.recIdx, activeRecs(cur.id).length - 1);
+    renderCard();
+  });
+});
+
+// ---------- celebration ----------
+
+function celebrate(kind, sp) {
+  return new Promise((resolve) => {
+    const box = $('celebrate');
+    const total = species.length;
+    const mastered = L.summary(S.learn, species).mastered;
+    box.className = 'celebrate ' + kind;
+    $('celebrateBurst').textContent = kind === 'mastered' ? '🏆' : '🧠';
+    $('celebrateTitle').textContent = kind === 'mastered' ? 'Mastered!' : 'Remembered!';
+    $('celebrateName').textContent = nm(sp);
+    $('celebrateSub').textContent = kind === 'mastered'
+      ? `${mastered} of ${total} birds mastered`
+      : 'Still know it by ear. It will come back later.';
+    const inner = box.querySelector('.celebrate-box');
+    inner.querySelectorAll('.confetti').forEach((c) => c.remove());
+    const colours = ['#1f6b4a', '#5cc08d', '#f0b84a', '#c98a12', '#ef7a6c', '#7fb6e0'];
+    for (let i = 0; i < 26; i++) {
+      const c = document.createElement('i');
+      c.className = 'confetti';
+      c.style.left = `${Math.random() * 100}%`;
+      c.style.background = colours[i % colours.length];
+      c.style.animationDelay = `${Math.random() * 0.5}s`;
+      inner.appendChild(c);
+    }
+    box.hidden = false;
+    let done = false;
+    const close = () => {
+      if (done) return;
+      done = true;
+      box.hidden = true;
+      box.removeEventListener('click', close);
+      resolve();
+    };
+    box.addEventListener('click', close);
+    setTimeout(close, 2600);
+  });
+}
+
+// ---------- top line ----------
+
+function renderTop() {
+  const s = L.summary(S.learn, species);
+  const st = currentStreak();
+  $('topSub').innerHTML = `<span data-tip="${esc(TIPS.area)}">${esc(area)}</span> · `
+    + `<span data-tip="${esc(TIPS.inPlay)}">${s.inPlay} birds in play</span> · `
+    + `<span data-tip="${esc(TIPS.met)}">${s.met} met</span> · `
+    + `<span data-tip="${esc(TIPS.mastered)}">${s.mastered} mastered</span>`
+    + (st ? ` · <span data-tip="${esc(TIPS.streak)}">🔥 ${st}</span>` : '');
+}
+
+// ---------- birds view ----------
+
+function renderBirds() {
+  const q = $('search').value.trim().toLowerCase();
+  const match = (sp) => !q || [...Object.values(sp.names), sp.sci, sp.listName, sp.family].some((v) => v.toLowerCase().includes(q));
+  let html = '';
+  for (const tier of TIER_ORDER) {
+    const list = species.filter((sp) => sp.tier === tier && match(sp));
+    if (!list.length) continue;
+    html += `<div class="tier-head">${tier}<span>${list.length} birds</span></div>`;
+    for (const sp of list) {
+      html += `<div class="bird-row" data-bird="${sp.id}" role="button" tabindex="0">
+        <img src="${esc(sp.photo?.url || '')}" alt="" loading="lazy">
+        <div class="nm"><div>${esc(nm(sp))}</div><div class="small muted">${chip(L.status(S.learn, sp.id))} ${esc(sp.family)}</div></div>
+        <button class="mini-play" data-play="${sp.id}" aria-label="Play ${esc(nm(sp))}">${PLAY_SVG}</button>
+      </div>`;
+    }
+  }
+  $('birdList').innerHTML = html || '<p class="muted">No birds match.</p>';
+}
+
+$('search').addEventListener('input', renderBirds);
+
+$('birdList').addEventListener('click', (e) => {
+  const p = e.target.closest('[data-play]');
+  if (p) {
+    e.stopPropagation();
+    const r = activeRecs(p.dataset.play)[0];
+    if (r) playRec(r, p);
+    return;
+  }
+  const row = e.target.closest('[data-bird]');
+  if (row) openBird(row.dataset.bird);
+});
+
+function confusedHtml(id) {
+  const list = L.confusedWith(S.learn, id).filter((c) => byId[c.id]).slice(0, 5);
+  if (!list.length) return '';
+  return `<h2 style="margin-top:14px"><span data-tip="${esc(TIPS.confused)}">Often confused with</span></h2>`
+    + list.map((c) => `<div class="compare-row">
+        <button class="mini-play" id="cf-${c.id}" data-cfplay="${c.id}" aria-label="Play ${esc(nm(byId[c.id]))}">${PLAY_SVG}</button>
+        ${byId[c.id].photo ? `<img src="${esc(byId[c.id].photo.url)}" alt="">` : ''}
+        <button class="link nm" data-open="${c.id}">${esc(nm(byId[c.id]))}</button>
+        <span class="small muted">${c.count}×</span>
+      </div>`).join('');
+}
+
+function openBird(id) {
+  const sp = byId[id];
+  const active = new Set(activeRecs(id).map((r) => r.xc));
+  const others = Object.entries(sp.names)
+    .filter(([k, v]) => k !== S.prefs.nameSet && v !== nm(sp))
+    .map(([k, v]) => `${esc(v)} (${esc(nameSets[k] || k)})`);
+  const b = S.learn.birds[id];
+  let html = `${sp.photo ? `<img class="photo" src="${esc(sp.photo.url)}" alt="">` : ''}
+    <div class="reveal-name">${esc(nm(sp))}</div>
+    <div class="reveal-sci">${esc(sp.sci)}</div>
+    ${others.length ? `<div class="detail-names">Also: ${[...new Set(others)].join(', ')}</div>` : ''}
+    <div class="reveal-meta"><span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, id))}</div>
+    ${b && (b.right || b.wrong) ? `<p class="small muted" style="text-align:center">Right ${b.right} · Missed ${b.wrong}</p>` : ''}
+    ${confusedHtml(id)}
+    <h2 style="margin-top:14px">Recordings</h2>
+    <p class="small muted">The two marked "In use" are the ones you study. Rate or flag to change them.</p>`;
+  for (const r of calls[id] || []) {
+    const pref = recPref(r);
+    html += `<div class="rec-card ${isOff(r) ? 'off' : ''}">
+      <div class="rc-top">
+        <button class="mini-play" id="dp-${r.xc}" data-dplay="${r.xc}" aria-label="Play">${PLAY_SVG}</button>
+        <div class="nm">${esc(r.type)} · ${r.secs}s ${active.has(r.xc) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
+          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${r.xc}">Restore</button>` : ''}</div>
+      </div>
+      <div class="stars small" data-rate="${r.xc}"></div>
+      <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
+      ${pref.flag ? '' : `<button class="link" data-flagrec="${r.xc}">⚑ Not distinctive</button>`}
+    </div>`;
+  }
+  if (sp.photo) html += `<p class="credit">Photo: ${esc(sp.photo.attr)}</p>`;
+  $('birdDetail').innerHTML = html;
+  $('birdDetail').querySelectorAll('[data-rate]').forEach((el) => {
+    renderStars(el, (calls[id] || []).find((r) => r.xc === +el.dataset.rate), false);
+  });
+  $('birdDetail').dataset.bird = id;
+  $('birdSheet').hidden = false;
+}
+
+$('birdDetail').addEventListener('click', (e) => {
+  const id = $('birdDetail').dataset.bird;
+  const find = (xc) => (calls[id] || []).find((r) => r.xc === +xc);
+  const p = e.target.closest('[data-dplay]');
+  if (p) return playRec(find(p.dataset.dplay), p);
+  const cf = e.target.closest('[data-cfplay]');
+  if (cf) { const r = activeRecs(cf.dataset.cfplay)[0]; return r && playRec(r, cf); }
+  const op = e.target.closest('[data-open]');
+  if (op) { stopAudio(); return openBird(op.dataset.open); }
+  const s = e.target.closest('[data-star]');
+  if (s) { setStars(+s.dataset.xc, +s.dataset.star); return openBird(id); }
+  const f = e.target.closest('[data-flagrec]');
+  if (f) { setFlag(+f.dataset.flagrec, 'indistinct'); return openBird(id); }
+  const u = e.target.closest('[data-unflag]');
+  if (u) { setFlag(+u.dataset.unflag, undefined); return openBird(id); }
+});
+
+$('birdSheet').addEventListener('click', (e) => {
+  if (e.target === $('birdSheet') || e.target === $('birdClose')) {
+    stopAudio();
+    $('birdSheet').hidden = true;
+    renderBirds();
+  }
+});
+
+// ---------- progress view ----------
+
+function renderProgress() {
+  const s = L.summary(S.learn, species);
+  const days = Math.ceil((BIG_DAY - new Date()) / 864e5);
+  const st = currentStreak();
+  let html = days >= 0 ? `<div class="countdown">${days === 0 ? 'Big Bird Day is today!' : `${days} day${days === 1 ? '' : 's'} to Big Bird Day`}</div>` : '';
+  html += `<div class="big-stats">
+    <div class="stat" data-tip="${esc(TIPS.mastered)}"><b>${s.mastered}</b><span>mastered</span></div>
+    <div class="stat" data-tip="${esc(TIPS.met)}"><b>${s.met}</b><span>met</span></div>
+    <div class="stat" data-tip="${esc(TIPS.inPlay)}"><b>${s.inPlay}</b><span>in play</span></div>
+    <div class="stat" data-tip="${esc(TIPS.accuracy)}"><b>${s.recentAccuracy == null ? '–' : Math.round(s.recentAccuracy * 100) + '%'}</b><span>last 20 right</span></div>
+  </div>
+  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st ? `${st}-day streak` : 'No streak yet: answer a bird today to start one'}${S.streak?.best > 1 ? ` · best ${S.streak.best}` : ''}</div>`;
+  for (const tier of TIER_ORDER) {
+    const t = s.tiers[tier];
+    if (!t) continue;
+    const pct = (n) => (n / t.total) * 100;
+    html += `<div class="panel">
+      <div class="tier-head" style="margin:0"><span class="tier-name" data-tip="${esc(`${tier}: how common these birds are around ${area}. Beginner = the 40 most recorded birds, Easy = 41-100, Medium = 101-180, Hard = rarer.`)}">${tier}</span><span>${t.mastered} of ${t.total} mastered</span></div>
+      <div class="tier-bar"><div class="m" style="width:${pct(t.mastered)}%"></div><div class="l" style="width:${pct(t.learning + t.new)}%"></div></div>
+      <div class="legend"><span data-tip="${esc(TIPS.status.mastered)}">Mastered ${t.mastered}</span><span data-tip="${esc(TIPS.status.learning)}">Learning ${t.learning + t.new}</span><span data-tip="${esc(TIPS.status.locked)}">Not yet ${t.locked}</span></div>
+    </div>`;
+  }
+  html += `<div class="panel">
+    <h2>How birds are added</h2>
+    <p class="muted small">You start with the 20 most common birds around ${esc(area)}. Each right answer moves a bird toward mastered (3 clean answers, or 6 with hints).
+    When fewer than 8 birds are still being learned, the next 5 most common are added. Missed birds come back after a few cards; mastered birds come back less and less often.</p>
+    ${s.inPlay < species.length ? '<button class="btn block ghost" id="unlockAll">Add all birds now</button>' : ''}
+  </div>
+  <p class="small muted" style="text-align:center">${s.answered} answers so far</p>`;
+  $('progress').innerHTML = html;
+  const u = $('unlockAll');
+  if (u) u.addEventListener('click', () => {
+    if (!confirm(`Add all ${species.length} birds to your study set now?`)) return;
+    L.ensurePool(S.learn, species, { all: true });
+    save();
+    renderProgress();
+    renderTop();
+  });
+}
+
+// ---------- settings ----------
+
+function renderSettings() {
+  $('nameSet').innerHTML = Object.entries(nameSets).map(([k, v]) =>
+    `<option value="${k}" ${k === S.prefs.nameSet ? 'selected' : ''}>${esc(v)}</option>`).join('');
+  $('autoplay').checked = S.prefs.autoplay;
+  $('intros').checked = S.prefs.intros;
+  $('syncCode').value = exportCode();
+  updateOfflineInfo();
+}
+
+$('nameSet').addEventListener('change', (e) => {
+  S.prefs.nameSet = e.target.value;
+  save();
+  toast(`Names: ${nameSets[S.prefs.nameSet]}`);
+});
+
+$('autoplay').addEventListener('change', (e) => {
+  S.prefs.autoplay = e.target.checked;
+  save();
+});
+
+$('intros').addEventListener('change', (e) => {
+  S.prefs.intros = e.target.checked;
+  S.prefs.introsChosen = true;
+  save();
+});
+
+function exportCode() {
+  const json = JSON.stringify({ learn: S.learn, recs: S.recs, prefs: S.prefs, streak: S.streak });
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+$('copyCode').addEventListener('click', async () => {
+  $('syncCode').value = exportCode();
+  try {
+    await navigator.clipboard.writeText($('syncCode').value);
+    toast('Code copied');
+  } catch {
+    $('syncCode').select();
+    toast('Select the code and copy it');
+  }
+});
+
+$('loadCode').addEventListener('click', () => {
+  try {
+    const data = JSON.parse(decodeURIComponent(escape(atob($('syncCode').value.trim()))));
+    if (!data.learn || !data.learn.birds) throw new Error('bad');
+    if (!confirm('Replace the progress on this device with the pasted code?')) return;
+    S = { ...defaultStore(), ...data, prefs: { ...defaultStore().prefs, ...data.prefs } };
+    save();
+    toast('Progress loaded');
+    renderSettings();
+    newCard();
+  } catch {
+    toast("That code doesn't look right");
+  }
+});
+
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('Reset all progress? Your ratings and flags are kept.')) return;
+  S.learn = L.newState();
+  save();
+  toast('Progress reset');
+  newCard();
+});
+
+// ---------- offline ----------
+
+function offlineItems() {
+  const items = [];
+  for (const sp of species) {
+    for (const r of activeRecs(sp.id)) items.push({ url: r.file, audio: true });
+    if (sp.photo) items.push({ url: sp.photo.url, audio: false });
+  }
+  return items;
+}
+
+async function updateOfflineInfo() {
+  try {
+    const cache = await caches.open(MEDIA_CACHE);
+    const have = new Set((await cache.keys()).map((k) => k.url));
+    const items = offlineItems();
+    const got = items.filter((i) => have.has(new URL(i.url, location.href).href)).length;
+    let size = '';
+    if (navigator.storage?.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est.usage) size = ` · about ${Math.round(est.usage / 1e6)} MB used`;
+    }
+    $('offlineInfo').textContent = got
+      ? `${got} of ${items.length} sounds and photos saved on this device${size}.`
+      : 'Save the recordings and photos to this device so the app works without signal (roughly 100–200 MB).';
+  } catch {
+    $('offlineInfo').textContent = "Offline saving isn't available in this browser.";
+  }
+}
+
+let downloading = false;
+$('dlBtn').addEventListener('click', async () => {
+  if (downloading) return;
+  downloading = true;
+  $('dlBtn').disabled = true;
+  $('dlProgress').hidden = false;
+  let failed = 0;
+  try {
+    const cache = await caches.open(MEDIA_CACHE);
+    const items = offlineItems();
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      $('dlFill').style.width = `${((i + 1) / items.length) * 100}%`;
+      if (await cache.match(it.url)) continue;
+      try {
+        const res = await fetch(it.url, { mode: it.audio ? 'cors' : 'no-cors' });
+        if (it.audio && !res.ok) throw new Error(res.status);
+        await cache.put(it.url, res);
+      } catch { failed++; }
+      // One file at a time with a short pause, to go easy on xeno-canto's server.
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    toast(failed ? `Done, but ${failed} files failed. Tap Download again to retry.` : 'All saved for offline use');
+  } catch {
+    toast("Couldn't save files on this device");
+  }
+  downloading = false;
+  $('dlBtn').disabled = false;
+  $('dlProgress').hidden = true;
+  updateOfflineInfo();
+});
+
+$('dlDelete').addEventListener('click', async () => {
+  if (!confirm('Delete the offline sounds and photos from this device?')) return;
+  await caches.delete(MEDIA_CACHE);
+  toast('Downloads deleted');
+  updateOfflineInfo();
+});
+
+// ---------- tabs ----------
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === name));
+  if (name !== 'study') stopAudio();
+  if (name === 'birds') renderBirds();
+  if (name === 'progress') renderProgress();
+  if (name === 'settings') renderSettings();
+  if (name === 'study' && cur) renderCard();
+  window.scrollTo(0, 0);
+}
+
+document.querySelector('.tabs').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-view]');
+  if (t) showView(t.dataset.view);
+});
+
+// Keyboard (on a computer): space play, h hint, r reveal, 1 missed, 2 got, n next.
+document.addEventListener('keydown', (e) => {
+  if (!$('view-study').classList.contains('active') || e.target.matches('input, textarea, select')) return;
+  if (!$('rateSheet').hidden || !$('birdSheet').hidden) return;
+  const k = e.key.toLowerCase();
+  const act = { h: 'hint', r: 'reveal', 1: 'missed', 2: 'got', n: 'next' }[k];
+  if (k === ' ') { e.preventDefault(); $('playBtn').click(); }
+  else if (k === 'o') $('otherRecBtn').click();
+  else if (act) {
+    const b = $('actions').querySelector(`[data-act="${act}"]`) ||
+      (k === 'n' || k === '2' ? $('actions').querySelector('[data-act="introDone"], [data-act="next"]') : null);
+    if (b && !b.disabled) b.click();
+  }
+});
+
+// ---------- start ----------
+
+async function start() {
+  try {
+    const [sp, cl] = await Promise.all([
+      fetch('data/species.json').then((r) => r.json()),
+      fetch('data/calls.json').then((r) => r.json()),
+    ]);
+    species = sp.species.filter((b) => (cl[b.id] || []).length);
+    species.sort((a, b) => a.rank - b.rank);
+    byId = Object.fromEntries(species.map((b) => [b.id, b]));
+    nameSets = sp.nameSets;
+    area = sp.area;
+    calls = cl;
+    if (!nameSets[S.prefs.nameSet]) S.prefs.nameSet = 'en_ZA';
+    newCard();
+  } catch (e) {
+    $('topSub').textContent = "Couldn't load the bird data. Check your connection and reload.";
+    console.error(e);
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+start();

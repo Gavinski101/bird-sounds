@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bird Sounds</title>
+  <meta name="description" content="Learn Southern African birds by their calls.">
+  <meta name="theme-color" content="#1f4d3a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Bird Sounds">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-title">Bird Sounds</div>
+    <div class="top-sub" id="topSub">Loading…</div>
+  </header>
+
+  <main>
+    <!-- Study -->
+    <section id="view-study" class="view active" aria-label="Study">
+      <div class="card" id="card">
+        <div class="card-label" id="cardLabel">Who's calling?</div>
+
+        <div class="player">
+          <button class="play" id="playBtn" aria-label="Play recording">
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+          </button>
+          <div class="bar" id="bar"><div class="bar-fill" id="barFill"></div></div>
+          <div class="rec-line">
+            <span id="recInfo">Recording 1 of 2</span>
+            <button class="link" id="otherRecBtn">Other recording</button>
+          </div>
+          <div class="rec-error" id="recError" hidden>Couldn't load this recording. Check your connection, or try the other recording.</div>
+        </div>
+
+        <div class="hint-area" id="hintArea" hidden></div>
+
+        <div class="reveal" id="reveal" hidden>
+          <img class="photo" id="revealPhoto" alt="">
+          <div class="reveal-name" id="revealName"></div>
+          <div class="reveal-sci" id="revealSci"></div>
+          <div class="reveal-meta" id="revealMeta"></div>
+          <div class="credit" id="revealCredit"></div>
+        </div>
+
+        <div class="actions" id="actions"></div>
+
+        <div class="card-foot">
+          <button class="link" id="skipBtn">Skip</button>
+          <button class="link" id="rateBtn">⚑ Rate / flag recording</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Birds -->
+    <section id="view-birds" class="view" aria-label="Birds">
+      <input class="search" id="search" type="search" placeholder="Search birds" autocomplete="off">
+      <div id="birdList"></div>
+    </section>
+
+    <!-- Progress -->
+    <section id="view-progress" class="view" aria-label="Progress">
+      <div id="progress"></div>
+    </section>
+
+    <!-- Settings -->
+    <section id="view-settings" class="view" aria-label="Settings">
+      <div class="panel">
+        <h2>Bird names</h2>
+        <p class="muted">Match the name set your Merlin app uses (Merlin → Settings → Language).</p>
+        <select id="nameSet"></select>
+      </div>
+      <div class="panel">
+        <h2>Playback</h2>
+        <label class="row"><input type="checkbox" id="autoplay"> Play the sound automatically on each new card</label>
+        <label class="row" style="margin-top:10px"><input type="checkbox" id="intros"> Show each new bird's name and photo before testing me on it</label>
+      </div>
+      <div class="panel">
+        <h2>Offline</h2>
+        <p class="muted" id="offlineInfo">Save the recordings and photos to this device so the app works without signal.</p>
+        <div class="progress-line" id="dlProgress" hidden><div id="dlFill"></div></div>
+        <div class="btn-row">
+          <button class="btn" id="dlBtn">Download for offline</button>
+          <button class="btn ghost" id="dlDelete">Delete downloads</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Move progress to another device</h2>
+        <p class="muted">Copy this code, then paste it on the other device and tap Load.</p>
+        <textarea id="syncCode" rows="3" spellcheck="false"></textarea>
+        <div class="btn-row">
+          <button class="btn" id="copyCode">Copy my code</button>
+          <button class="btn ghost" id="loadCode">Load pasted code</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Start again</h2>
+        <button class="btn danger" id="resetBtn">Reset all progress</button>
+      </div>
+      <div class="panel about">
+        <h2>About</h2>
+        <p>Sounds from <a href="https://xeno-canto.org" target="_blank" rel="noopener">xeno-canto.org</a>, shared by their recordists under Creative Commons licences (credited on each bird).
+        Photos from <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a>. Names from the <a href="https://ebird.org" target="_blank" rel="noopener">eBird</a> taxonomy, as used by Merlin.
+        Tiers come from iNaturalist records around George and Wilderness.</p>
+        <p class="muted">A free, personal, non-commercial learning app.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-view="study">Study</button>
+    <button class="tab" data-view="birds">Birds</button>
+    <button class="tab" data-view="progress">Progress</button>
+    <button class="tab" data-view="settings">Settings</button>
+  </nav>
+
+  <!-- Rate / flag sheet -->
+  <div class="sheet-bg" id="rateSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rateTitle">
+      <h2 id="rateTitle">This recording</h2>
+      <div class="stars" id="stars" role="radiogroup" aria-label="Rating"></div>
+      <p class="muted small">5 stars plays this recording first. 1–2 stars swaps it for another one.</p>
+      <button class="btn block" data-flag="indistinct">Not distinctive, use another</button>
+      <button class="btn block ghost" data-flag="quality">Poor quality or wrong bird, use another</button>
+      <button class="btn block ghost" id="rateClose">Close</button>
+    </div>
+  </div>
+
+  <!-- Bird detail sheet -->
+  <div class="sheet-bg" id="birdSheet" hidden>
+    <div class="sheet tall" role="dialog" aria-modal="true">
+      <div id="birdDetail"></div>
+      <button class="btn block ghost" id="birdClose">Close</button>
+    </div>
+  </div>
+
+  <!-- Celebration -->
+  <div class="celebrate" id="celebrate" hidden>
+    <div class="celebrate-box">
+      <div class="celebrate-burst" id="celebrateBurst"></div>
+      <div class="celebrate-title" id="celebrateTitle"></div>
+      <div class="celebrate-name" id="celebrateName"></div>
+      <div class="celebrate-sub" id="celebrateSub"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <audio id="audio" preload="auto"></audio>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

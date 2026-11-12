@@ -1,0 +1,2011 @@
+{
+ "nameSets": {
+  "en_ZA": "English (South Africa)",
+  "en_IOC": "English (IOC)",
+  "en": "English (US)",
+  "en_UK": "English (UK)"
+ },
+ "area": "George / Wilderness",
+ "species": [
+  {
+   "id": "brhkin1",
+   "sci": "Halcyon albiventris",
+   "names": {
+    "en_ZA": "Brown-hooded Kingfisher",
+    "en_IOC": "Brown-hooded Kingfisher",
+    "en": "Brown-hooded Kingfisher",
+    "en_UK": "Brown-hooded Kingfisher"
+   },
+   "family": "Kingfishers",
+   "familySci": "Alcedinidae",
+   "listName": "Kingfisher Brown hooded",
+   "rank": 1,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/740247/medium.jpg",
+    "attr": "(c) Ian White, some rights reserved (CC BY-NC-SA)",
+    "inat_taxon": 2346
+   }
+  },
+  {
+   "id": "gdcsun2",
+   "sci": "Cinnyris afer",
+   "names": {
+    "en_ZA": "Greater Double-collared Sunbird",
+    "en_IOC": "Greater Double-collared Sunbird",
+    "en": "Greater Double-collared Sunbird",
+    "en_UK": "Greater Double-collared Sunbird"
+   },
+   "family": "Sunbirds and Spiderhunters",
+   "familySci": "Nectariniidae",
+   "listName": "Sunbird Greater Double",
+   "rank": 2,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/23540317/medium.jpeg",
+    "attr": "(c) Colin Ralston, some rights reserved (CC BY-NC), uploaded by Colin Ralston",
+    "inat_taxon": 145163
+   }
+  },
+  {
+   "id": "egygoo",
+   "sci": "Alopochen aegyptiaca",
+   "names": {
+    "en_ZA": "Egyptian Goose",
+    "en_IOC": "Egyptian Goose",
+    "en": "Egyptian Goose",
+    "en_UK": "Egyptian Goose"
+   },
+   "family": "Ducks, Geese, and Waterfowl",
+   "familySci": "Anatidae",
+   "listName": "Goose Egyptian",
+   "rank": 4,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/130517490/medium.jpeg",
+    "attr": "(c) Luís Lourenço, some rights reserved (CC BY-NC-ND), uploaded by Luís Lourenço",
+    "inat_taxon": 72486
+   }
+  },
+  {
+   "id": "soufis1",
+   "sci": "Lanius collaris",
+   "names": {
+    "en_ZA": "Southern Fiscal",
+    "en_IOC": "Southern Fiscal",
+    "en": "Southern Fiscal",
+    "en_UK": "Southern Fiscal"
+   },
+   "family": "Shrikes",
+   "familySci": "Laniidae",
+   "listName": "Shrike Fiscal",
+   "rank": 5,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/284099565/medium.jpeg",
+    "attr": "(c) Paul Hoekman, some rights reserved (CC BY), uploaded by Paul Hoekman",
+    "inat_taxon": 204531
+   }
+  },
+  {
+   "id": "capwea1",
+   "sci": "Ploceus capensis",
+   "names": {
+    "en_ZA": "Cape Weaver",
+    "en_IOC": "Cape Weaver",
+    "en": "Cape Weaver",
+    "en_UK": "Cape Weaver"
+   },
+   "family": "Weavers and Allies",
+   "familySci": "Ploceidae",
+   "listName": "Weaver Cape",
+   "rank": 6,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/22757/medium.jpg",
+    "attr": "(c) Martin Heigan, some rights reserved (CC BY-NC-ND)",
+    "inat_taxon": 13801
+   }
+  },
+  {
+   "id": "fotdro5",
+   "sci": "Dicrurus adsimilis",
+   "names": {
+    "en_ZA": "Fork-tailed Drongo",
+    "en_IOC": "Fork-tailed Drongo",
+    "en": "Fork-tailed Drongo",
+    "en_UK": "Fork-tailed Drongo"
+   },
+   "family": "Drongos",
+   "familySci": "Dicruridae",
+   "listName": "Drongo",
+   "rank": 7,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/689750121/medium.jpg",
+    "attr": "(c) Rails and roadtrips, some rights reserved (CC BY-NC), uploaded by Rails and roadtrips",
+    "inat_taxon": 8268
+   }
+  },
+  {
+   "id": "knytur1",
+   "sci": "Tauraco corythaix",
+   "names": {
+    "en_ZA": "Knysna Turaco",
+    "en_IOC": "Knysna Turaco",
+    "en": "Knysna Turaco",
+    "en_UK": "Knysna Turaco"
+   },
+   "family": "Turacos",
+   "familySci": "Musophagidae",
+   "listName": "Turaco Knysna",
+   "rank": 8,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/353002846/medium.jpg",
+    "attr": "(c) Marie Delport, some rights reserved (CC BY-NC), uploaded by Marie Delport",
+    "inat_taxon": 7205
+   }
+  },
+  {
+   "id": "capbul1",
+   "sci": "Pycnonotus capensis",
+   "names": {
+    "en_ZA": "Cape Bulbul",
+    "en_IOC": "Cape Bulbul",
+    "en": "Cape Bulbul",
+    "en_UK": "Cape Bulbul"
+   },
+   "family": "Bulbuls",
+   "familySci": "Pycnonotidae",
+   "listName": "Bulbul Cape",
+   "rank": 11,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1366561/medium.jpg",
+    "attr": "(c) Derek Keats, some rights reserved (CC BY)",
+    "inat_taxon": 14594
+   }
+  },
+  {
+   "id": "reedov1",
+   "sci": "Streptopelia semitorquata",
+   "names": {
+    "en_ZA": "Red-eyed Dove",
+    "en_IOC": "Red-eyed Dove",
+    "en": "Red-eyed Dove",
+    "en_UK": "Red-eyed Dove"
+   },
+   "family": "Pigeons and Doves",
+   "familySci": "Columbidae",
+   "listName": "Dove Red eyed",
+   "rank": 14,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/736383407/medium.jpg",
+    "attr": "(c) Ian N. White, all rights reserved, uploaded by Ian N. White",
+    "inat_taxon": 2988
+   }
+  },
+  {
+   "id": "capwhe2",
+   "sci": "Zosterops virens",
+   "names": {
+    "en_ZA": "Cape White-eye",
+    "en_IOC": "Cape White-eye",
+    "en": "Cape White-eye",
+    "en_UK": "Cape White-eye"
+   },
+   "family": "White-eyes, Yuhinas, and Allies",
+   "familySci": "Zosteropidae",
+   "listName": "White-eye",
+   "rank": 15,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/545801809/medium.jpg",
+    "attr": "(c) John Gale, some rights reserved (CC BY-NC), uploaded by John Gale",
+    "inat_taxon": 472770
+   }
+  },
+  {
+   "id": "olithr2",
+   "sci": "Turdus olivaceus",
+   "names": {
+    "en_ZA": "Olive Thrush",
+    "en_IOC": "Olive Thrush",
+    "en": "Olive Thrush",
+    "en_UK": "Olive Thrush"
+   },
+   "family": "Thrushes and Allies",
+   "familySci": "Turdidae",
+   "listName": "Thrush Olive",
+   "rank": 16,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/10132188/medium.jpg",
+    "attr": "(c) markus lilje, some rights reserved (CC BY-NC-ND), uploaded by markus lilje",
+    "inat_taxon": 203815
+   }
+  },
+  {
+   "id": "helgui",
+   "sci": "Numida meleagris",
+   "names": {
+    "en_ZA": "Helmeted Guineafowl",
+    "en_IOC": "Helmeted Guineafowl",
+    "en": "Helmeted Guineafowl",
+    "en_UK": "Helmeted Guineafowl"
+   },
+   "family": "Guineafowl",
+   "familySci": "Numididae",
+   "listName": "Guineafowl",
+   "rank": 17,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/93691875/medium.jpg",
+    "attr": "(c) Robert Siegel, all rights reserved, uploaded by Robert Siegel",
+    "inat_taxon": 1428
+   }
+  },
+  {
+   "id": "hadibi1",
+   "sci": "Bostrychia hagedash",
+   "names": {
+    "en_ZA": "Hadeda Ibis",
+    "en_IOC": "Hadada Ibis",
+    "en": "Hadada Ibis",
+    "en_UK": "Hadada Ibis"
+   },
+   "family": "Ibises and Spoonbills",
+   "familySci": "Threskiornithidae",
+   "listName": "Hadeda",
+   "rank": 18,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/73848759/medium.jpg",
+    "attr": "(c) Sunil Onamkulam, all rights reserved, uploaded by Sunil Onamkulam",
+    "inat_taxon": 3743
+   }
+  },
+  {
+   "id": "spemou2",
+   "sci": "Colius striatus",
+   "names": {
+    "en_ZA": "Speckled Mousebird",
+    "en_IOC": "Speckled Mousebird",
+    "en": "Speckled Mousebird",
+    "en_UK": "Speckled Mousebird"
+   },
+   "family": "Mousebirds",
+   "familySci": "Coliidae",
+   "listName": "Mousebird Speckled",
+   "rank": 19,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/245848834/medium.jpg",
+    "attr": "(c) Marie Delport, some rights reserved (CC BY-NC), uploaded by Marie Delport",
+    "inat_taxon": 3704
+   }
+  },
+  {
+   "id": "carcha1",
+   "sci": "Dessonornis caffer",
+   "names": {
+    "en_ZA": "Cape Robin-Chat",
+    "en_IOC": "Cape Robin-Chat",
+    "en": "Cape Robin-Chat",
+    "en_UK": "Cape Robin-Chat"
+   },
+   "family": "Old World Flycatchers",
+   "familySci": "Muscicapidae",
+   "listName": "Robin Cape",
+   "rank": 21,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/257266823/medium.jpg",
+    "attr": "(c) David Roche, all rights reserved, uploaded by David Roche",
+    "inat_taxon": 1585912
+   }
+  },
+  {
+   "id": "sdcsun3",
+   "sci": "Cinnyris chalybeus",
+   "names": {
+    "en_ZA": "Southern Double-collared Sunbird",
+    "en_IOC": "Southern Double-collared Sunbird",
+    "en": "Southern Double-collared Sunbird",
+    "en_UK": "Southern Double-collared Sunbird"
+   },
+   "family": "Sunbirds and Spiderhunters",
+   "familySci": "Nectariniidae",
+   "listName": "Sunbird Southern Double",
+   "rank": 22,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/12098817/medium.jpg",
+    "attr": "(c) Kevin Schafer, some rights reserved (CC BY-NC-ND), uploaded by Kevin Schafer",
+    "inat_taxon": 145157
+   }
+  },
+  {
+   "id": "capwag1",
+   "sci": "Motacilla capensis",
+   "names": {
+    "en_ZA": "Cape Wagtail",
+    "en_IOC": "Cape Wagtail",
+    "en": "Cape Wagtail",
+    "en_UK": "Cape Wagtail"
+   },
+   "family": "Wagtails and Pipits",
+   "familySci": "Motacillidae",
+   "listName": "Wagtail Cape",
+   "rank": 23,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/54496010/medium.jpg",
+    "attr": "(c) Ray Turnbull, some rights reserved (CC BY-NC), uploaded by Ray Turnbull",
+    "inat_taxon": 13699
+   }
+  },
+  {
+   "id": "afdfly1",
+   "sci": "Muscicapa adusta",
+   "names": {
+    "en_ZA": "African Dusky Flycatcher",
+    "en_IOC": "African Dusky Flycatcher",
+    "en": "African Dusky Flycatcher",
+    "en_UK": "African Dusky Flycatcher"
+   },
+   "family": "Old World Flycatchers",
+   "familySci": "Muscicapidae",
+   "listName": "Flycatcher Dusky",
+   "rank": 24,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/266552862/medium.jpg",
+    "attr": "(c) Mark Sikking, all rights reserved, uploaded by Mark Sikking",
+    "inat_taxon": 12978
+   }
+  },
+  {
+   "id": "moubuz3",
+   "sci": "Buteo trizonatus",
+   "names": {
+    "en_ZA": "Forest Buzzard",
+    "en_IOC": "Forest Buzzard",
+    "en": "Forest Buzzard",
+    "en_UK": "Forest Buzzard"
+   },
+   "family": "Hawks, Eagles, and Kites",
+   "familySci": "Accipitridae",
+   "listName": "Buzzard Forest",
+   "rank": 25,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/3257518/medium.jpg",
+    "attr": "(c) Derek Keats, some rights reserved (CC BY)",
+    "inat_taxon": 512762
+   }
+  },
+  {
+   "id": "abhori1",
+   "sci": "Oriolus larvatus",
+   "names": {
+    "en_ZA": "Black-headed Oriole",
+    "en_IOC": "Black-headed Oriole",
+    "en": "African Black-headed Oriole",
+    "en_UK": "African Black-headed Oriole"
+   },
+   "family": "Old World Orioles",
+   "familySci": "Oriolidae",
+   "listName": "Oriole",
+   "rank": 28,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/212670641/medium.jpg",
+    "attr": "(c) Derek Keats, some rights reserved (CC BY)",
+    "inat_taxon": 7876
+   }
+  },
+  {
+   "id": "somgre1",
+   "sci": "Andropadus importunus",
+   "names": {
+    "en_ZA": "Sombre Greenbul",
+    "en_IOC": "Sombre Greenbul",
+    "en": "Sombre Greenbul",
+    "en_UK": "Sombre Greenbul"
+   },
+   "family": "Bulbuls",
+   "familySci": "Pycnonotidae",
+   "listName": "Greenbul Sombre",
+   "rank": 29,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/323252/medium.JPG",
+    "attr": "(c) Carmelo López Abad, some rights reserved (CC BY-NC), uploaded by Carmelo López Abad",
+    "inat_taxon": 14708
+   }
+  },
+  {
+   "id": "blhher1",
+   "sci": "Ardea melanocephala",
+   "names": {
+    "en_ZA": "Black-headed Heron",
+    "en_IOC": "Black-headed Heron",
+    "en": "Black-headed Heron",
+    "en_UK": "Black-headed Heron"
+   },
+   "family": "Herons, Egrets, and Bitterns",
+   "familySci": "Ardeidae",
+   "listName": "Heron Black headed",
+   "rank": 31,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/194664553/medium.jpg",
+    "attr": "(c) Nik Borrow, some rights reserved (CC BY-NC), uploaded by Nik Borrow",
+    "inat_taxon": 4972
+   }
+  },
+  {
+   "id": "sptkne1",
+   "sci": "Burhinus capensis",
+   "names": {
+    "en_ZA": "Spotted Thick-knee",
+    "en_IOC": "Spotted Thick-knee",
+    "en": "Spotted Thick-knee",
+    "en_UK": "Spotted Thick-knee"
+   },
+   "family": "Thick-knees",
+   "familySci": "Burhinidae",
+   "listName": "Thickened Spotted",
+   "rank": 32,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/70719051/medium.jpg",
+    "attr": "(c) Carlos N. G. Bocos, all rights reserved, uploaded by Carlos N. G. Bocos",
+    "inat_taxon": 4922
+   }
+  },
+  {
+   "id": "amesun2",
+   "sci": "Chalcomitra amethystina",
+   "names": {
+    "en_ZA": "Amethyst Sunbird",
+    "en_IOC": "Amethyst Sunbird",
+    "en": "Amethyst Sunbird",
+    "en_UK": "Amethyst Sunbird"
+   },
+   "family": "Sunbirds and Spiderhunters",
+   "familySci": "Nectariniidae",
+   "listName": "Sunbird Amathyst",
+   "rank": 33,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/16169724/medium.jpg",
+    "attr": "(c) Peter Vos, some rights reserved (CC BY-NC), uploaded by Peter Vos",
+    "inat_taxon": 145142
+   }
+  },
+  {
+   "id": "graher1",
+   "sci": "Ardea cinerea",
+   "names": {
+    "en_ZA": "Grey Heron",
+    "en_IOC": "Grey Heron",
+    "en": "Gray Heron",
+    "en_UK": "Grey Heron"
+   },
+   "family": "Herons, Egrets, and Bitterns",
+   "familySci": "Ardeidae",
+   "listName": "Heron Grey",
+   "rank": 36,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/73516715/medium.jpg",
+    "attr": "(c) Frank Sengpiel, some rights reserved (CC BY), uploaded by Frank Sengpiel",
+    "inat_taxon": 4954
+   }
+  },
+  {
+   "id": "fisfly1",
+   "sci": "Sigelus silens",
+   "names": {
+    "en_ZA": "Fiscal Flycatcher",
+    "en_IOC": "Fiscal Flycatcher",
+    "en": "Fiscal Flycatcher",
+    "en_UK": "Fiscal Flycatcher"
+   },
+   "family": "Old World Flycatchers",
+   "familySci": "Muscicapidae",
+   "listName": "Flycatcher Fiscal",
+   "rank": 37,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/59900970/medium.jpg",
+    "attr": "(c) David Beadle, all rights reserved, uploaded by David Beadle",
+    "inat_taxon": 13251
+   }
+  },
+  {
+   "id": "capsug1",
+   "sci": "Promerops cafer",
+   "names": {
+    "en_ZA": "Cape Sugarbird",
+    "en_IOC": "Cape Sugarbird",
+    "en": "Cape Sugarbird",
+    "en_UK": "Cape Sugarbird"
+   },
+   "family": "Sugarbirds",
+   "familySci": "Promeropidae",
+   "listName": "Sugarbird Cape",
+   "rank": 38,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/728414837/medium.jpg",
+    "attr": "(c) Philip Hoekstra, some rights reserved (CC BY-NC), uploaded by Philip Hoekstra",
+    "inat_taxon": 13442
+   }
+  },
+  {
+   "id": "capbat10",
+   "sci": "Batis capensis",
+   "names": {
+    "en_ZA": "Cape Batis",
+    "en_IOC": "Cape Batis",
+    "en": "Cape Batis",
+    "en_UK": "Cape Batis"
+   },
+   "family": "Wattle-eyes and Batises",
+   "familySci": "Platysteiridae",
+   "listName": "Batis Cape",
+   "rank": 40,
+   "tier": "Beginner",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/47826345/medium.jpeg",
+    "attr": "(c) andrewhodgson, some rights reserved (CC BY-NC)",
+    "inat_taxon": 8396
+   }
+  },
+  {
+   "id": "categr1",
+   "sci": "Ardea ibis",
+   "names": {
+    "en_ZA": "Western Cattle Egret",
+    "en_IOC": "Western Cattle Egret",
+    "en": "Western Cattle-Egret",
+    "en_UK": "Western Cattle-Egret"
+   },
+   "family": "Herons, Egrets, and Bitterns",
+   "familySci": "Ardeidae",
+   "listName": "Egret Cattle",
+   "rank": 41,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/278764160/medium.jpg",
+    "attr": "(c) Алексей Сизов, some rights reserved (CC BY-NC), uploaded by Алексей Сизов",
+    "inat_taxon": 411086
+   }
+  },
+  {
+   "id": "chrcha1",
+   "sci": "Cossypha dichroa",
+   "names": {
+    "en_ZA": "Chorister Robin-Chat",
+    "en_IOC": "Chorister Robin-Chat",
+    "en": "Chorister Robin-Chat",
+    "en_UK": "Chorister Robin-Chat"
+   },
+   "family": "Old World Flycatchers",
+   "familySci": "Muscicapidae",
+   "listName": "Robin Chorister",
+   "rank": 42,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/229684657/medium.jpg",
+    "attr": "(c) Leonie Twentyman Jones, some rights reserved (CC BY-NC), uploaded by Leonie Twentyman Jones",
+    "inat_taxon": 12796
+   }
+  },
+  {
+   "id": "forcan1",
+   "sci": "Crithagra scotops",
+   "names": {
+    "en_ZA": "Forest Canary",
+    "en_IOC": "Forest Canary",
+    "en": "Forest Canary",
+    "en_UK": "Forest Canary"
+   },
+   "family": "Finches, Euphonias, and Allies",
+   "familySci": "Fringillidae",
+   "listName": "Canary Forest",
+   "rank": 43,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/696507211/medium.jpg",
+    "attr": "(c) John Gale, some rights reserved (CC BY-NC), uploaded by John Gale",
+    "inat_taxon": 558607
+   }
+  },
+  {
+   "id": "oliwoo2",
+   "sci": "Dendropicos griseocephalus",
+   "names": {
+    "en_ZA": "Olive Woodpecker",
+    "en_IOC": "Olive Woodpecker",
+    "en": "Olive Woodpecker",
+    "en_UK": "Olive Woodpecker"
+   },
+   "family": "Woodpeckers",
+   "familySci": "Picidae",
+   "listName": "Woodpecker Olive",
+   "rank": 44,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/6209640/medium.jpeg",
+    "attr": "(c) Gawie Malan, some rights reserved (CC BY-NC), uploaded by Gawie Malan",
+    "inat_taxon": 1506403
+   }
+  },
+  {
+   "id": "whbcou3",
+   "sci": "Centropus burchellii",
+   "names": {
+    "en_ZA": "Burchell's Coucal",
+    "en_IOC": "Burchell's Coucal",
+    "en": "Burchell's Coucal",
+    "en_UK": "Burchell's Coucal"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Coucal",
+   "rank": 45,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/13380776/medium.jpeg",
+    "attr": "(c) copper, some rights reserved (CC BY-NC), uploaded by copper",
+    "inat_taxon": 1583337
+   }
+  },
+  {
+   "id": "swewax3",
+   "sci": "Coccopygia melanotis",
+   "names": {
+    "en_ZA": "Swee Waxbill",
+    "en_IOC": "Swee Waxbill",
+    "en": "Swee Waxbill",
+    "en_UK": "Swee Waxbill"
+   },
+   "family": "Waxbills and Allies",
+   "familySci": "Estrildidae",
+   "listName": "Waxbill Swee",
+   "rank": 47,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8191777/medium.jpg",
+    "attr": "(c) Markus  Lilje, some rights reserved (CC BY-NC-ND), uploaded by Markus  Lilje",
+    "inat_taxon": 979663
+   }
+  },
+  {
+   "id": "blaplo1",
+   "sci": "Vanellus armatus",
+   "names": {
+    "en_ZA": "Blacksmith Lapwing",
+    "en_IOC": "Blacksmith Lapwing",
+    "en": "Blacksmith Lapwing",
+    "en_UK": "Blacksmith Lapwing"
+   },
+   "family": "Plovers and Lapwings",
+   "familySci": "Charadriidae",
+   "listName": "Lapwing Blacksmith",
+   "rank": 48,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/259641949/medium.jpg",
+    "attr": "(c) Pavel Shukov, some rights reserved (CC BY-NC), uploaded by Pavel Shukov",
+    "inat_taxon": 4870
+   }
+  },
+  {
+   "id": "batapa2",
+   "sci": "Apalis thoracica",
+   "names": {
+    "en_ZA": "Bar-throated Apalis",
+    "en_IOC": "Bar-throated Apalis",
+    "en": "Bar-throated Apalis",
+    "en_UK": "Bar-throated Apalis"
+   },
+   "family": "Cisticolas and Allies",
+   "familySci": "Cisticolidae",
+   "listName": "Apalis",
+   "rank": 50,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/11708191/medium.jpg",
+    "attr": "(c) Philip Herbst, all rights reserved, uploaded by Philip Herbst",
+    "inat_taxon": 7742
+   }
+  },
+  {
+   "id": "brican1",
+   "sci": "Crithagra sulphurata",
+   "names": {
+    "en_ZA": "Brimstone Canary",
+    "en_IOC": "Brimstone Canary",
+    "en": "Brimstone Canary",
+    "en_UK": "Brimstone Canary"
+   },
+   "family": "Finches, Euphonias, and Allies",
+   "familySci": "Fringillidae",
+   "listName": "Canary Brimstone",
+   "rank": 52,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15979937/medium.jpg",
+    "attr": "(c) Colin Ralston, some rights reserved (CC BY-NC), uploaded by Colin Ralston",
+    "inat_taxon": 558618
+   }
+  },
+  {
+   "id": "bbgsta1",
+   "sci": "Notopholia corusca",
+   "names": {
+    "en_ZA": "Black-bellied Starling",
+    "en_IOC": "Black-bellied Starling",
+    "en": "Black-bellied Starling",
+    "en_UK": "Black-bellied Starling"
+   },
+   "family": "Starlings",
+   "familySci": "Sturnidae",
+   "listName": "Starling Black bellied",
+   "rank": 53,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/219385579/medium.jpg",
+    "attr": "(c) Marie Delport, some rights reserved (CC BY-NC), uploaded by Marie Delport",
+    "inat_taxon": 979832
+   }
+  },
+  {
+   "id": "spepig1",
+   "sci": "Columba guinea",
+   "names": {
+    "en_ZA": "Speckled Pigeon",
+    "en_IOC": "Speckled Pigeon",
+    "en": "Speckled Pigeon",
+    "en_UK": "Speckled Pigeon"
+   },
+   "family": "Pigeons and Doves",
+   "familySci": "Columbidae",
+   "listName": "Pigeon Speckled",
+   "rank": 54,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1954837/medium.jpg",
+    "attr": "(c) Paul Cools, some rights reserved (CC BY-NC), uploaded by Paul Cools",
+    "inat_taxon": 3036
+   }
+  },
+  {
+   "id": "eursta",
+   "sci": "Sturnus vulgaris",
+   "names": {
+    "en_ZA": "Common Starling",
+    "en_IOC": "Common Starling",
+    "en": "European Starling",
+    "en_UK": "Common Starling"
+   },
+   "family": "Starlings",
+   "familySci": "Sturnidae",
+   "listName": "Starling Common",
+   "rank": 55,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/32152001/medium.jpg",
+    "attr": "(c) Fran Wiesner, some rights reserved (CC BY-NC-ND), uploaded by Fran Wiesner",
+    "inat_taxon": 14850
+   }
+  },
+  {
+   "id": "hoopoe",
+   "sci": "Upupa epops",
+   "names": {
+    "en_ZA": "Common Hoopoe",
+    "en_IOC": "Common Hoopoe",
+    "en": "Common Hoopoe",
+    "en_UK": "Common Hoopoe"
+   },
+   "family": "Hoopoes",
+   "familySci": "Upupidae",
+   "listName": "Hoopoe",
+   "rank": 56,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/60494705/medium.jpg",
+    "attr": "(c) Andrej Chudý, some rights reserved (CC BY-NC-SA)",
+    "inat_taxon": 20969
+   }
+  },
+  {
+   "id": "sthsee2",
+   "sci": "Crithagra gularis",
+   "names": {
+    "en_ZA": "Streaky-headed Seedeater",
+    "en_IOC": "Streaky-headed Seedeater",
+    "en": "Streaky-headed Seedeater",
+    "en_UK": "Streaky-headed Seedeater"
+   },
+   "family": "Finches, Euphonias, and Allies",
+   "familySci": "Fringillidae",
+   "listName": "Seedeater Streak",
+   "rank": 57,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/691969835/medium.jpg",
+    "attr": "(c) Ian N. White, all rights reserved, uploaded by Ian N. White",
+    "inat_taxon": 979671
+   }
+  },
+  {
+   "id": "whtswa3",
+   "sci": "Hirundo albigularis",
+   "names": {
+    "en_ZA": "White-throated Swallow",
+    "en_IOC": "White-throated Swallow",
+    "en": "White-throated Swallow",
+    "en_UK": "White-throated Swallow"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Swallow White throated",
+   "rank": 58,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/265006332/medium.jpg",
+    "attr": "(c) Mark Sikking, all rights reserved, uploaded by Mark Sikking",
+    "inat_taxon": 11920
+   }
+  },
+  {
+   "id": "comwax",
+   "sci": "Estrilda astrild",
+   "names": {
+    "en_ZA": "Common Waxbill",
+    "en_IOC": "Common Waxbill",
+    "en": "Common Waxbill",
+    "en_UK": "Common Waxbill"
+   },
+   "family": "Waxbills and Allies",
+   "familySci": "Estrildidae",
+   "listName": "Waxbill Common",
+   "rank": 61,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/397446858/medium.jpg",
+    "attr": "(c) David Barros Cardona, some rights reserved (CC BY-NC), uploaded by David Barros Cardona",
+    "inat_taxon": 13770
+   }
+  },
+  {
+   "id": "karpri1",
+   "sci": "Prinia maculosa",
+   "names": {
+    "en_ZA": "Karoo Prinia",
+    "en_IOC": "Karoo Prinia",
+    "en": "Karoo Prinia",
+    "en_UK": "Karoo Prinia"
+   },
+   "family": "Cisticolas and Allies",
+   "familySci": "Cisticolidae",
+   "listName": "Prinia Karoo",
+   "rank": 63,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/64726020/medium.jpg",
+    "attr": "(c) William Stephens, some rights reserved (CC BY), uploaded by William Stephens",
+    "inat_taxon": 7730
+   }
+  },
+  {
+   "id": "laudov1",
+   "sci": "Spilopelia senegalensis",
+   "names": {
+    "en_ZA": "Laughing Dove",
+    "en_IOC": "Laughing Dove",
+    "en": "Laughing Dove",
+    "en_UK": "Laughing Dove"
+   },
+   "family": "Pigeons and Doves",
+   "familySci": "Columbidae",
+   "listName": "Dove Laughing",
+   "rank": 65,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/2951884/medium.jpg",
+    "attr": "(c) Nik Borrow, some rights reserved (CC BY-NC)",
+    "inat_taxon": 1455922
+   }
+  },
+  {
+   "id": "rewsta1",
+   "sci": "Onychognathus morio",
+   "names": {
+    "en_ZA": "Red-winged Starling",
+    "en_IOC": "Red-winged Starling",
+    "en": "Red-winged Starling",
+    "en_UK": "Red-winged Starling"
+   },
+   "family": "Starlings",
+   "familySci": "Sturnidae",
+   "listName": "Starling Red winged",
+   "rank": 66,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/355116921/medium.jpeg",
+    "attr": "(c) Jonghyun Park, some rights reserved (CC BY), uploaded by Jonghyun Park",
+    "inat_taxon": 204554
+   }
+  },
+  {
+   "id": "rampig1",
+   "sci": "Columba arquatrix",
+   "names": {
+    "en_ZA": "African Olive Pigeon",
+    "en_IOC": "African Olive Pigeon",
+    "en": "Rameron Pigeon",
+    "en_UK": "Rameron Pigeon"
+   },
+   "family": "Pigeons and Doves",
+   "familySci": "Columbidae",
+   "listName": "Pigeon Rameron",
+   "rank": 67,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/323242/medium.JPG",
+    "attr": "(c) Carmelo López Abad, some rights reserved (CC BY-NC), uploaded by Carmelo López Abad",
+    "inat_taxon": 3012
+   }
+  },
+  {
+   "id": "soubou1",
+   "sci": "Laniarius ferrugineus",
+   "names": {
+    "en_ZA": "Southern Boubou",
+    "en_IOC": "Southern Boubou",
+    "en": "Southern Boubou",
+    "en_UK": "Southern Boubou"
+   },
+   "family": "Bushshrikes and Allies",
+   "familySci": "Malaconotidae",
+   "listName": "Boubou",
+   "rank": 68,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/25006748/medium.jpg",
+    "attr": "(c) Jaunne-Marelize Van Tonder, some rights reserved (CC BY-NC), uploaded by Jaunne-Marelize Van Tonder",
+    "inat_taxon": 8224
+   }
+  },
+  {
+   "id": "pitwhy",
+   "sci": "Vidua macroura",
+   "names": {
+    "en_ZA": "Pin-tailed Whydah",
+    "en_IOC": "Pin-tailed Whydah",
+    "en": "Pin-tailed Whydah",
+    "en_UK": "Pin-tailed Whydah"
+   },
+   "family": "Whydahs and Indigobirds",
+   "familySci": "Viduidae",
+   "listName": "Whydah Pintailed",
+   "rank": 69,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/129793503/medium.jpg",
+    "attr": "(c) James M. Maley, some rights reserved (CC BY), uploaded by James M. Maley",
+    "inat_taxon": 14011
+   }
+  },
+  {
+   "id": "afpfly1",
+   "sci": "Terpsiphone viridis",
+   "names": {
+    "en_ZA": "African Paradise Flycatcher",
+    "en_IOC": "African Paradise Flycatcher",
+    "en": "African Paradise-Flycatcher",
+    "en_UK": "African Paradise-Flycatcher"
+   },
+   "family": "Monarch Flycatchers",
+   "familySci": "Monarchidae",
+   "listName": "Flycatcher Paradise",
+   "rank": 71,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1332763/medium.jpg",
+    "attr": "(c) blingbeek, some rights reserved (CC BY-NC)",
+    "inat_taxon": 8354
+   }
+  },
+  {
+   "id": "affeag1",
+   "sci": "Icthyophaga vocifer",
+   "names": {
+    "en_ZA": "African Fish Eagle",
+    "en_IOC": "African Fish Eagle",
+    "en": "African Fish-Eagle",
+    "en_UK": "African Fish-Eagle"
+   },
+   "family": "Hawks, Eagles, and Kites",
+   "familySci": "Accipitridae",
+   "listName": "Eagle Fish",
+   "rank": 74,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/339871833/medium.jpg",
+    "attr": "(c) Asrat Ayalew Gella, all rights reserved, uploaded by Asrat Ayalew Gella",
+    "inat_taxon": 1505670
+   }
+  },
+  {
+   "id": "sghspa2",
+   "sci": "Passer diffusus",
+   "names": {
+    "en_ZA": "Southern Grey-headed Sparrow",
+    "en_IOC": "Southern Grey-headed Sparrow",
+    "en": "Southern Gray-headed Sparrow",
+    "en_UK": "Southern Grey-headed Sparrow"
+   },
+   "family": "Old World Sparrows",
+   "familySci": "Passeridae",
+   "listName": "Sparrow Grey headed",
+   "rank": 75,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/333703657/medium.jpg",
+    "attr": "(c) Tristan Scholze, some rights reserved (CC BY-NC), uploaded by Tristan Scholze",
+    "inat_taxon": 73152
+   }
+  },
+  {
+   "id": "blbpuf2",
+   "sci": "Dryoscopus cubla",
+   "names": {
+    "en_ZA": "Black-backed Puffback",
+    "en_IOC": "Black-backed Puffback",
+    "en": "Black-backed Puffback",
+    "en_UK": "Black-backed Puffback"
+   },
+   "family": "Bushshrikes and Allies",
+   "familySci": "Malaconotidae",
+   "listName": "Puffback",
+   "rank": 80,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/331342507/medium.jpg",
+    "attr": "(c) Paolo Candotti, some rights reserved (CC BY-NC), uploaded by Paolo Candotti",
+    "inat_taxon": 8296
+   }
+  },
+  {
+   "id": "piecro1",
+   "sci": "Corvus albus",
+   "names": {
+    "en_ZA": "Pied Crow",
+    "en_IOC": "Pied Crow",
+    "en": "Pied Crow",
+    "en_UK": "Pied Crow"
+   },
+   "family": "Crows, Jays, and Magpies",
+   "familySci": "Corvidae",
+   "listName": "Crow Pied",
+   "rank": 81,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/104475058/medium.jpg",
+    "attr": "no rights reserved, uploaded by Dave Brown",
+    "inat_taxon": 8038
+   }
+  },
+  {
+   "id": "renfra1",
+   "sci": "Pternistis afer",
+   "names": {
+    "en_ZA": "Red-necked Spurfowl",
+    "en_IOC": "Red-necked Spurfowl",
+    "en": "Red-necked Spurfowl",
+    "en_UK": "Red-necked Spurfowl"
+   },
+   "family": "Pheasants, Grouse, and Allies",
+   "familySci": "Phasianidae",
+   "listName": "Spurfowl Red necked",
+   "rank": 82,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/2635250/medium.jpg",
+    "attr": "(c) Nik Borrow, some rights reserved (CC BY-NC), uploaded by Nik Borrow",
+    "inat_taxon": 495994
+   }
+  },
+  {
+   "id": "grycus1",
+   "sci": "Ceblepyris caesius",
+   "names": {
+    "en_ZA": "Grey Cuckooshrike",
+    "en_IOC": "Grey Cuckooshrike",
+    "en": "Gray Cuckooshrike",
+    "en_UK": "Grey Cuckooshrike"
+   },
+   "family": "Cuckooshrikes",
+   "familySci": "Campephagidae",
+   "listName": "Cuckoo shrike Grey",
+   "rank": 83,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/156974701/medium.jpg",
+    "attr": "(c) Marc Henrion, some rights reserved (CC BY-NC), uploaded by Marc Henrion",
+    "inat_taxon": 1585528
+   }
+  },
+  {
+   "id": "afcfly1",
+   "sci": "Trochocercus cyanomelas",
+   "names": {
+    "en_ZA": "Blue-mantled Crested Flycatcher",
+    "en_IOC": "Blue-mantled Crested Flycatcher",
+    "en": "African Crested Flycatcher",
+    "en_UK": "African Crested Flycatcher"
+   },
+   "family": "Monarch Flycatchers",
+   "familySci": "Monarchidae",
+   "listName": "Flycatcher Blue",
+   "rank": 84,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8193185/medium.jpg",
+    "attr": "(c) Markus  Lilje, some rights reserved (CC BY-NC-ND), uploaded by Markus  Lilje",
+    "inat_taxon": 8563
+   }
+  },
+  {
+   "id": "afrsto1",
+   "sci": "Saxicola torquatus",
+   "names": {
+    "en_ZA": "African Stonechat",
+    "en_IOC": "African Stonechat",
+    "en": "African Stonechat",
+    "en_UK": "African Stonechat"
+   },
+   "family": "Old World Flycatchers",
+   "familySci": "Muscicapidae",
+   "listName": "Stonechat",
+   "rank": 85,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/2644120/medium.jpg",
+    "attr": "(c) Nik Borrow, some rights reserved (CC BY-NC)",
+    "inat_taxon": 55371
+   }
+  },
+  {
+   "id": "rindov",
+   "sci": "Streptopelia capicola",
+   "names": {
+    "en_ZA": "Cape Turtle (Ring-necked) Dove",
+    "en_IOC": "Ring-necked Dove",
+    "en": "Ring-necked Dove",
+    "en_UK": "Ring-necked Dove"
+   },
+   "family": "Pigeons and Doves",
+   "familySci": "Columbidae",
+   "listName": "Dove Turtle",
+   "rank": 86,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/22114928/medium.jpeg",
+    "attr": "(c) copper, some rights reserved (CC BY-NC), uploaded by copper",
+    "inat_taxon": 2959
+   }
+  },
+  {
+   "id": "nartro1",
+   "sci": "Apaloderma narina",
+   "names": {
+    "en_ZA": "Narina Trogon",
+    "en_IOC": "Narina Trogon",
+    "en": "Narina Trogon",
+    "en_UK": "Narina Trogon"
+   },
+   "family": "Trogons",
+   "familySci": "Trogonidae",
+   "listName": "Trogan",
+   "rank": 87,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/519267547/medium.jpg",
+    "attr": "(c) Peter Steward, some rights reserved (CC BY-NC)",
+    "inat_taxon": 20836
+   }
+  },
+  {
+   "id": "grewoo2",
+   "sci": "Phoeniculus purpureus",
+   "names": {
+    "en_ZA": "Green Wood-hoopoe",
+    "en_IOC": "Green Wood Hoopoe",
+    "en": "Green Woodhoopoe",
+    "en_UK": "Green Woodhoopoe"
+   },
+   "family": "Woodhoopoes and Scimitarbills",
+   "familySci": "Phoeniculidae",
+   "listName": "Wood-hoopoe",
+   "rank": 90,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/156649321/medium.jpg",
+    "attr": "(c) Adam Welz, some rights reserved (CC BY-NC-ND), uploaded by Adam Welz",
+    "inat_taxon": 20934
+   }
+  },
+  {
+   "id": "grests1",
+   "sci": "Cecropis cucullata",
+   "names": {
+    "en_ZA": "Greater Striped Swallow",
+    "en_IOC": "Greater Striped Swallow",
+    "en": "Greater Striped Swallow",
+    "en_UK": "Greater Striped Swallow"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Swallow Greater Striped",
+   "rank": 92,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15618149/medium.jpg",
+    "attr": "(c) Kate Braun, some rights reserved (CC BY-NC), uploaded by Kate Braun",
+    "inat_taxon": 144791
+   }
+  },
+  {
+   "id": "olibus1",
+   "sci": "Chlorophoneus olivaceus",
+   "names": {
+    "en_ZA": "Olive Bushshrike",
+    "en_IOC": "Olive Bushshrike",
+    "en": "Olive Bushshrike",
+    "en_UK": "Olive Bushshrike"
+   },
+   "family": "Bushshrikes and Allies",
+   "familySci": "Malaconotidae",
+   "listName": "Bushshrike Olive",
+   "rank": 93,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/90573/medium.jpg",
+    "attr": "(c) Paul Barnard, some rights reserved (CC BY-NC-ND)",
+    "inat_taxon": 1586888
+   }
+  },
+  {
+   "id": "whnrav1",
+   "sci": "Corvus albicollis",
+   "names": {
+    "en_ZA": "White-necked Raven",
+    "en_IOC": "White-necked Raven",
+    "en": "White-necked Raven",
+    "en_UK": "White-necked Raven"
+   },
+   "family": "Crows, Jays, and Magpies",
+   "familySci": "Corvidae",
+   "listName": "Raven",
+   "rank": 94,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/35092/medium.jpg",
+    "attr": "(c) David Schenfeld, some rights reserved (CC BY-NC-ND)",
+    "inat_taxon": 8004
+   }
+  },
+  {
+   "id": "terbro1",
+   "sci": "Phyllastrephus terrestris",
+   "names": {
+    "en_ZA": "Terrestrial Brownbul",
+    "en_IOC": "Terrestrial Brownbul",
+    "en": "Terrestrial Brownbul",
+    "en_UK": "Terrestrial Brownbul"
+   },
+   "family": "Bulbuls",
+   "familySci": "Pycnonotidae",
+   "listName": "Brownbul Terrestrial",
+   "rank": 96,
+   "tier": "Easy",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15884058/medium.jpg",
+    "attr": "(c) Kate Braun, some rights reserved (CC BY-NC), uploaded by Kate Braun",
+    "inat_taxon": 14563
+   }
+  },
+  {
+   "id": "pipcis2",
+   "sci": "Cisticola fulvicapilla",
+   "names": {
+    "en_ZA": "Neddicky",
+    "en_IOC": "Neddicky",
+    "en": "Piping Cisticola",
+    "en_UK": "Piping Cisticola"
+   },
+   "family": "Cisticolas and Allies",
+   "familySci": "Cisticolidae",
+   "listName": "Nedicky",
+   "rank": 101,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15408280/medium.jpg",
+    "attr": "(c) Michael McSweeney, some rights reserved (CC BY-NC), uploaded by Michael McSweeney",
+    "inat_taxon": 72731
+   }
+  },
+  {
+   "id": "yelbis1",
+   "sci": "Euplectes capensis",
+   "names": {
+    "en_ZA": "Yellow Bishop",
+    "en_IOC": "Yellow Bishop",
+    "en": "Yellow Bishop",
+    "en_UK": "Yellow Bishop"
+   },
+   "family": "Weavers and Allies",
+   "familySci": "Ploceidae",
+   "listName": "Bishop Cape",
+   "rank": 103,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/17780507/medium.jpg",
+    "attr": "(c) Rogério Ferreira, all rights reserved, uploaded by Rogério Ferreira",
+    "inat_taxon": 13964
+   }
+  },
+  {
+   "id": "grbcam1",
+   "sci": "Camaroptera brachyura",
+   "names": {
+    "en_ZA": "Bleating Camaroptera",
+    "en_IOC": "Bleating Camaroptera",
+    "en": "Green-backed Camaroptera",
+    "en_UK": "Green-backed Camaroptera"
+   },
+   "family": "Cisticolas and Allies",
+   "familySci": "Cisticolidae",
+   "listName": "Camaraoptera Bleating",
+   "rank": 104,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/261546373/medium.jpg",
+    "attr": "(c) Wayne and Pam Osborn, some rights reserved (CC BY-NC), uploaded by Wayne and Pam Osborn",
+    "inat_taxon": 979641
+   }
+  },
+  {
+   "id": "knswar1",
+   "sci": "Bradypterus sylvaticus",
+   "names": {
+    "en_ZA": "Knysna Warbler",
+    "en_IOC": "Knysna Warbler",
+    "en": "Knysna Warbler",
+    "en_UK": "Knysna Warbler"
+   },
+   "family": "Grassbirds and Allies",
+   "familySci": "Locustellidae",
+   "listName": "Warbler Knysna",
+   "rank": 107,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15780678/medium.jpg",
+    "attr": "(c) suemarsden, some rights reserved (CC BY-NC), uploaded by suemarsden",
+    "inat_taxon": 117190
+   }
+  },
+  {
+   "id": "malsun1",
+   "sci": "Nectarinia famosa",
+   "names": {
+    "en_ZA": "Malachite Sunbird",
+    "en_IOC": "Malachite Sunbird",
+    "en": "Malachite Sunbird",
+    "en_UK": "Malachite Sunbird"
+   },
+   "family": "Sunbirds and Spiderhunters",
+   "familySci": "Nectariniidae",
+   "listName": "Sunbird Malachite",
+   "rank": 109,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/25812/medium.jpg",
+    "attr": "(c) Steve Garvie, some rights reserved (CC BY-SA)",
+    "inat_taxon": 13300
+   }
+  },
+  {
+   "id": "capcan1",
+   "sci": "Serinus canicollis",
+   "names": {
+    "en_ZA": "Cape Canary",
+    "en_IOC": "Cape Canary",
+    "en": "Cape Canary",
+    "en_UK": "Cape Canary"
+   },
+   "family": "Finches, Euphonias, and Allies",
+   "familySci": "Fringillidae",
+   "listName": "Canary Cape",
+   "rank": 111,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/30392756/medium.jpeg",
+    "attr": "(c) Felix Riegel, some rights reserved (CC BY-NC), uploaded by Felix Riegel",
+    "inat_taxon": 9271
+   }
+  },
+  {
+   "id": "reccuc1",
+   "sci": "Cuculus solitarius",
+   "names": {
+    "en_ZA": "Red-chested Cuckoo",
+    "en_IOC": "Red-chested Cuckoo",
+    "en": "Red-chested Cuckoo",
+    "en_UK": "Red-chested Cuckoo"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Cuckoo Red chested",
+   "rank": 112,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/86937250/medium.jpg",
+    "attr": "(c) ianrijsdijk, some rights reserved (CC BY-NC), uploaded by ianrijsdijk",
+    "inat_taxon": 1903
+   }
+  },
+  {
+   "id": "klacuc1",
+   "sci": "Chrysococcyx klaas",
+   "names": {
+    "en_ZA": "Klaas's Cuckoo",
+    "en_IOC": "Klaas's Cuckoo",
+    "en": "Klaas's Cuckoo",
+    "en_UK": "Klaas's Cuckoo"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Cuckoo Klaass",
+   "rank": 115,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/25155793/medium.jpeg",
+    "attr": "(c) Peter Vos, some rights reserved (CC BY-NC), uploaded by Peter Vos",
+    "inat_taxon": 1730
+   }
+  },
+  {
+   "id": "yetwow1",
+   "sci": "Phylloscopus ruficapilla",
+   "names": {
+    "en_ZA": "Yellow-throated Woodland Warbler",
+    "en_IOC": "Yellow-throated Woodland Warbler",
+    "en": "Yellow-throated Woodland-Warbler",
+    "en_UK": "Yellow-throated Woodland-Warbler"
+   },
+   "family": "Leaf Warblers",
+   "familySci": "Phylloscopidae",
+   "listName": "Warbler Woodland",
+   "rank": 117,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/113089925/medium.jpeg",
+    "attr": "(c) Colin Ralston, some rights reserved (CC BY-NC), uploaded by Colin Ralston",
+    "inat_taxon": 117045
+   }
+  },
+  {
+   "id": "redbis",
+   "sci": "Euplectes orix",
+   "names": {
+    "en_ZA": "Southern Red Bishop",
+    "en_IOC": "Southern Red Bishop",
+    "en": "Southern Red Bishop",
+    "en_UK": "Southern Red Bishop"
+   },
+   "family": "Weavers and Allies",
+   "familySci": "Ploceidae",
+   "listName": "Bishop Red",
+   "rank": 119,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/264253885/medium.jpg",
+    "attr": "(c) Mark Sikking, all rights reserved, uploaded by Mark Sikking",
+    "inat_taxon": 13962
+   }
+  },
+  {
+   "id": "combuz1",
+   "sci": "Buteo buteo",
+   "names": {
+    "en_ZA": "Common Buzzard",
+    "en_IOC": "Common Buzzard",
+    "en": "Common Buzzard",
+    "en_UK": "Common Buzzard"
+   },
+   "family": "Hawks, Eagles, and Kites",
+   "familySci": "Accipitridae",
+   "listName": "Buzzard Common",
+   "rank": 122,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/457121231/medium.jpg",
+    "attr": "(c) Manuel Raab, some rights reserved (CC BY-NC), uploaded by Manuel Raab",
+    "inat_taxon": 204472
+   }
+  },
+  {
+   "id": "bkskit1",
+   "sci": "Elanus caeruleus",
+   "names": {
+    "en_ZA": "Black-winged Kite",
+    "en_IOC": "Black-winged Kite",
+    "en": "Black-winged Kite",
+    "en_UK": "Black-winged Kite"
+   },
+   "family": "Hawks, Eagles, and Kites",
+   "familySci": "Accipitridae",
+   "listName": "Kite Black winged",
+   "rank": 127,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/183749378/medium.jpeg",
+    "attr": "(c) Daniel Liepack, some rights reserved (CC BY-NC), uploaded by Daniel Liepack",
+    "inat_taxon": 5275
+   }
+  },
+  {
+   "id": "crolap1",
+   "sci": "Vanellus coronatus",
+   "names": {
+    "en_ZA": "Crowned Lapwing",
+    "en_IOC": "Crowned Lapwing",
+    "en": "Crowned Lapwing",
+    "en_UK": "Crowned Lapwing"
+   },
+   "family": "Plovers and Lapwings",
+   "familySci": "Charadriidae",
+   "listName": "Lapwing Crowned",
+   "rank": 128,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/166913136/medium.jpg",
+    "attr": "(c) Ad Konings, some rights reserved (CC BY-NC), uploaded by Ad Konings",
+    "inat_taxon": 4877
+   }
+  },
+  {
+   "id": "barswa",
+   "sci": "Hirundo rustica",
+   "names": {
+    "en_ZA": "Barn Swallow",
+    "en_IOC": "Barn Swallow",
+    "en": "Barn Swallow",
+    "en_UK": "Barn Swallow"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Swallow Barn",
+   "rank": 130,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/122469139/medium.jpg",
+    "attr": "(c) Ad Konings, some rights reserved (CC BY-NC), uploaded by Ad Konings",
+    "inat_taxon": 11901
+   }
+  },
+  {
+   "id": "blksaw1",
+   "sci": "Psalidoprocne pristoptera",
+   "names": {
+    "en_ZA": "Black Saw-wing",
+    "en_IOC": "Black Saw-wing",
+    "en": "Black Saw-wing",
+    "en_UK": "Black Saw-wing"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Sawwing",
+   "rank": 133,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1695608/medium.jpg",
+    "attr": "(c) Alandmanson, some rights reserved (CC BY-SA)",
+    "inat_taxon": 11953
+   }
+  },
+  {
+   "id": "mocsun2",
+   "sci": "Cyanomitra veroxii",
+   "names": {
+    "en_ZA": "Grey Sunbird",
+    "en_IOC": "Grey Sunbird",
+    "en": "Mouse-colored Sunbird",
+    "en_UK": "Mouse-coloured Sunbird"
+   },
+   "family": "Sunbirds and Spiderhunters",
+   "familySci": "Nectariniidae",
+   "listName": "Sunbird Grey",
+   "rank": 134,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8192288/medium.jpg",
+    "attr": "(c) Markus  Lilje, some rights reserved (CC BY-NC-ND), uploaded by Markus  Lilje",
+    "inat_taxon": 145138
+   }
+  },
+  {
+   "id": "didcuc1",
+   "sci": "Chrysococcyx caprius",
+   "names": {
+    "en_ZA": "Diederik Cuckoo",
+    "en_IOC": "Diederik Cuckoo",
+    "en": "Diederik Cuckoo",
+    "en_UK": "Diederik Cuckoo"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Cuckoo Diderick",
+   "rank": 135,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/602738519/medium.jpg",
+    "attr": "(c) Ian N. White, all rights reserved, uploaded by Ian N. White",
+    "inat_taxon": 1738
+   }
+  },
+  {
+   "id": "afecuc1",
+   "sci": "Chrysococcyx cupreus",
+   "names": {
+    "en_ZA": "African Emerald Cuckoo",
+    "en_IOC": "African Emerald Cuckoo",
+    "en": "African Emerald Cuckoo",
+    "en_UK": "African Emerald Cuckoo"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Cuckoo Emerald",
+   "rank": 142,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8193410/medium.jpg",
+    "attr": "(c) Markus  Lilje, some rights reserved (CC BY-NC-ND), uploaded by Markus  Lilje",
+    "inat_taxon": 1736
+   }
+  },
+  {
+   "id": "blacuc1",
+   "sci": "Cuculus clamosus",
+   "names": {
+    "en_ZA": "Black Cuckoo",
+    "en_IOC": "Black Cuckoo",
+    "en": "Black Cuckoo",
+    "en_UK": "Black Cuckoo"
+   },
+   "family": "Cuckoos",
+   "familySci": "Cuculidae",
+   "listName": "Cuckoo Black",
+   "rank": 146,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/8174575/medium.jpg",
+    "attr": "(c) Frans Vandewalle, some rights reserved (CC BY-NC)",
+    "inat_taxon": 1913
+   }
+  },
+  {
+   "id": "capgra1",
+   "sci": "Sphenoeacus afer",
+   "names": {
+    "en_ZA": "Cape Grassbird",
+    "en_IOC": "Cape Grassbird",
+    "en": "Cape Grassbird",
+    "en_UK": "Cape Grassbird"
+   },
+   "family": "African Longbills, Crombecs, and Allies",
+   "familySci": "Macrosphenidae",
+   "listName": "Grassbird",
+   "rank": 149,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/318844/medium.JPG",
+    "attr": "(c) Carmelo López Abad, some rights reserved (CC BY-NC), uploaded by Carmelo López Abad",
+    "inat_taxon": 15717
+   }
+  },
+  {
+   "id": "knywoo1",
+   "sci": "Campethera notata",
+   "names": {
+    "en_ZA": "Knysna Woodpecker",
+    "en_IOC": "Knysna Woodpecker",
+    "en": "Knysna Woodpecker",
+    "en_UK": "Knysna Woodpecker"
+   },
+   "family": "Woodpeckers",
+   "familySci": "Picidae",
+   "listName": "Woodpecker Knysna",
+   "rank": 151,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/1551335/medium.jpg",
+    "attr": "(c) Martina Hölzl, Littlewood Wildlife Photography, some rights reserved (CC BY-NC), uploaded by Martina Hölzl, Littlewood Wildlife Photography",
+    "inat_taxon": 17605
+   }
+  },
+  {
+   "id": "blkcus1",
+   "sci": "Campephaga flava",
+   "names": {
+    "en_ZA": "Black Cuckooshrike",
+    "en_IOC": "Black Cuckooshrike",
+    "en": "Black Cuckooshrike",
+    "en_UK": "Black Cuckooshrike"
+   },
+   "family": "Cuckooshrikes",
+   "familySci": "Campephagidae",
+   "listName": "Cuckoo shrike Black",
+   "rank": 154,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/158600832/medium.jpg",
+    "attr": "(c) Sunčana Bradley, some rights reserved (CC BY), uploaded by Sunčana Bradley",
+    "inat_taxon": 8313
+   }
+  },
+  {
+   "id": "rocmar5",
+   "sci": "Ptyonoprogne fuligula",
+   "names": {
+    "en_ZA": "Large Rock Martin",
+    "en_IOC": "Large Rock Martin",
+    "en": "Southern Crag-Martin",
+    "en_UK": "Southern Crag Martin"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Martin Rock",
+   "rank": 155,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/15898494/medium.jpg",
+    "attr": "(c) suemarsden, some rights reserved (CC BY-NC), uploaded by suemarsden",
+    "inat_taxon": 144789
+   }
+  },
+  {
+   "id": "viswar1",
+   "sci": "Cryptillas victorini",
+   "names": {
+    "en_ZA": "Victorin's Warbler",
+    "en_IOC": "Victorin's Warbler",
+    "en": "Victorin's Warbler",
+    "en_UK": "Victorin's Warbler"
+   },
+   "family": "African Longbills, Crombecs, and Allies",
+   "familySci": "Macrosphenidae",
+   "listName": "Warbler Victorins",
+   "rank": 165,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/92976427/medium.jpeg",
+    "attr": "(c) Christoph Moning, some rights reserved (CC BY), uploaded by Christoph Moning",
+    "inat_taxon": 144920
+   }
+  },
+  {
+   "id": "whrswi1",
+   "sci": "Apus caffer",
+   "names": {
+    "en_ZA": "White-rumped Swift",
+    "en_IOC": "White-rumped Swift",
+    "en": "White-rumped Swift",
+    "en_UK": "White-rumped Swift"
+   },
+   "family": "Swifts",
+   "familySci": "Apodidae",
+   "listName": "Swift White rumped",
+   "rank": 170,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/630428186/medium.jpg",
+    "attr": "(c) Ian N. White, all rights reserved, uploaded by Ian N. White",
+    "inat_taxon": 6619
+   }
+  },
+  {
+   "id": "afpswi1",
+   "sci": "Cypsiurus parvus",
+   "names": {
+    "en_ZA": "African Palm Swift",
+    "en_IOC": "African Palm Swift",
+    "en": "African Palm Swift",
+    "en_UK": "African Palm Swift"
+   },
+   "family": "Swifts",
+   "familySci": "Apodidae",
+   "listName": "Swift Palm",
+   "rank": 179,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/687708277/medium.jpg",
+    "attr": "(c) Ian N. White, all rights reserved, uploaded by Ian N. White",
+    "inat_taxon": 6681
+   }
+  },
+  {
+   "id": "afrpip1",
+   "sci": "Anthus cinnamomeus",
+   "names": {
+    "en_ZA": "African Pipit",
+    "en_IOC": "African Pipit",
+    "en": "African Pipit",
+    "en_UK": "African Pipit"
+   },
+   "family": "Wagtails and Pipits",
+   "familySci": "Motacillidae",
+   "listName": "Pipit African",
+   "rank": 180,
+   "tier": "Medium",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/321797424/medium.jpg",
+    "attr": "(c) Luca Boscain, some rights reserved (CC BY-NC), uploaded by Luca Boscain",
+    "inat_taxon": 145208
+   }
+  },
+  {
+   "id": "plbpip1",
+   "sci": "Anthus leucophrys",
+   "names": {
+    "en_ZA": "Plain-backed Pipit",
+    "en_IOC": "Plain-backed Pipit",
+    "en": "Plain-backed Pipit",
+    "en_UK": "Plain-backed Pipit"
+   },
+   "family": "Wagtails and Pipits",
+   "familySci": "Motacillidae",
+   "listName": "Pipit Plain backed",
+   "rank": 185,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/478742287/medium.jpeg",
+    "attr": "(c) samzhang, all rights reserved",
+    "inat_taxon": 13708
+   }
+  },
+  {
+   "id": "recflu1",
+   "sci": "Sarothrura rufa",
+   "names": {
+    "en_ZA": "Red-chested Flufftail",
+    "en_IOC": "Red-chested Flufftail",
+    "en": "Red-chested Flufftail",
+    "en_UK": "Red-chested Flufftail"
+   },
+   "family": "Flufftails",
+   "familySci": "Sarothruridae",
+   "listName": "Flufftail",
+   "rank": 189,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/104944631/medium.jpeg",
+    "attr": "(c) nature_with_krista, some rights reserved (CC BY-NC), uploaded by nature_with_krista",
+    "inat_taxon": 352
+   }
+  },
+  {
+   "id": "afffin",
+   "sci": "Lagonosticta rubricata",
+   "names": {
+    "en_ZA": "African Firefinch",
+    "en_IOC": "African Firefinch",
+    "en": "African Firefinch",
+    "en_UK": "African Firefinch"
+   },
+   "family": "Waxbills and Allies",
+   "familySci": "Estrildidae",
+   "listName": "Firefinch African",
+   "rank": 192,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/151897/medium.jpg",
+    "attr": "(c) Martin Heigan, some rights reserved (CC BY-NC-ND)",
+    "inat_taxon": 14053
+   }
+  },
+  {
+   "id": "alpswi1",
+   "sci": "Tachymarptis melba",
+   "names": {
+    "en_ZA": "Alpine Swift",
+    "en_IOC": "Alpine Swift",
+    "en": "Alpine Swift",
+    "en_UK": "Alpine Swift"
+   },
+   "family": "Swifts",
+   "familySci": "Apodidae",
+   "listName": "Swift Alpine",
+   "rank": 199,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/189480813/medium.jpg",
+    "attr": "no rights reserved, uploaded by Paulo Caseirito",
+    "inat_taxon": 72516
+   }
+  },
+  {
+   "id": "lessts1",
+   "sci": "Cecropis abyssinica",
+   "names": {
+    "en_ZA": "Lesser Striped Swallow",
+    "en_IOC": "Lesser Striped Swallow",
+    "en": "Lesser Striped Swallow",
+    "en_UK": "Lesser Striped Swallow"
+   },
+   "family": "Swallows",
+   "familySci": "Hirundinidae",
+   "listName": "Swallow Lesser striped",
+   "rank": 207,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://static.inaturalist.org/photos/252613191/medium.jpeg",
+    "attr": "(c) Liz Falvo, all rights reserved, uploaded by Liz Falvo",
+    "inat_taxon": 144795
+   }
+  },
+  {
+   "id": "zitcis1",
+   "sci": "Cisticola juncidis",
+   "names": {
+    "en_ZA": "Zitting Cisticola",
+    "en_IOC": "Zitting Cisticola",
+    "en": "Zitting Cisticola",
+    "en_UK": "Zitting Cisticola"
+   },
+   "family": "Cisticolas and Allies",
+   "familySci": "Cisticolidae",
+   "listName": "Cisticola Zitting",
+   "rank": 215,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/180576291/medium.jpg",
+    "attr": "(c) Ximo Galarza, some rights reserved (CC BY-NC-SA)",
+    "inat_taxon": 7697
+   }
+  },
+  {
+   "id": "afrswi1",
+   "sci": "Apus barbatus",
+   "names": {
+    "en_ZA": "African Black Swift",
+    "en_IOC": "African Black Swift",
+    "en": "African Swift",
+    "en_UK": "African Swift"
+   },
+   "family": "Swifts",
+   "familySci": "Apodidae",
+   "listName": "Swift Black",
+   "rank": 291,
+   "tier": "Hard",
+   "photo": {
+    "url": "https://inaturalist-open-data.s3.amazonaws.com/photos/102142086/medium.jpg",
+    "attr": "(c) Adam Welz, some rights reserved (CC BY-NC-ND), uploaded by Adam Welz",
+    "inat_taxon": 339935
+   }
+  }
+ ]
+}
