@@ -610,13 +610,13 @@ function renderCard() {
       }).join('');
     ha.hidden = false;
   } else if (!shown && cur.hint > 0) {
-    let h = cur.pair ? '' : `<div class="hint-text">Family: <b>${esc(sp.family)}</b></div>`;
-    if (cur.hint >= 2) {
-      h += '<div class="choices">' + cur.choices.map((id) =>
-        `<button class="choice" data-choice="${id}">${esc(nm(byId[id]))}</button>`).join('') + '</div>';
-    }
-    if (cur.hint >= 3 && sp.photo) h += `<img class="hint-photo" src="${esc(sp.photo.url)}" alt="Photo hint">`;
-    ha.innerHTML = h;
+    // Hints never name the family or show the photo (that gives the answer away):
+    // hint 1 = pick from 4 birds, hint 2 = two of the wrong ones are crossed out.
+    const out = new Set(cur.removed || []);
+    ha.innerHTML = `<div class="hint-text">${cur.pair ? 'Which of these two?' : 'Which one is it?'}</div>
+      <div class="choices">${cur.choices.map((id) => out.has(id)
+        ? `<button class="choice out" disabled>${esc(nm(byId[id]))}</button>`
+        : `<button class="choice" data-choice="${id}">${esc(nm(byId[id]))}</button>`).join('')}</div>`;
     ha.hidden = false;
   } else if (cur.stage === 'graded' && cur.choices) {
     ha.innerHTML = '<div class="choices">' + cur.choices.map((id) => {
@@ -652,7 +652,7 @@ function renderCard() {
   } else if (cur.stage === 'thought') {
     a.innerHTML = renderThought();
   } else if (cur.stage === 'guess') {
-    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 3 ? 'disabled' : ''}>${cur.hint ? 'More hint' : 'Hint'}</button>
+    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>${cur.hint ? 'More hint' : 'Hint'}</button>
       <button class="btn" data-act="reveal">Reveal</button>`;
   } else if (cur.stage === 'revealed') {
     a.innerHTML = '<button class="btn bad" data-act="missed">Missed it</button><button class="btn good" data-act="got">Got it</button>';
@@ -706,7 +706,8 @@ async function onAction(act) {
     newCard();
   } else if (act === 'hint') {
     cur.hint++;
-    if (cur.hint === 2) cur.choices = makeChoices();
+    if (cur.hint === 1) cur.choices = makeChoices();
+    if (cur.hint === 2) cur.removed = shuffle(cur.choices.filter((id) => id !== cur.id)).slice(0, 2);
     renderCard();
   } else if (act === 'reveal') {
     cur.stage = 'revealed';
@@ -721,7 +722,7 @@ async function onAction(act) {
   } else if (act === 'pairTest') {
     stopAudio();
     cur.stage = 'guess';
-    cur.hint = 2;
+    cur.hint = 1;
     cur.choices = shuffle([cur.id, cur.pair]);
     renderCard();
     playRec(currentRec(), $('playBtn'));

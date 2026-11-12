@@ -446,3 +446,5 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
     width: 42px; height: 42px;
   }
 }
+
+.choice.out { opacity: 0.35; text-decoration: line-through; }
