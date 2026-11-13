@@ -451,9 +451,16 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 
 /* Region picker */
 #areaOpts .search { margin-bottom: 4px; }
-.area-row { display: flex; align-items: stretch; gap: 6px; }
-.area-row .opt { flex: 1; min-width: 0; }
+.area-row { display: flex; align-items: stretch; gap: 4px; margin-left: calc(var(--depth, 0) * 16px); }
+.area-row .opt { flex: 1; min-width: 0; text-wrap: pretty; }
+.area-opt .area-where { font-size: 13px; }
 .area-toggle, .area-toggle-space { flex: none; width: 32px; }
+/* Phones: smaller indent and arrow column so deep regions keep a wide card. */
+@media (max-width: 520px) {
+  .area-row { margin-left: calc(var(--depth, 0) * 10px); }
+  .area-toggle, .area-toggle-space { width: 24px; }
+  .area-row .opt { padding: 10px 12px; }
+}
 .area-toggle { border: 0; background: none; color: var(--muted); font-size: 18px; border-radius: 10px; }
 .area-toggle:hover { background: var(--surface-2); }
 

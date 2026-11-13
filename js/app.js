@@ -1544,10 +1544,15 @@ function areaOpt(a, depth, showPath) {
   const sub = a.near
     ? (birdCount(a) ? `${birdCount(a)} birds recorded within ${NEAR_KM} km of you` : `Birds recorded within ${NEAR_KM} km of you (uses your location)`)
     : `${birdCount(a)} birds${a.private ? ' · only you can see this' : ''}`;
-  return `<div class="area-row" style="margin-left:${depth * 16}px">
-    ${kids && !showPath ? `<button class="area-toggle" data-toggle="${a.id}" aria-label="${openAreas.has(a.id) ? 'Close' : 'Open'} ${esc(a.name)}">${openAreas.has(a.id) ? '▾' : '▸'}</button>` : '<span class="area-toggle-space"></span>'}
+  // Search results: name in bold, the regions it sits in as a short grey line (no "Southern Africa").
+  const where = showPath ? areaPath(areaById(a.parent) || {}).split(' › ').slice(1).join(' › ') : '';
+  const toggle = showPath ? ''
+    : kids ? `<button class="area-toggle" data-toggle="${a.id}" aria-label="${openAreas.has(a.id) ? 'Close' : 'Open'} ${esc(a.name)}">${openAreas.has(a.id) ? '▾' : '▸'}</button>`
+    : '<span class="area-toggle-space"></span>';
+  return `<div class="area-row" style="--depth:${depth}">
+    ${toggle}
     <button class="opt area-opt ${a.id === surveyPick.area ? 'on' : ''}" data-area="${a.id}">
-      <b>${esc(showPath ? areaPath(a) : a.name)}</b><span>${esc(sub)}</span></button>
+      <b>${esc(a.name)}</b>${where ? `<span class="area-where">${esc(where)}</span>` : ''}<span>${esc(sub)}</span></button>
   </div>`;
 }
 
