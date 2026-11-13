@@ -456,7 +456,10 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .area-opt .area-where { font-size: 13px; }
 #areaBtn { width: 100%; }
 #areaBtn .change { float: right; color: var(--accent); font-size: 14px; font-weight: 600; }
-.build { text-align: center; color: var(--muted); font-size: 11px; opacity: 0.7; margin: 18px 0 4px; }
+.tabs .build {
+  position: absolute; left: 0; right: 0; bottom: calc(1px + env(safe-area-inset-bottom));
+  text-align: center; font-size: 9px; line-height: 1; color: var(--muted); opacity: 0.4; pointer-events: none;
+}
 .area-toggle, .area-toggle-space { flex: none; width: 32px; }
 /* Phones: smaller indent and arrow column so deep regions keep a wide card. */
 @media (max-width: 520px) {

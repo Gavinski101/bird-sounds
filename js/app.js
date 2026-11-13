@@ -2,8 +2,9 @@ import * as L from './learn.js';
 import * as Sync from './sync.js';
 import { OWNER_HASHES } from './config.js';
 
-// Shown at the bottom of every page; keep equal to the number in sw.js SHELL.
-const BUILD = 23;
+// Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release:
+// patch (0.9.x) for fixes, minor (0.x.0) for new features; 1.0.0 once tested on the phone.
+const VERSION = '0.9.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const BIG_DAY = new Date('2026-12-05T00:00:00');
@@ -1662,7 +1663,7 @@ $('replayWelcome').addEventListener('click', () => {
 });
 
 async function start() {
-  $('buildNo').textContent = `Build ${BUILD}`;
+  $('buildNo').textContent = `v${VERSION}`;
   try {
     const [sp, cl, ar] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),
