@@ -454,6 +454,9 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .area-row { display: flex; align-items: stretch; gap: 4px; margin-left: calc(var(--depth, 0) * 16px); }
 .area-row .opt { flex: 1; min-width: 0; text-wrap: pretty; }
 .area-opt .area-where { font-size: 13px; }
+#areaBtn { width: 100%; }
+#areaBtn .change { float: right; color: var(--accent); font-size: 14px; font-weight: 600; }
+.build { text-align: center; color: var(--muted); font-size: 11px; opacity: 0.7; margin: 18px 0 4px; }
 .area-toggle, .area-toggle-space { flex: none; width: 32px; }
 /* Phones: smaller indent and arrow column so deep regions keep a wide card. */
 @media (max-width: 520px) {

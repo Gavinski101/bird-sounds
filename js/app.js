@@ -2,6 +2,8 @@ import * as L from './learn.js';
 import * as Sync from './sync.js';
 import { OWNER_HASHES } from './config.js';
 
+// Shown at the bottom of every page; keep equal to the number in sw.js SHELL.
+const BUILD = 23;
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const BIG_DAY = new Date('2026-12-05T00:00:00');
@@ -1152,8 +1154,10 @@ function renderSettings() {
   $('intros').checked = S.prefs.intros;
   $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
-  $('areaSel').innerHTML = areaTree().map(({ a, depth }) =>
-    `<option value="${a.id}" ${a.id === currentAreaId() ? 'selected' : ''}>${'\u00a0\u00a0\u00a0'.repeat(depth)}${esc(a.name)}${a.near && !birdCount(a) ? '' : ` (${birdCount(a)} birds)`}</option>`).join('');
+  const ca = areaById(currentAreaId()) || areaById(DEFAULT_AREA);
+  const caWhere = areaPath(areaById(ca.parent) || { name: '' }).split(' › ').slice(1).join(' › ');
+  $('areaBtn').innerHTML = `<b>${esc(ca.name)} <span class="change">Change</span></b>`
+    + (caWhere ? `<span class="area-where">${esc(caWhere)}</span>` : '') + `<span>${birdCount(ca)} birds</span>`;
   $('syncCode').value = exportCode();
   renderAccount();
   updateOfflineInfo();
@@ -1175,11 +1179,32 @@ $('levelSel').addEventListener('change', (e) => {
   toast(added > 0 ? `${LEVELS[e.target.value].label}: ${added} more birds added` : `${LEVELS[e.target.value].label}: birds already in play stay in play`);
 });
 
-$('areaSel').addEventListener('change', async (e) => {
-  if (await chooseArea(e.target.value)) {
+// Settings region picker: the survey's tree + search, shown in a sheet.
+$('areaBtn').addEventListener('click', () => {
+  surveyPick.area = currentAreaId();
+  for (let a = areaById(surveyPick.area); a; a = areaById(a.parent)) if (a.parent) openAreas.add(a.parent);
+  areaQuery = '';
+  $('areaSheetBody').append($('areaOpts'));
+  renderAreaPicker();
+  $('areaSheet').hidden = false;
+  $('areaOpts').querySelector('.on')?.scrollIntoView({ block: 'center' });
+});
+
+function closeAreaSheet() {
+  $('areaSheet').hidden = true;
+  $('surveyDone').before($('areaOpts'));
+}
+
+$('areaSheet').addEventListener('click', async (e) => {
+  if (e.target === $('areaSheet') || e.target.id === 'areaClose') return closeAreaSheet();
+  if (toggleArea(e)) return;
+  const ar = e.target.closest('[data-area]');
+  if (!ar) return;
+  if (ar.dataset.area !== currentAreaId() && await chooseArea(ar.dataset.area)) {
     cur = null;
     toast(`Region: ${area}`);
   }
+  closeAreaSheet();
   renderSettings();
 });
 
@@ -1589,15 +1614,20 @@ function applyLevel(level) {
   L.ensurePool(S.learn, species, { all: !L0.pool });
 }
 
+// Open/close a region in the tree; true when the click was on an arrow.
+function toggleArea(e) {
+  const tg = e.target.closest('[data-toggle]');
+  if (!tg) return false;
+  if (openAreas.has(tg.dataset.toggle)) openAreas.delete(tg.dataset.toggle);
+  else openAreas.add(tg.dataset.toggle);
+  renderAreaPicker();
+  return true;
+}
+
 $('survey').addEventListener('click', (e) => {
   const lv = e.target.closest('[data-level]');
   const ar = e.target.closest('[data-area]');
-  const tg = e.target.closest('[data-toggle]');
-  if (tg) {
-    if (openAreas.has(tg.dataset.toggle)) openAreas.delete(tg.dataset.toggle);
-    else openAreas.add(tg.dataset.toggle);
-    return renderAreaPicker();
-  }
+  if (toggleArea(e)) return;
   if (lv) surveyPick.level = lv.dataset.level;
   if (ar) surveyPick.area = ar.dataset.area;
   if (lv) renderSurvey();
@@ -1632,6 +1662,7 @@ $('replayWelcome').addEventListener('click', () => {
 });
 
 async function start() {
+  $('buildNo').textContent = `Build ${BUILD}`;
   try {
     const [sp, cl, ar] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),

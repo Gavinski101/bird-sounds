@@ -85,8 +85,8 @@
         <p class="muted small">Moving to a higher level adds birds straight away. Moving down keeps the birds already in play.</p>
         <label class="small muted" for="levelSel">How well do you know bird calls?</label>
         <select id="levelSel"></select>
-        <label class="small muted" for="areaSel" style="display:block;margin-top:10px">Region: pick a whole region or a smaller area inside it</label>
-        <select id="areaSel"></select>
+        <p class="small muted" style="margin:10px 0 4px">Region: pick a whole region or a smaller area inside it</p>
+        <button class="opt area-opt block" id="areaBtn" type="button"></button>
       </div>
       <div class="panel">
         <h2>Bird names</h2>
@@ -125,10 +125,11 @@
         <h2>About</h2>
         <p>Sounds from <a href="https://xeno-canto.org" target="_blank" rel="noopener">xeno-canto.org</a>, shared by their recordists under Creative Commons licences (credited on each bird).
         Photos from <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a>. Names from the <a href="https://ebird.org" target="_blank" rel="noopener">eBird</a> taxonomy, as used by Merlin.
-        Tiers come from iNaturalist records around George and Wilderness.</p>
+        How common each bird is comes from iNaturalist records in the region you pick.</p>
         <p class="muted">A free, personal, non-commercial learning app. <a href="privacy.html">Privacy policy</a></p>
       </div>
     </section>
+    <p class="build" id="buildNo"></p>
   </main>
 
   <nav class="tabs" aria-label="Sections">
@@ -177,6 +178,16 @@
         <button type="submit" class="btn block" id="pwSave">Save new password</button>
       </form>
       <button class="btn block ghost" id="pwCancel">Not now</button>
+    </div>
+  </div>
+
+  <!-- Region picker (Settings); borrows #areaOpts from the survey -->
+  <div class="sheet-bg" id="areaSheet" hidden>
+    <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="areaTitle">
+      <h2 id="areaTitle">Choose a region</h2>
+      <p class="muted small" style="margin:-4px 0 8px">Tap a region, or open it (▸) to choose a smaller area inside it.</p>
+      <div class="opts" id="areaSheetBody"></div>
+      <button class="btn block ghost" id="areaClose">Close</button>
     </div>
   </div>
 
