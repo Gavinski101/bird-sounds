@@ -4,7 +4,7 @@ import { OWNER_HASHES } from './config.js';
 
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release:
 // patch (0.9.x) for fixes, minor (0.x.0) for new features; 1.0.0 once tested on the phone.
-const VERSION = '0.9.1';
+const VERSION = '0.9.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const BIG_DAY = new Date('2026-12-05T00:00:00');
@@ -314,14 +314,17 @@ $('account').addEventListener('click', async (e) => {
       await Sync.deleteAccount();
       S.sync = {};
       saveLocal();
-      renderAccount();
+      showView('study');
+      openWelcome();
       toast('Account deleted');
     } else if (id === 'signOutBtn') {
       if (!confirm('Sign out? Your progress stays on this device and in your account.')) return;
       await Sync.signOut();
       S.sync = {};
       saveLocal();
-      renderAccount();
+      // Back to the welcome screen (sign in again, or carry on without an account), like first open.
+      showView('study');
+      openWelcome();
       toast('Signed out');
     }
   } catch (err) {
