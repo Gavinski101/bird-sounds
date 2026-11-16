@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.2.8';
+const VERSION = '1.2.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -340,16 +340,47 @@ const nm = (sp) => sp.names[S.prefs.nameSet] || sp.names.en_ZA;
 // Ratings and flags are keyed by the recording: the XC number, or "inat-<id>" for iNaturalist.
 const recKey = (r) => (r.xc != null ? String(r.xc) : r.key);
 const recPref = (r) => S.recs[recKey(r)] || {};
-const isOff = (r) => !!recPref(r).flag || (recPref(r).stars ?? 3) <= 2;
 
-// The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first,
-// otherwise in the order the build script ranked them.
+// Shared verdicts: every signed-in user's flags and ratings, totalled by the database.
+// A recording 2+ people flagged (or 2+ rated 1-2 on average) is dropped for everyone, and
+// the average rating orders the rest. Your own rating, flag or "Use anyway" always wins.
+const SCORES_KEY = 'bird-sounds-scores';
+const SHARED_MIN = 2;
+let scores = {};
+try { scores = JSON.parse(localStorage.getItem(SCORES_KEY))?.map || {}; } catch { /* none yet */ }
+const shared = (r) => scores[recKey(r)];
+const sharedOff = (r) => { const c = shared(r); return !!c && (c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2)); };
+const sharedStars = (r) => { const c = shared(r); return c && c.raters >= SHARED_MIN ? c.avg : null; };
+
+async function loadScores(force = false) {
+  if (!Sync.configured || !navigator.onLine) return;
+  try {
+    const c = JSON.parse(localStorage.getItem(SCORES_KEY));
+    if (!force && c && Date.now() - c.at < 6 * 3600e3) return;
+  } catch { /* fetch */ }
+  try {
+    const rows = await Sync.recScores();
+    scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars }]));
+    localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
+  } catch (e) { console.warn('recording scores', e); }
+}
+
+function isOff(r) {
+  const p = recPref(r);
+  if (p.flag || (p.stars ?? 3) <= 2) return true;
+  if (p.stars || p.keep) return false;
+  return sharedOff(r);
+}
+
+// The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first
+// (your rating, else everyone's), otherwise in the order the build script ranked them.
+const recStars = (r) => recPref(r).stars ?? sharedStars(r) ?? 3;
 function activeRecs(id) {
   const all = calls[id] || [];
   const ok = all.filter((r) => !isOff(r));
   return (ok.length ? ok : all)
     .map((r, i) => ({ r, i }))
-    .sort((a, b) => (recPref(b.r).stars ?? 3) - (recPref(a.r).stars ?? 3) || a.i - b.i)
+    .sort((a, b) => recStars(b.r) - recStars(a.r) || a.i - b.i)
     .slice(0, 2)
     .map((x) => x.r);
 }
@@ -392,6 +423,9 @@ const TIPS = {
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Which of this bird's 2 study recordings is playing, and what kind of sound it is (song, call, alarm...).",
   family: 'The bird family this species belongs to.',
+  soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
+  sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
+  sharedStars: 'Average star rating from everyone signed in who rated this recording. Your own rating counts first for you.',
   inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',
   status: {
     mastered: 'Mastered: you know this one. It comes back less and less often to check you still remember it.',
@@ -480,17 +514,33 @@ const currentStreak = () => streakState().run;
 const audio = $('audio');
 
 // Volume is per device (phone and laptop differ), so it is kept outside the synced store.
-// iOS ignores audio.volume (hardware buttons only), so the slider is hidden there.
+// iOS ignores audio.volume (hardware buttons only) and newer versions still report the set
+// value, so the slider is hidden on iPhone/iPad by name as well as by the test.
+// The slider is cubed into audio.volume: ears hear loudness on a log scale, so a straight
+// 0-1 slider barely changed anything over its top half.
 const VOL_KEY = 'bird-sounds-volume';
-const volWorks = (() => { const t = new Audio(); t.volume = 0.5; return t.volume === 0.5; })();
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const volWorks = !isIOS && (() => { const t = new Audio(); t.volume = 0.5; return t.volume === 0.5; })();
 let volume = 1;
 try { const v = parseFloat(localStorage.getItem(VOL_KEY)); if (v >= 0 && v <= 1) volume = v; } catch { /* private mode */ }
-audio.volume = volume;
+const applyVolume = () => { audio.volume = volume ** 3; };
+applyVolume();
 $('volume').value = volume;
 $('volRow').hidden = !volWorks;
+const volIcon = () => $('volBtn').classList.toggle('muted', volume === 0);
+volIcon();
 $('volume').addEventListener('input', (e) => {
-  audio.volume = volume = parseFloat(e.target.value);
+  volume = parseFloat(e.target.value);
+  applyVolume();
+  volIcon();
   try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* private mode */ }
+});
+$('volBtn').addEventListener('click', () => {
+  const open = $('volRow').classList.toggle('open');
+  $('volBtn').setAttribute('aria-expanded', open);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#volRow')) $('volRow').classList.remove('open');
 });
 let audioKey = null;
 let playSeq = 0; // bumps on every new play/stop, so a slow load from an earlier card can't take over
@@ -660,7 +710,9 @@ function renderCard() {
     // Hints never name the family or show the photo (that gives the answer away):
     // hint 1 = pick from 4 birds, hint 2 = two of the wrong ones are crossed out.
     const out = new Set(cur.removed || []);
-    ha.innerHTML = `<div class="hint-text">${cur.pair ? 'Which of these two?' : 'Which one is it?'}</div>
+    const clue = hintClue(cur.id, cur.choices);
+    ha.innerHTML = (clue ? `<div class="sound-tip" data-tip="${esc(TIPS.soundClue)}"><b>Sound clue:</b> ${esc(clue)}</div>` : '')
+      + `<div class="hint-text">${cur.pair ? 'Which of these two?' : 'Which one is it?'}</div>
       <div class="choices">${cur.choices.map((id) => out.has(id)
         ? `<button class="choice out" disabled>${esc(nm(byId[id]))}</button>`
         : `<button class="choice" data-choice="${id}">${esc(nm(byId[id]))}</button>`).join('')}</div>`;
@@ -878,6 +930,7 @@ function setStars(xc, stars) {
 function setFlag(xc, flag) {
   const p = (S.recs[xc] ||= {});
   p.flag = flag;
+  p.keep = flag ? undefined : true; // un-flagging = "use it", even if others flagged it
   save();
 }
 
@@ -1055,6 +1108,17 @@ $('birdList').addEventListener('click', (e) => {
   if (row) openBird(row.dataset.bird);
 });
 
+// The bird's memory aid as a hint clue. Words found in any option's name (e.g. "canary",
+// "swee") are blanked so the clue never names the answer or its family outright.
+function hintClue(id, choices) {
+  const tip = guide.birds[id]?.tip;
+  if (!tip) return '';
+  const words = new Set((choices || [id]).flatMap((c) => [...Object.values(byId[c]?.names || {}), byId[c]?.family || ''])
+    .flatMap((n) => n.toLowerCase().split(/[^a-z]+/)).flatMap((w) => [w, w.replace(/e?s$/, '')]).filter((w) => w.length >= 4));
+  const hide = (w) => { const l = w.toLowerCase().replace(/'s$/, ''); return words.has(l) || words.has(l.replace(/e?s$/, '')); };
+  return tip.replace(/[A-Za-z']+/g, (w) => (hide(w) ? '…' : w));
+}
+
 // Memory aid and the user's OWN mix-ups (2+ times). Only ever shown after the answer.
 // The guide's sound-alike pairs stay behind the scenes (order, hints): shown as text they
 // read as if everyone confuses those birds.
@@ -1093,16 +1157,18 @@ function openBird(id) {
     ${soundTipHtml(id) ? `<div class="sound-tip">${soundTipHtml(id)}</div>` : ''}
     ${confusedHtml(id)}
     <h2 style="margin-top:14px">Recordings</h2>
-    <p class="small muted">The two marked "In use" are the ones you study. Rate or flag to change them.</p>`;
+    <p class="small muted">The two marked "In use" are the ones you study. Rate or flag to change them. Signed-in users' flags and ratings also help pick recordings for everyone.</p>`;
   for (const r of calls[id] || []) {
     const pref = recPref(r);
     html += `<div class="rec-card ${isOff(r) ? 'off' : ''}">
       <div class="rc-top">
         <button class="mini-play" id="dp-${esc(recKey(r))}" data-dplay="${esc(recKey(r))}" aria-label="Play">${PLAY_SVG}</button>
         <div class="nm">${esc(r.type)} · ${r.secs ? `${r.secs}s ` : ''}${active.has(recKey(r)) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
-          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}</div>
+          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}
+          ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span> <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
       </div>
       <div class="stars small" data-rate="${esc(recKey(r))}"></div>
+      ${shared(r)?.raters ? `<div class="small muted" data-tip="${esc(TIPS.sharedStars)}">Everyone: ${shared(r).avg.toFixed(1)}★ from ${shared(r).raters} ${shared(r).raters === 1 ? 'person' : 'people'}</div>` : ''}
       <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
       ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Not distinctive</button>`}
     </div>`;
@@ -1846,6 +1912,7 @@ async function start() {
     else newCard();
     if (back === 'recovery') openPwSheet();
     syncNow({ firstSignIn: !!back });
+    loadScores();
     Sync.refreshProfile().then(renderAvatar).catch(() => {});
     if (await updateOwner()) { applyArea(); renderTop(); }
   } catch (e) {

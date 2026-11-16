@@ -135,9 +135,16 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 @keyframes pulse { from { transform: scale(0.95); opacity: 0.6; } to { transform: scale(1.18); opacity: 0; } }
 
 .bar { width: 100%; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
-.vol { display: flex; align-items: center; gap: 8px; width: min(220px, 70%); color: var(--muted); }
-.vol svg { width: 20px; height: 20px; flex: none; fill: currentColor; }
-.vol input { flex: 1; accent-color: var(--accent); }
+.bar-row { display: flex; align-items: center; gap: 6px; width: 100%; }
+.bar-row .bar { flex: 1; }
+/* Volume: a small speaker icon; the slider slides out on hover (desktop) or tap (phone). */
+.vol { display: inline-flex; align-items: center; }
+.vol-btn { background: none; border: 0; padding: 4px; color: var(--muted); cursor: pointer; display: flex; border-radius: 50%; }
+.vol-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.vol-btn.muted { opacity: 0.45; }
+.vol input { width: 0; opacity: 0; margin: 0; accent-color: var(--accent); transition: width 0.2s, opacity 0.2s, margin 0.2s; }
+.vol.open input { width: 90px; opacity: 1; margin-left: 4px; }
+@media (hover: hover) { .vol:hover input, .vol:focus-within input { width: 90px; opacity: 1; margin-left: 4px; } }
 .bar-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s linear; }
 
 .rec-line { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 14px; }

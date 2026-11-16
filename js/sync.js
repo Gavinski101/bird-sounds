@@ -147,6 +147,12 @@ export async function deleteAccount() {
   saveAuth(null);
 }
 
+// Everyone's flags and star ratings per recording, totalled in the database (rec_scores in
+// supabase/setup.sql). Only totals, never who voted, so it works signed out too.
+export async function recScores() {
+  return call('/rest/v1/rpc/rec_scores', { method: 'POST', body: {} });
+}
+
 export async function signOut() {
   try { await call('/auth/v1/logout', { method: 'POST', token: await token() }); } catch { /* sign out locally anyway */ }
   saveAuth(null);
