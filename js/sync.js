@@ -148,7 +148,7 @@ export async function deleteAccount() {
 }
 
 // Everyone's flags and star ratings per recording, totalled in the database (rec_scores in
-// supabase/setup.sql). Only totals, never who voted, so it works signed out too.
+// supabase/3-shared-recording-scores.sql). Only totals, never who voted, so it works signed out too.
 export async function recScores() {
   return call('/rest/v1/rpc/rec_scores', { method: 'POST', body: {} });
 }

@@ -1,3 +1,4 @@
+-- Saved in the Supabase SQL editor as "4 - Bird names". Regenerate when data/species.json changes.
 -- Bird names for the usage reports (reports.sql), so they show names instead of eBird codes.
 -- Generated from data/species.json (en_ZA names). Safe to run again: it replaces the list.
 -- Not readable from the app (row level security on, no policies); only the SQL editor sees it.
