@@ -273,7 +273,14 @@ textarea { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .stat { background: var(--surface); border-radius: 14px; padding: 12px; text-align: center; box-shadow: var(--shadow); }
 .stat b { display: block; font-size: 22px; line-height: 1.1; }
 .stat span { color: var(--muted); font-size: 13px; }
-.countdown { text-align: center; font-weight: 650; margin-bottom: 12px; color: var(--accent); }
+.sound-tip { text-align: left; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin: 10px 0 6px; font-size: 14px; line-height: 1.45; }
+.sound-tip > div + div { margin-top: 6px; }
+.mix-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.mix-row:first-of-type { border-top: 0; }
+.mix-pair { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.mix-bird { display: flex; align-items: center; gap: 8px; }
+.mix-bird .nm { text-align: left; }
+.mix-row > .small { flex: none; text-align: right; }
 .tier-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--surface-2); margin: 6px 0 4px; }
 .tier-bar .m { background: var(--good); }
 .tier-bar .l { background: var(--accent); opacity: 0.45; }

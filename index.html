@@ -51,6 +51,7 @@
           <div class="reveal-name" id="revealName"></div>
           <div class="reveal-sci" id="revealSci"></div>
           <div class="reveal-meta" id="revealMeta"></div>
+          <div class="sound-tip" id="revealTip" hidden></div>
           <div class="credit" id="revealCredit"></div>
         </div>
 
@@ -85,6 +86,8 @@
         <p class="muted small">Moving to a higher level adds birds straight away. Moving down keeps the birds already in play.</p>
         <label class="small muted" for="levelSel">How well do you know bird calls?</label>
         <select id="levelSel"></select>
+        <label class="small muted" for="orderSel" style="display:block;margin-top:10px"><span id="orderLabel">Which birds come first?</span></label>
+        <select id="orderSel"></select>
         <p class="small muted" style="margin:10px 0 4px">Region: pick a whole region or a smaller area inside it</p>
         <button class="opt area-opt block" id="areaBtn" type="button"></button>
       </div>
@@ -159,6 +162,8 @@
       <p class="muted">So the app starts at the right level and region. You can change both later in Settings.</p>
       <h2 class="survey-q">How well do you know bird calls?</h2>
       <div class="opts" id="levelOpts"></div>
+      <h2 class="survey-q">Which birds first?</h2>
+      <div class="opts" id="orderOpts"></div>
       <h2 class="survey-q">Which birds do you want to learn?</h2>
       <p class="muted small" style="text-align:left;margin:-4px 0 8px">Pick a whole region or open it (▸) to choose a smaller area inside it.
         The commonest birds there come first.</p>

@@ -3,6 +3,13 @@
 Version numbers: major.minor.patch. Patch = fixes, minor = new features, major = big changes.
 1.0.0 is the first public version.
 
+## 2.1.0 (2026-11-16)
+- New learning order "Easiest to tell apart first" (default; also in the survey and Settings): common birds with distinctive calls come first, and birds that sound alike are spread out.
+- "Remember it" memory aids and "Can sound like" notes after you answer and on each bird's page.
+- Progress: "Birds you mix up" and "Birds you miss most", with play buttons to compare.
+- Hints use sound-alike birds as choices.
+- Big Bird Day countdown removed.
+
 ## 2.0.5 (2026-11-16)
 - Version numbering starts at 1.0.0 for the first public version.
 

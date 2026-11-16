@@ -5,10 +5,9 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md: patch (x.y.Z) for fixes, minor (x.Y.0) for new features,
 // major (X.0.0) for a big change. 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.5';
+const VERSION = '2.1.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
-const BIG_DAY = new Date('2026-12-05T00:00:00');
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
 const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
@@ -22,6 +21,7 @@ let areas = [];
 let byId = {};
 let calls = {};
 let nameSets = {};
+let guide = { birds: {}, similar: [] }; // data/guide.json: ease by ear, memory aids, sound-alike pairs
 let area = '';
 let areaTotal = 0;
 let S = loadStore();
@@ -378,6 +378,11 @@ function shuffle(a) {
 }
 
 const TIPS = {
+  order: 'The order new birds join your study set. "Easiest to tell apart first" starts with common birds that have distinctive calls and spreads out birds that sound alike.',
+  memoryAid: 'A common way birders remember this call. Only shown after you answer.',
+  soundsLike: 'Birds whose calls are easy to mix up with this one. They are kept apart when new birds are added, and used as choices in hints.',
+  mixUps: 'Pairs you have confused: from wrong picks in hints and your answers to "What did you think it was?" after a miss. Play both to compare.',
+  hardest: 'Birds you have met and missed at least twice, with the highest share of misses first.',
   area: 'Your home area. Beginner to Hard tiers are based on how often each bird is recorded around here.',
   inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
@@ -676,6 +681,8 @@ function renderCard() {
     $('revealName').textContent = nm(sp);
     $('revealSci').textContent = sp.sci;
     $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}`;
+    $('revealTip').innerHTML = soundTipHtml(sp.id);
+    $('revealTip').hidden = !$('revealTip').innerHTML;
     $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? `Photo: ${esc(sp.photo.attr)}` : '');
   }
 
@@ -716,7 +723,8 @@ function renderThought() {
 function makeChoices() {
   const sp = byId[cur.id];
   const pool = new Set(S.learn.pool);
-  const confused = L.confusedWith(S.learn, sp.id).map((c) => byId[c.id]).filter(Boolean);
+  const confused = [...new Set([...L.confusedWith(S.learn, sp.id).map((c) => c.id), ...similarTo(sp.id)])]
+    .map((id) => byId[id]).filter(Boolean);
   const confusedIds = new Set(confused.map((x) => x.id));
   const others = species.filter((x) => x.id !== sp.id && !confusedIds.has(x.id));
   const sameFam = shuffle(others.filter((x) => x.familySci === sp.familySci));
@@ -1005,7 +1013,7 @@ function renderBirds() {
   const match = (sp) => !q || [...Object.values(sp.names), sp.sci, sp.listName, sp.family].some((v) => v.toLowerCase().includes(q));
   let html = '';
   for (const tier of TIER_ORDER) {
-    const list = species.filter((sp) => sp.tier === tier && match(sp));
+    const list = species.filter((sp) => sp.tier === tier && match(sp)).sort((x, y) => x.rank - y.rank);
     if (!list.length) continue;
     html += `<div class="tier-head">${tier}<span>${list.length} birds</span></div>`;
     for (const sp of list) {
@@ -1033,6 +1041,14 @@ $('birdList').addEventListener('click', (e) => {
   if (row) openBird(row.dataset.bird);
 });
 
+// Memory aid and sound-alikes. Only ever shown after the answer (reveal, intro, bird page).
+function soundTipHtml(id) {
+  const tip = guide.birds[id]?.tip;
+  const alike = similarTo(id);
+  return (tip ? `<div data-tip="${esc(TIPS.memoryAid)}"><b>Remember it:</b> ${esc(tip)}</div>` : '')
+    + (alike.length ? `<div data-tip="${esc(TIPS.soundsLike)}"><b>Can sound like:</b> ${alike.map((x) => esc(nm(byId[x]))).join(', ')}</div>` : '');
+}
+
 function confusedHtml(id) {
   const list = L.confusedWith(S.learn, id).filter((c) => byId[c.id]).slice(0, 5);
   if (!list.length) return '';
@@ -1058,6 +1074,7 @@ function openBird(id) {
     ${others.length ? `<div class="detail-names">Also: ${[...new Set(others)].join(', ')}</div>` : ''}
     <div class="reveal-meta"><span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, id))}</div>
     ${b && (b.right || b.wrong) ? `<p class="small muted" style="text-align:center">Right ${b.right} · Missed ${b.wrong}</p>` : ''}
+    ${soundTipHtml(id) ? `<div class="sound-tip">${soundTipHtml(id)}</div>` : ''}
     ${confusedHtml(id)}
     <h2 style="margin-top:14px">Recordings</h2>
     <p class="small muted">The two marked "In use" are the ones you study. Rate or flag to change them.</p>`;
@@ -1110,12 +1127,48 @@ $('birdSheet').addEventListener('click', (e) => {
 
 // ---------- progress view ----------
 
+const mixBird = (id) => `<div class="mix-bird"><button class="mini-play" data-mplay="${id}" aria-label="Play ${esc(nm(byId[id]))}">${PLAY_SVG}</button>
+  <button class="link nm" data-pbird="${id}">${esc(nm(byId[id]))}</button></div>`;
+
+// Pairs you've mixed up (wrong hint picks and "What did you think it was?"), most first.
+function mixUpsHtml() {
+  const pairs = {};
+  for (const [heard, row] of Object.entries(S.learn.mix || {})) {
+    for (const [thought, n] of Object.entries(row)) {
+      if (!byId[heard] || !byId[thought]) continue;
+      const key = [heard, thought].sort().join('|');
+      pairs[key] = (pairs[key] || 0) + n;
+    }
+  }
+  const top = Object.entries(pairs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const body = top.length
+    ? top.map(([key, n]) => {
+      const [a, b] = key.split('|');
+      return `<div class="mix-row"><div class="mix-pair">${[a, b].map(mixBird).join('')}</div>
+        <span class="small muted">${n}×</span></div>`;
+    }).join('')
+    : '<p class="muted small">None yet. When you miss a bird, use a hint or answer "What did you think it was?" and the app learns which birds you mix up.</p>';
+  return `<div class="panel"><h2><span data-tip="${esc(TIPS.mixUps)}">Birds you mix up</span></h2>${body}</div>`;
+}
+
+// Met birds you get wrong most often (2+ misses, by share of misses).
+function hardestHtml() {
+  const list = Object.entries(S.learn.birds || {})
+    .filter(([id, b]) => byId[id] && (b.wrong || 0) >= 2)
+    .map(([id, b]) => ({ id, right: b.right || 0, wrong: b.wrong, share: b.wrong / ((b.right || 0) + b.wrong) }))
+    .sort((a, b) => b.share - a.share || b.wrong - a.wrong)
+    .slice(0, 8);
+  if (!list.length) return '';
+  return `<div class="panel"><h2><span data-tip="${esc(TIPS.hardest)}">Birds you miss most</span></h2>`
+    + list.map((x) => `<div class="mix-row"><div class="mix-pair">${mixBird(x.id)}</div>
+      <span class="small muted">right ${x.right} · missed ${x.wrong}</span></div>`).join('')
+    + '</div>';
+}
+
 function renderProgress() {
   const s = L.summary(S.learn, species);
-  const days = Math.ceil((BIG_DAY - new Date()) / 864e5);
   const st = currentStreak();
-  let html = days >= 0 ? `<div class="countdown">${days === 0 ? 'Big Bird Day is today!' : `${days} day${days === 1 ? '' : 's'} to Big Bird Day`}</div>` : '';
-  html += `<div class="big-stats">
+  let html = `<div class="big-stats">
     <div class="stat" data-tip="${esc(birdListTip('mastered'))}"><b>${s.mastered}</b><span>mastered</span></div>
     <div class="stat" data-tip="${esc(birdListTip('met'))}"><b>${s.met}</b><span>met</span></div>
     <div class="stat" data-tip="${esc(birdListTip('inPlay'))}"><b>${s.inPlay}</b><span>in play</span></div>
@@ -1132,10 +1185,16 @@ function renderProgress() {
       <div class="legend"><span data-tip="${esc(TIPS.status.mastered)}">Mastered ${t.mastered}</span><span data-tip="${esc(TIPS.status.learning)}">Learning ${t.learning + t.new}</span><span data-tip="${esc(TIPS.status.locked)}">Not yet ${t.locked}</span></div>
     </div>`;
   }
+  html += mixUpsHtml() + hardestHtml();
+  const distinct = (S.prefs.order || 'distinct') === 'distinct';
   html += `<div class="panel">
     <h2>How birds are added</h2>
-    <p class="muted small">You start with the 20 most common birds around ${esc(area)}. Each right answer moves a bird toward mastered (3 clean answers, or 6 with hints).
-    When fewer than 8 birds are still being learned, the next 5 most common are added. Missed birds come back after a few cards; mastered birds come back less and less often.</p>
+    <p class="muted small">${distinct
+    ? `You start with common birds around ${esc(area)} that have distinctive calls. Birds that sound alike (one family, or pairs people often mix up) are spread out and come later.`
+    : `You start with the most common birds around ${esc(area)}.`}
+    Each right answer moves a bird toward mastered (3 clean answers, or 6 with hints).
+    When fewer than 8 birds are still being learned, the next 5 are added, but not while 3 or more birds you've met are still a struggle.
+    Missed birds come back after a few cards; mastered birds come back less and less often. Change the order in Settings.</p>
     ${s.inPlay < species.length ? '<button class="btn block ghost" id="unlockAll">Add all birds now</button>' : ''}
   </div>
   <p class="small muted" style="text-align:center">${s.answered} answers so far</p>`;
@@ -1150,6 +1209,13 @@ function renderProgress() {
   });
 }
 
+$('progress').addEventListener('click', (e) => {
+  const p = e.target.closest('[data-mplay]');
+  if (p) { const r = activeRecs(p.dataset.mplay)[0]; return r && playRec(r, p); }
+  const b = e.target.closest('[data-pbird]');
+  if (b) openBird(b.dataset.pbird);
+});
+
 // ---------- settings ----------
 
 function renderSettings() {
@@ -1159,6 +1225,9 @@ function renderSettings() {
   $('intros').checked = S.prefs.intros;
   $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+  $('orderLabel').dataset.tip = TIPS.order;
+  $('orderSel').innerHTML = Object.entries(ORDERS).map(([k, v]) =>
+    `<option value="${k}" ${k === (S.prefs.order || 'distinct') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
   const ca = areaById(currentAreaId()) || areaById(DEFAULT_AREA);
   const caWhere = areaPath(areaById(ca.parent) || { name: '' }).split(' › ').slice(1).join(' › ');
   $('areaBtn').innerHTML = `<b>${esc(ca.name)} <span class="change">Change</span></b>`
@@ -1182,6 +1251,13 @@ $('levelSel').addEventListener('change', (e) => {
   renderTop();
   const added = S.learn.pool.length - before;
   toast(added > 0 ? `${LEVELS[e.target.value].label}: ${added} more birds added` : `${LEVELS[e.target.value].label}: birds already in play stay in play`);
+});
+
+$('orderSel').addEventListener('change', (e) => {
+  S.prefs.order = e.target.value;
+  applyArea();
+  save();
+  toast(`${ORDERS[e.target.value].label}: birds already in play stay in play`);
 });
 
 // Settings region picker: the survey's tree + search, shown in a sheet.
@@ -1306,6 +1382,47 @@ async function chooseArea(id) {
   return true;
 }
 
+// The order new birds join your study set (learn.js adds them in `species` order).
+// 'distinct' (default): commonness weighted by how easy the bird is to tell apart by ear
+// (data/guide.json), then spread out so birds of one family or sound-alikes don't arrive
+// together. 'common': plain commonness rank.
+const ORDERS = {
+  distinct: { label: 'Easiest to tell apart first', desc: 'Common birds with distinctive calls first. Birds that sound alike are spread out and added later.' },
+  common: { label: 'Most common first', desc: 'Strictly the most recorded birds in your region first, however alike they sound.' },
+};
+const EASE_FACTOR = { 1: 0.4, 2: 1, 3: 1.8, 4: 2.5 };
+const SPREAD = 6; // a new bird avoids the family / sound-alikes of the last 6 added
+
+const easeOf = (id) => guide.birds[id]?.ease || 2;
+
+// Sound-alike pairs: hand-made ones plus pairs you've mixed up twice or more.
+function soundAlikes() {
+  const set = new Set();
+  const add = (a, b) => { set.add(`${a}|${b}`); set.add(`${b}|${a}`); };
+  for (const [a, b] of guide.similar || []) add(a, b);
+  for (const [heard, row] of Object.entries(S.learn.mix || {})) {
+    for (const [thought, n] of Object.entries(row)) if (n >= 2) add(heard, thought);
+  }
+  return set;
+}
+
+function learnOrder(list) {
+  if ((S.prefs.order || 'distinct') !== 'distinct') return list;
+  const queue = [...list].sort((x, y) => x.rank * EASE_FACTOR[easeOf(x.id)] - y.rank * EASE_FACTOR[easeOf(y.id)]);
+  const alike = soundAlikes();
+  const out = [];
+  while (queue.length) {
+    const last = out.slice(-SPREAD);
+    let i = queue.slice(0, 15).findIndex((b) => !last.some((o) => o.familySci === b.familySci || alike.has(`${o.id}|${b.id}`)));
+    if (i < 0) i = 0;
+    out.push(queue.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+// Birds that can sound like this one (hand-made pairs only), for the reveal and bird page.
+const similarTo = (id) => (guide.similar || []).flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : [])).filter((x) => byId[x]);
+
 function tierFor(rank) {
   return rank <= 40 ? 'Beginner' : rank <= 100 ? 'Easy' : rank <= 180 ? 'Medium' : 'Hard';
 }
@@ -1316,10 +1433,10 @@ function applyArea() {
   if (!a || !birdCount(a)) a = areaById(DEFAULT_AREA); // e.g. Near me before the location is known
   area = a.name;
   areaTotal = a.totalSpecies;
-  species = allSpecies
+  species = learnOrder(allSpecies
     .filter((b) => a.ranks[b.id] != null)
     .map((b) => ({ ...b, rank: a.ranks[b.id], tier: tierFor(a.ranks[b.id]) }))
-    .sort((x, y) => x.rank - y.rank);
+    .sort((x, y) => x.rank - y.rank));
   byId = { ...Object.fromEntries(allSpecies.map((b) => [b.id, b])), ...Object.fromEntries(species.map((b) => [b.id, b])) };
 }
 
@@ -1541,18 +1658,18 @@ function closeWelcome() {
 // ---------- survey (experience + area) ----------
 
 const LEVELS = {
-  new: { label: 'New to bird calls', desc: 'Start with the 10 commonest birds. Each new bird is introduced before you are tested on it.', pool: 10, intros: true },
-  some: { label: 'I know a few calls', desc: 'Start with the 20 commonest birds, with an introduction for each new one.', pool: 20, intros: true },
-  good: { label: 'I know most common calls', desc: 'Start with the 40 commonest birds, with introductions.', pool: 40, intros: true },
+  new: { label: 'New to bird calls', desc: 'Start with 10 birds. Each new bird is introduced before you are tested on it.', pool: 10, intros: true },
+  some: { label: 'I know a few calls', desc: 'Start with 20 birds, with an introduction for each new one.', pool: 20, intros: true },
+  good: { label: 'I know most common calls', desc: 'Start with 40 birds, with introductions.', pool: 40, intros: true },
   expert: { label: 'Experienced', desc: 'All birds in play from the start, no introductions: straight to testing.', pool: 0, intros: false },
 };
 
 const overlayOpen = () => !$('welcome').hidden || !$('survey').hidden;
 const needsSurvey = () => !S.prefs.surveyDone;
-let surveyPick = { level: 'some', area: DEFAULT_AREA };
+let surveyPick = { level: 'some', area: DEFAULT_AREA, order: 'distinct' };
 
 function openSurvey() {
-  surveyPick = { level: S.prefs.level || 'some', area: currentAreaId() };
+  surveyPick = { level: S.prefs.level || 'some', area: currentAreaId(), order: S.prefs.order || 'distinct' };
   renderSurvey();
   $('survey').hidden = false;
 }
@@ -1561,6 +1678,8 @@ function renderSurvey() {
   for (let a = areaById(surveyPick.area); a; a = areaById(a.parent)) if (a.parent) openAreas.add(a.parent);
   $('levelOpts').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<button class="opt ${k === surveyPick.level ? 'on' : ''}" data-level="${k}"><b>${esc(v.label)}</b><span>${esc(v.desc)}</span></button>`).join('');
+  $('orderOpts').innerHTML = Object.entries(ORDERS).map(([k, v]) =>
+    `<button class="opt ${k === surveyPick.order ? 'on' : ''}" data-order="${k}"><b>${esc(v.label)}${k === 'distinct' ? ' (recommended)' : ''}</b><span>${esc(v.desc)}</span></button>`).join('');
   renderAreaPicker();
 }
 
@@ -1633,6 +1752,8 @@ $('survey').addEventListener('click', (e) => {
   const lv = e.target.closest('[data-level]');
   const ar = e.target.closest('[data-area]');
   if (toggleArea(e)) return;
+  const od = e.target.closest('[data-order]');
+  if (od) { surveyPick.order = od.dataset.order; return renderSurvey(); }
   if (lv) surveyPick.level = lv.dataset.level;
   if (ar) surveyPick.area = ar.dataset.area;
   if (lv) renderSurvey();
@@ -1643,6 +1764,7 @@ $('survey').addEventListener('click', (e) => {
 async function finishSurvey() {
   {
     $('surveyDone').disabled = true;
+    S.prefs.order = surveyPick.order;
     const ok = await chooseArea(surveyPick.area);
     $('surveyDone').disabled = false;
     if (!ok) return;
@@ -1669,11 +1791,13 @@ $('replayWelcome').addEventListener('click', () => {
 async function start() {
   $('buildNo').textContent = `v${VERSION}`;
   try {
-    const [sp, cl, ar] = await Promise.all([
+    const [sp, cl, ar, gd] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),
       fetch('data/calls.json').then((r) => r.json()),
       fetch('data/areas.json').then((r) => r.json()),
+      fetch('data/guide.json').then((r) => r.json()).catch(() => null),
     ]);
+    if (gd) guide = gd;
     allSpecies = sp.species.filter((b) => (cl[b.id] || []).length);
     areas = ar.areas;
     nameSets = sp.nameSets;
