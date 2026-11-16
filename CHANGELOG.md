@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.2.8 (2026-11-16)
+- Volume slider under the play bar, remembered per device. Hidden on iPhone/iPad, where only the phone's volume buttons work.
+
 ## 1.2.7 (2026-11-16)
 - "Remember it" sound notes for the 71 practice-list birds that had none (136 birds in all), so intro cards show one. Learning order unchanged.
 

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.2.7';
+const VERSION = '1.2.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -478,6 +478,20 @@ const currentStreak = () => streakState().run;
 // ---------- audio ----------
 
 const audio = $('audio');
+
+// Volume is per device (phone and laptop differ), so it is kept outside the synced store.
+// iOS ignores audio.volume (hardware buttons only), so the slider is hidden there.
+const VOL_KEY = 'bird-sounds-volume';
+const volWorks = (() => { const t = new Audio(); t.volume = 0.5; return t.volume === 0.5; })();
+let volume = 1;
+try { const v = parseFloat(localStorage.getItem(VOL_KEY)); if (v >= 0 && v <= 1) volume = v; } catch { /* private mode */ }
+audio.volume = volume;
+$('volume').value = volume;
+$('volRow').hidden = !volWorks;
+$('volume').addEventListener('input', (e) => {
+  audio.volume = volume = parseFloat(e.target.value);
+  try { localStorage.setItem(VOL_KEY, String(volume)); } catch { /* private mode */ }
+});
 let audioKey = null;
 let playSeq = 0; // bumps on every new play/stop, so a slow load from an earlier card can't take over
 let audioSecs = 0; // stored length of the playing clip, used until the browser knows the duration
