@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.2 (2026-11-16)
+- Progress keeps a small per-day log (answers, birds mastered) and how many cards each bird took to master, for the owner's anonymous usage reports (supabase/reports.sql).
+
 ## 1.3.1 (2026-11-16)
 - Flag reason reworded: "Can't hear the bird / too many sounds / noise".
 

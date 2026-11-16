@@ -134,7 +134,8 @@ export function skip(state, id) {
 }
 
 // Returns 'mastered' | 'remembered' | 'lost' | null for the celebration popups.
-export function answer(state, species, id, { correct, hinted = false, pair = null }, rand = Math.random) {
+// day (YYYY-MM-DD, optional): logs answers and mastered count per day for usage reports.
+export function answer(state, species, id, { correct, hinted = false, pair = null, day = null }, rand = Math.random) {
   const b = bird(state, id);
   tick(state, id);
   state.sinceIntro++;
@@ -158,6 +159,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
       b.s += hinted ? 1 : 2;
       if (b.s >= MASTER_SCORE) {
         b.m = true;
+        if (b.firstM == null) b.firstM = b.right + b.wrong; // cards it took to master
         b.iv = FIRST_INTERVAL;
         b.due = state.n + b.iv;
         event = 'mastered';
@@ -176,8 +178,19 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
     }
     b.due = state.n + 3 + Math.floor(rand() * 3);
   }
+  if (day) logDay(state, day);
   ensurePool(state, species);
   return event;
+}
+
+const KEEP_DAYS = 400;
+function logDay(state, day) {
+  const days = (state.days ||= {});
+  const d = (days[day] ||= { a: 0, m: 0 });
+  d.a++;
+  d.m = Object.values(state.birds).filter((x) => x.m).length;
+  const keys = Object.keys(days);
+  if (keys.length > KEEP_DAYS) for (const k of keys.sort().slice(0, keys.length - KEEP_DAYS)) delete days[k];
 }
 
 // ---------- mix-ups ----------

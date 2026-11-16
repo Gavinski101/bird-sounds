@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.1';
+const VERSION = '1.3.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -802,7 +802,8 @@ function makeChoices() {
 
 async function grade(correct) {
   const hinted = cur.hint > 0;
-  const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null });
+  const day = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
+  const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null, day });
   const record = bumpStreak(correct);
   save();
   if (record && !(S.streak.best % 5)) toast(`🔥 New record: ${S.streak.best} right in a row!`);
