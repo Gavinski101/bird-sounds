@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.0 (2026-11-16)
+- New flag reason: "Too many other sounds (birds, noise)".
+
 ## 1.2.9 (2026-11-16)
 - Shared flags and ratings: a recording 2+ signed-in people flagged (or rated 1-2) is dropped for everyone; average ratings order the rest. Your own rating, flag or "Use anyway" always wins. Needs rec_scores() from supabase/setup.sql.
 - Volume is now a small speaker icon next to the progress bar; the slider slides out on hover or tap, and follows a loudness curve so the whole range is audible.
