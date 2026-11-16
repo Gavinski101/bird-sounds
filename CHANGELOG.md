@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.2.6 (2026-11-16)
+- "Can sound like" replaced by "You often mix it up with", built only from your own mix-ups (2+ times). The bird page says "You've mixed it up with".
+
 ## 1.2.5 (2026-11-16)
 - New learning order "Easiest to tell apart first" (default; also in the survey and Settings): common birds with distinctive calls come first, and birds that sound alike are spread out.
 - "Remember it" memory aids and "Can sound like" notes after you answer and on each bird's page.

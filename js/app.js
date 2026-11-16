@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.2.5';
+const VERSION = '1.2.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -380,7 +380,7 @@ function shuffle(a) {
 const TIPS = {
   order: 'The order new birds join your study set. "Easiest to tell apart first" starts with common birds that have distinctive calls and spreads out birds that sound alike.',
   memoryAid: 'A common way birders remember this call. Only shown after you answer.',
-  soundsLike: 'Birds whose calls are easy to mix up with this one. They are kept apart when new birds are added, and used as choices in hints.',
+  soundsLike: 'Birds you have taken this one for at least twice: from wrong hint choices and your answers to "What did you think it was?".',
   mixUps: 'Pairs you have confused: from wrong picks in hints and your answers to "What did you think it was?" after a miss. Play both to compare.',
   hardest: 'Birds you have met and missed at least twice, with the highest share of misses first.',
   area: 'Your home area. Beginner to Hard tiers are based on how often each bird is recorded around here.',
@@ -1041,18 +1041,20 @@ $('birdList').addEventListener('click', (e) => {
   if (row) openBird(row.dataset.bird);
 });
 
-// Memory aid and sound-alikes. Only ever shown after the answer (reveal, intro, bird page).
+// Memory aid and the user's OWN mix-ups (2+ times). Only ever shown after the answer.
+// The guide's sound-alike pairs stay behind the scenes (order, hints): shown as text they
+// read as if everyone confuses those birds.
 function soundTipHtml(id) {
   const tip = guide.birds[id]?.tip;
-  const alike = similarTo(id);
+  const mixed = L.confusedWith(S.learn, id).filter((c) => c.count >= 2 && byId[c.id]).slice(0, 3);
   return (tip ? `<div data-tip="${esc(TIPS.memoryAid)}"><b>Remember it:</b> ${esc(tip)}</div>` : '')
-    + (alike.length ? `<div data-tip="${esc(TIPS.soundsLike)}"><b>Can sound like:</b> ${alike.map((x) => esc(nm(byId[x]))).join(', ')}</div>` : '');
+    + (mixed.length ? `<div data-tip="${esc(TIPS.soundsLike)}"><b>You often mix it up with:</b> ${mixed.map((c) => esc(nm(byId[c.id]))).join(', ')}</div>` : '');
 }
 
 function confusedHtml(id) {
   const list = L.confusedWith(S.learn, id).filter((c) => byId[c.id]).slice(0, 5);
   if (!list.length) return '';
-  return `<h2 style="margin-top:14px"><span data-tip="${esc(TIPS.confused)}">Often confused with</span></h2>`
+  return `<h2 style="margin-top:14px"><span data-tip="${esc(TIPS.confused)}">You've mixed it up with</span></h2>`
     + list.map((c) => `<div class="compare-row">
         <button class="mini-play" id="cf-${c.id}" data-cfplay="${c.id}" aria-label="Play ${esc(nm(byId[c.id]))}">${PLAY_SVG}</button>
         ${byId[c.id].photo ? `<img src="${esc(byId[c.id].photo.url)}" alt="">` : ''}
