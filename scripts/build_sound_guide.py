@@ -98,6 +98,82 @@ TIPS = {
     "Cape Weaver": "Harsh, wheezy swizzling chatter around the nests.",
     "Speckled Mousebird": "Twittering \"tsik-tsik\" chatter from the group as they fly from bush to bush.",
 }
+# Sound notes for the rest of the practice list: shown as "Remember it", but unlike TIPS they
+# do NOT make a bird "easy" (they describe the sound; they don't make it stand out).
+NOTES = {
+    "Cape Bulbul": "Cheerful, liquid whistles \"piet-piet-patata\"; harsh chatter when alarmed. Shorter, quicker phrases than Olive Thrush.",
+    "Forest Buzzard": "Thin, high, mewing \"peee-oo\" over the forest.",
+    "Black-headed Heron": "Mostly quiet; harsh croaking \"kaaark\" in flight and loud clattering at nests.",
+    "Fiscal Flycatcher": "Soft, high, scratchy twittering; much gentler than Southern Fiscal's harsh notes.",
+    "Cape Sugarbird": "Scratchy, grating chatter with metallic notes; wings \"frrrt\" in display flight.",
+    "Western Cattle Egret": "Mostly silent; low \"rick-rack\" croaks at roosts and nesting colonies.",
+    "Swee Waxbill": "Says its name: soft, high \"swee-swee\" from small flocks.",
+    "White-throated Swallow": "Pleasant twittering song and short \"vit\" calls, usually near water.",
+    "Common Starling": "Wheezes, clicks, whistles and mimicry run together; long falling \"sheeeooo\" whistle.",
+    "African Olive Pigeon": "Deep, gruff cooing from the forest canopy; loud wing clatter when it flies off.",
+    "Pin-tailed Whydah": "Male's sharp, sibilant \"tseet-tseet-tseet\" while bouncing in display over a female.",
+    "Greater Double-collared Sunbird": "Fast, jumbled, scratchy song; harsh \"tchik\" calls. A little slower and lower than Southern Double-collared.",
+    "African Dusky Flycatcher": "Very thin, high, single \"tseeet\" notes, like a squeaky gate; not a warbled twitter like Cape White-eye.",
+    "Forest Canary": "Soft, rambling canary twitter; quieter and thinner than Cape Canary.",
+    "Black-bellied Starling": "Noisy, harsh, squeaky chattering with whistles, from flocks high in the forest.",
+    "Southern Fiscal": "Harsh \"gzzzt\" scold; song mixes grating notes with sweet whistles and mimicry.",
+    "Bar-throated Apalis": "Loud, fast \"tlip-tlip-tlip\"; pairs duet, one answering the other at a different pitch.",
+    "Amethyst Sunbird": "Long, fast twittering song; sharp \"tsip\" calls.",
+    "Greater Striped Swallow": "Soft, twittering, slightly guttural song; quieter than Lesser Striped Swallow's nasal notes.",
+    "White-necked Raven": "Deep, harsh croaking \"kraak\"; also higher, falsetto notes.",
+    "Southern Double-collared Sunbird": "Fast, high, jumbled twittering; sharp \"tchik-tchik\" calls.",
+    "Streaky-headed Seedeater": "Slow, sweet, rambling song of clear whistles and twitters.",
+    "Cape Batis": "Clear, slow whistles on one pitch plus frog-like rattling \"chrrr\" calls.",
+    "Southern Grey-headed Sparrow": "Simple \"cheep, chirp\" chirps, like a House Sparrow but softer.",
+    "Grey Heron": "Loud, harsh \"fraank\" in flight.",
+    "Olive Woodpecker": "Sharp \"wir-rit\" double note and squeaky calls; seldom drums.",
+    "Chorister Robin-Chat": "Rich song full of mimicry, the forest's best mimic; plaintive \"toy-toy-toy\" call.",
+    "Red-necked Spurfowl": "Loud, harsh crowing \"kraaa-kraaa-kraaa\", fading away, at dawn and dusk.",
+    "Klaas's Cuckoo": "Plaintive \"may-tee, may-tee\", repeated over and over.",
+    "Southern Red Bishop": "Male's fizzing, sizzling, buzzy song from reeds.",
+    "Karoo Prinia": "Loud, fast \"chlee-chlee-chlee\"; scolding \"tit-tit-tit\" alarm.",
+    "Neddicky": "Monotonous fast \"tee-tee-tee-tee\" from a bush top, going on and on.",
+    "Bleating Camaroptera": "Goat-like bleat \"neeehh\" and a loud snapping \"tic-tic-tic\".",
+    "Olive Thrush": "Clear, fluty phrases, each often repeated; slower and more deliberate than Cape Robin-Chat or Cape Bulbul. Thin \"tseep\" call.",
+    "Cape Wagtail": "Cheerful, clear \"tseee-chee-chee\"; bright twittering song.",
+    "Black-backed Puffback": "Sharp \"chick-weeu\" and loud clicks; wings make a soft \"puff\" in display.",
+    "African Stonechat": "Scratchy short song; call like two stones knocked together: \"weet-tsak-tsak\".",
+    "Olive Bushshrike": "Ringing, fluty \"tew-tew-tew-tew\" whistles and a harsh churr.",
+    "Cape Robin-Chat": "Short sweet phrases \"cheroo-weet-weet\", often with mimicry; growling \"wur-da-wur\" alarm.",
+    "Common Waxbill": "Nasal, twanging \"chip-chip-tcheeer\" from flocks in long grass.",
+    "Black Saw-wing": "Mostly quiet; soft \"chrrp\" calls while hawking along forest edges.",
+    "Brimstone Canary": "Rich, slow, deep canary song; heavier than Cape Canary's.",
+    "Speckled Pigeon": "Deep, booming \"hooo-hooo-hooo\" rising then falling, from roofs and cliffs.",
+    "Yellow-throated Woodland Warbler": "Rapid descending \"seee-sip-sip-sip-sip\" from high in the forest.",
+    "Barn Swallow": "Twittering, chattering song and \"vit-vit\" calls. Summer visitor.",
+    "Cape Canary": "Long, fast, rolling canary song full of trills, from tree tops.",
+    "Yellow Bishop": "Male's sizzling, buzzy display song; harsh \"zeet\" calls.",
+    "Terrestrial Brownbul": "Chattering, grumbling \"chuck-chuck-chirrr\" from parties in the undergrowth.",
+    "Red-winged Starling": "Loud, melodious whistled \"cher-leeeoo\"; flocks very vocal.",
+    "Grey Sunbird": "Dry \"tsik-tsik-tsik\" repeated monotonously.",
+    "Common Buzzard": "Mewing \"peeeooo\", like a cat.",
+    "Knysna Woodpecker": "Shrill, high \"kreeee\" scream.",
+    "Black Cuckooshrike": "Long, insect-like trill \"trrrrrrr\" lasting several seconds.",
+    "Grey Cuckooshrike": "Very thin, high \"tseeeep\" calls; easily missed.",
+    "African Emerald Cuckoo": "Clear whistle \"Hel-lo Geor-gie\" (or \"Pret-ty Geor-gie\").",
+    "Blue-mantled Crested Flycatcher": "Rasping, buzzy scolds and a fast, sweet twittering song.",
+    "Victorin's Warbler": "Loud, sweet, accelerating song from dense fynbos; very hard to see.",
+    "African Paradise Flycatcher": "Rasping \"zwee-zwer\" scold; lively, fast \"tswee-tswee-tswee\" song.",
+    "White-rumped Swift": "Mostly quiet; soft twittering at nests under bridges and eaves.",
+    "Cape Grassbird": "A few slow notes, then a fast jumble of tinkling notes from a grass or bush top.",
+    "Large Rock Martin": "Mostly silent; soft twittering near cliffs and buildings.",
+    "African Palm Swift": "Thin, high, twittering screams around palm trees.",
+    "African Pipit": "Repeated \"chrip-chrip-chrip\" in display flight; \"chissik\" flight call.",
+    "Plain-backed Pipit": "Repeated two-note song from a perch; hard to tell from African Pipit.",
+    "Alpine Swift": "Loud, shrill trilling screams from flocks, falling in pitch.",
+    "Lesser Striped Swallow": "Nasal, descending \"zeh-zeh-zeh-zeh\"; common around houses.",
+    "Red-chested Flufftail": "Hooting \"woo-woo-woo-woo\" from dense reeds, often at night; seldom seen.",
+    "Malachite Sunbird": "Loud, jumbled twittering; sharp \"tseep\" call.",
+    "African Firefinch": "Fast, rolling \"trrrrt\" trill and a clear \"vee-vee\" call.",
+    "Black-winged Kite": "Thin, high \"weeeep\" whistle; mostly quiet.",
+    "African Black Swift": "Shrill screams around cliffs, flocks screaming at dusk.",
+}
+
 # Have a memory aid, but still easy to confuse: keep their family's ease.
 TIP_NOT_EASY = {
     "Cape White-eye", "Cape Weaver", "Speckled Mousebird", "Zitting Cisticola", "Rufous-naped Lark",
@@ -134,7 +210,7 @@ SIMILAR = [
 def main():
     species = json.loads((DATA / "species.json").read_text(encoding="utf-8"))["species"]
     by_name = {b["names"]["en_ZA"]: b for b in species}
-    missing = [n for n in [*TIPS, *EASY_EXTRA, *(n for p in SIMILAR for n in p)] if n not in by_name]
+    missing = [n for n in [*TIPS, *NOTES, *EASY_EXTRA, *(n for p in SIMILAR for n in p)] if n not in by_name]
     if missing:
         raise SystemExit(f"names not in species.json (en_ZA): {sorted(set(missing))}")
 
@@ -144,13 +220,13 @@ def main():
         n = b["names"]["en_ZA"]
         ease = 1 if n in easy else 3 if b["family"] in SIMILAR_FAMILIES else 4 if b["family"] in QUIET_FAMILIES else 2
         e = {"ease": ease}
-        if n in TIPS:
-            e["tip"] = TIPS[n]
+        if n in TIPS or n in NOTES:
+            e["tip"] = TIPS.get(n) or NOTES[n]
         birds[b["id"]] = e
     similar = [[by_name[a]["id"], by_name[b]["id"]] for a, b in SIMILAR]
     (DATA / "guide.json").write_text(json.dumps({"birds": birds, "similar": similar}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     counts = {k: sum(1 for e in birds.values() if e["ease"] == k) for k in (1, 2, 3, 4)}
-    print(f"guide.json: ease counts {counts}, {len(TIPS)} memory aids, {len(similar)} sound-alike pairs")
+    print(f"guide.json: ease counts {counts}, {sum(1 for e in birds.values() if 'tip' in e)} memory aids, {len(similar)} sound-alike pairs")
 
 
 if __name__ == "__main__":
