@@ -119,15 +119,49 @@ function play(state, knows, cards) {
     if (c.pair) pairCard = c;
     else L.answer(s, species, c.id, { correct: true }, rand);
   }
-  assert.ok(pairCard, 'compare card shown');
+  assert.ok(pairCard && pairCard.compare, 'compare card shown');
   assert.deepEqual([pairCard.id, pairCard.pair].sort(), ['b1', 'b2']);
-  L.answer(s, species, pairCard.id, { correct: true, hinted: true, pair: pairCard.pair }, rand);
-  for (let i = 0; i < L.PAIR_REST - 2; i++) {
+  L.compared(s, pairCard.id, pairCard.pair, rand);
+  // The test is not the next card, comes within a few cards, and has the same two birds.
+  let test = null, gap = 0;
+  for (let i = 0; i < 10 && !test; i++) {
+    const c = L.nextCard(s, species, rand);
+    if (c.test) test = c;
+    else { gap++; L.answer(s, species, c.id, { correct: true }, rand); }
+  }
+  assert.ok(test, 'pair test comes');
+  assert.ok(gap >= 2, `pair test not straight after the compare card (gap ${gap})`);
+  assert.deepEqual([test.id, test.pair].sort(), ['b1', 'b2']);
+  L.answer(s, species, test.id, { correct: true, hinted: true, pair: test.pair }, rand);
+  for (let i = 0; i < L.PAIR_REST - 12; i++) {
     const c = L.nextCard(s, species, rand);
     assert.ok(!c.pair, 'same pair rests');
     L.answer(s, species, c.id, { correct: true }, rand);
   }
+  // The tested bird is random: both birds get tested over many compare cards.
+  const picked = new Set();
+  for (let k = 0; k < 40; k++) {
+    const t = L.newState();
+    L.compared(t, 'b1', 'b2', Math.random);
+    picked.add(t.pairTest.id);
+  }
+  assert.equal(picked.size, 2, 'either bird can be tested');
   assert.equal(L.summary(s, species).met, 20);
+}
+
+// Skip for later: a new bird goes to the back of the new-bird queue; a met bird waits SKIP_LATER cards.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  const first = L.nextCard(s, species, rand, { intros: true });
+  assert.ok(first.intro);
+  L.skip(s, first.id);
+  const next = L.nextCard(s, species, rand, { intros: true });
+  assert.notEqual(next.id, first.id, 'skipped new bird not next');
+  assert.equal(s.pool[s.pool.length - 1], first.id, 'skipped new bird at the back');
+  L.introduced(s, next.id);
+  L.skip(s, next.id);
+  assert.equal(s.birds[next.id].due, s.n + L.SKIP_LATER, 'met bird waits');
 }
 
 // Starting pool follows the experience level.

@@ -2,6 +2,11 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.3 (2026-11-16)
+- Compare cards ("You mix these two up") are now just a reminder. The "Which of the two?" test comes 3-5 cards later and plays a random one of the pair, not always the first one heard.
+- "Skip for later": a met bird comes back about 8 cards later; on a new-bird card it moves that bird to the back of the queue.
+- Version number sits just above the tab bar.
+
 ## 1.3.2 (2026-11-16)
 - Progress keeps a small per-day log (answers, birds mastered) and how many cards each bird took to master, for the owner's anonymous usage reports (supabase/reports.sql).
 

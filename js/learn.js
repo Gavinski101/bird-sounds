@@ -94,6 +94,11 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
   if (missedDue.length) {
     return { id: missedDue[0][0], intro: false };
   }
+  // "Which of the two?" test a few cards after a compare card, with a random one of the pair.
+  const pt = state.pairTest;
+  if (pt && pt.due <= state.n && pt.id !== state.lastId && inArea.has(pt.id) && inArea.has(pt.pair)) {
+    return { id: pt.id, intro: false, pair: pt.pair, test: true };
+  }
   // Mix due mastered birds in among the learning ones so "remembered" checks happen.
   if (masteredDue.length && (!learningDue.length || rand() < REVIEW_SHARE)) {
     return { id: pickFrom(masteredDue, rand)[0], intro: false };
@@ -101,7 +106,7 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
   const pair = (state.sincePair ?? 0) >= PAIR_EVERY ? duePair(state) : null;
   if (pair) {
     const [a, b] = rand() < 0.5 ? pair : [pair[1], pair[0]];
-    return a !== state.lastId ? { id: a, intro: false, pair: b } : { id: b, intro: false, pair: a };
+    return { id: a, intro: false, pair: b, compare: true };
   }
   if (learningDue.length) {
     return { id: pickFrom(learningDue.slice(0, 3), rand)[0], intro: false };
@@ -128,9 +133,25 @@ export function introduced(state, id) {
   state.sinceIntro = 0;
 }
 
-export function skip(state, id) {
+// Compare card done: the two birds were only heard side by side. The test of which is which
+// comes 3-5 cards later (not straight away), on a random one of the two.
+export function compared(state, id, pair, rand = Math.random) {
   tick(state, id);
-  bird(state, id).due = state.n + 2;
+  (state.pairShown ||= {})[pairKey(id, pair)] = state.n;
+  state.sincePair = 0;
+  const [t, o] = rand() < 0.5 ? [id, pair] : [pair, id];
+  state.pairTest = { id: t, pair: o, due: state.n + 3 + Math.floor(rand() * 3) };
+}
+
+// "Skip for later": a met bird comes back SKIP_LATER cards later (a pending pair test with it
+// too); a new bird goes to the back of the queue of new birds.
+export const SKIP_LATER = 8;
+export function skip(state, id) {
+  const b = bird(state, id);
+  tick(state, id);
+  if (!b.intro) state.pool = [...state.pool.filter((x) => x !== id), id];
+  else b.due = state.n + SKIP_LATER;
+  if (state.pairTest?.id === id) state.pairTest.due = state.n + SKIP_LATER;
 }
 
 // Returns 'mastered' | 'remembered' | 'lost' | null for the celebration popups.
@@ -142,6 +163,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   if (pair) {
     (state.pairShown ||= {})[pairKey(id, pair)] = state.n;
     state.sincePair = 0;
+    state.pairTest = null;
   } else {
     state.sincePair = (state.sincePair ?? 0) + 1;
   }

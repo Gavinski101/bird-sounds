@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.2';
+const VERSION = '1.3.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -635,7 +635,11 @@ function newCard() {
   stopAudio();
   const c = L.nextCard(S.learn, species, Math.random, { intros: S.prefs.intros });
   save();
-  cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.pair ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
+  cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.compare ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
+  if (c.test) { // "which of the two?" test: both names shown as the choices
+    cur.hint = 1;
+    cur.choices = shuffle([c.id, c.pair]);
+  }
   renderCard();
   renderTop();
   const photo = byId[cur.id]?.photo?.url;
@@ -696,7 +700,7 @@ function renderCard() {
   // Hints
   const ha = $('hintArea');
   if (cur.stage === 'compare') {
-    ha.innerHTML = '<p class="small muted" style="margin:0 0 6px">Listen to both, then test yourself on which is which.</p>'
+    ha.innerHTML = '<p class="small muted" style="margin:0 0 6px">Listen to both. A few cards from now you will hear one of them and pick which it is.</p>'
       + [cur.id, cur.pair].map((id) => {
         const b = byId[id];
         return `<div class="compare-row">
@@ -757,7 +761,7 @@ function renderCard() {
   if (cur.stage === 'intro') {
     a.innerHTML = '<button class="btn wide" data-act="introDone">Got it, next bird</button>';
   } else if (cur.stage === 'compare') {
-    a.innerHTML = '<button class="btn wide" data-act="pairTest">Test me on these two</button>';
+    a.innerHTML = '<button class="btn wide" data-act="compared">Got it, test me later</button>';
   } else if (cur.stage === 'guess' && cur.pair) {
     a.innerHTML = '<button class="btn ghost wide" data-act="reveal">Reveal</button>';
   } else if (cur.stage === 'thought') {
@@ -770,7 +774,7 @@ function renderCard() {
   } else {
     a.innerHTML = '<button class="btn wide" data-act="next">Next bird</button>';
   }
-  $('skipBtn').hidden = cur.stage !== 'guess';
+  $('skipBtn').hidden = cur.stage !== 'guess' && cur.stage !== 'intro';
 }
 
 function renderThought() {
@@ -832,13 +836,10 @@ async function onAction(act) {
     await grade(false);
     cur.stage = 'thought';
     renderCard();
-  } else if (act === 'pairTest') {
-    stopAudio();
-    cur.stage = 'guess';
-    cur.hint = 1;
-    cur.choices = shuffle([cur.id, cur.pair]);
-    renderCard();
-    playRec(currentRec(), $('playBtn'));
+  } else if (act === 'compared') {
+    L.compared(S.learn, cur.id, cur.pair);
+    save();
+    newCard();
   } else if (act === 'next') {
     newCard();
   }
