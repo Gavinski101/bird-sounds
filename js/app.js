@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.3';
+const VERSION = '1.3.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -19,6 +19,7 @@ let species = [];      // birds in the current area, commonest first (rank/tier 
 let allSpecies = [];
 let areas = [];
 let byId = {};
+let areaIds = new Set(); // ids of `species`: birds of the current area
 let calls = {};
 let nameSets = {};
 let guide = { birds: {}, similar: [] }; // data/guide.json: ease by ear, memory aids, sound-alike pairs
@@ -794,7 +795,7 @@ function makeChoices() {
   const sp = byId[cur.id];
   const pool = new Set(S.learn.pool);
   const confused = [...new Set([...L.confusedWith(S.learn, sp.id).map((c) => c.id), ...similarTo(sp.id)])]
-    .map((id) => byId[id]).filter(Boolean);
+    .filter((id) => areaIds.has(id)).map((id) => byId[id]);
   const confusedIds = new Set(confused.map((x) => x.id));
   const others = species.filter((x) => x.id !== sp.id && !confusedIds.has(x.id));
   const sameFam = shuffle(others.filter((x) => x.familySci === sp.familySci));
@@ -1219,7 +1220,7 @@ function mixUpsHtml() {
   const pairs = {};
   for (const [heard, row] of Object.entries(S.learn.mix || {})) {
     for (const [thought, n] of Object.entries(row)) {
-      if (!byId[heard] || !byId[thought]) continue;
+      if (!areaIds.has(heard) || !areaIds.has(thought)) continue; // current region only
       const key = [heard, thought].sort().join('|');
       pairs[key] = (pairs[key] || 0) + n;
     }
@@ -1238,7 +1239,7 @@ function mixUpsHtml() {
 // Met birds you get wrong most often (2+ misses, by share of misses).
 function hardestHtml() {
   const list = Object.entries(S.learn.birds || {})
-    .filter(([id, b]) => byId[id] && (b.wrong || 0) >= 2)
+    .filter(([id, b]) => areaIds.has(id) && (b.wrong || 0) >= 2) // current region only
     .map(([id, b]) => ({ id, right: b.right || 0, wrong: b.wrong, share: b.wrong / ((b.right || 0) + b.wrong) }))
     .sort((a, b) => b.share - a.share || b.wrong - a.wrong)
     .slice(0, 8);
@@ -1522,6 +1523,7 @@ function applyArea() {
     .map((b) => ({ ...b, rank: a.ranks[b.id], tier: tierFor(a.ranks[b.id]) }))
     .sort((x, y) => x.rank - y.rank));
   byId = { ...Object.fromEntries(allSpecies.map((b) => [b.id, b])), ...Object.fromEntries(species.map((b) => [b.id, b])) };
+  areaIds = new Set(species.map((b) => b.id));
 }
 
 $('autoplay').addEventListener('change', (e) => {

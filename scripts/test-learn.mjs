@@ -164,6 +164,22 @@ function play(state, knows, cards) {
   assert.equal(s.birds[next.id].due, s.n + L.SKIP_LATER, 'met bird waits');
 }
 
+// Compare cards only pair birds of the current area.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of s.pool) L.introduced(s, id);
+  for (let k = 0; k < 2; k++) L.recordMix(s, 'b1', 'b2');
+  s.sincePair = 99;
+  const area = species.filter((sp) => sp.id !== 'b2');
+  for (let i = 0; i < 30; i++) {
+    const c = L.nextCard(s, area, rand);
+    assert.ok(!c.pair, 'no compare card with a bird outside the area');
+    assert.ok(c.id !== 'b2', 'no card for a bird outside the area');
+    L.answer(s, area, c.id, { correct: true }, rand);
+  }
+}
+
 // Starting pool follows the experience level.
 {
   const s = L.newState();

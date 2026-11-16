@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.4 (2026-11-16)
+- Region switch: compare cards, hint choices, "Birds you mix up" and "Birds you miss most" now only use birds of the current region (counts and cards already did). Progress on birds outside the region is kept for when you switch back.
+
 ## 1.3.3 (2026-11-16)
 - Compare cards ("You mix these two up") are now just a reminder. The "Which of the two?" test comes 3-5 cards later and plays a random one of the pair, not always the first one heard.
 - "Skip for later": a met bird comes back about 8 cards later; on a new-bird card it moves that bird to the back of the queue.

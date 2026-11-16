@@ -103,7 +103,7 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
   if (masteredDue.length && (!learningDue.length || rand() < REVIEW_SHARE)) {
     return { id: pickFrom(masteredDue, rand)[0], intro: false };
   }
-  const pair = (state.sincePair ?? 0) >= PAIR_EVERY ? duePair(state) : null;
+  const pair = (state.sincePair ?? 0) >= PAIR_EVERY ? duePair(state, inArea) : null;
   if (pair) {
     const [a, b] = rand() < 0.5 ? pair : [pair[1], pair[0]];
     return { id: a, intro: false, pair: b, compare: true };
@@ -238,8 +238,9 @@ export function confusedWith(state, id) {
   return Object.entries(counts).map(([other, count]) => ({ id: other, count })).sort((a, b) => b.count - a.count);
 }
 
-function duePair(state) {
-  const met = new Set(state.pool.filter((id) => state.birds[id]?.intro));
+// Only pairs where both birds are in the current area.
+function duePair(state, inArea) {
+  const met = new Set(state.pool.filter((id) => inArea.has(id) && state.birds[id]?.intro));
   let best = null;
   for (const heard of Object.keys(state.mix || {})) {
     if (!met.has(heard)) continue;
