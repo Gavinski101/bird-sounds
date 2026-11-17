@@ -172,6 +172,17 @@ NOTES = {
     "African Firefinch": "Fast, rolling \"trrrrt\" trill and a clear \"vee-vee\" call.",
     "Black-winged Kite": "Thin, high \"weeeep\" whistle; mostly quiet.",
     "African Black Swift": "Shrill screams around cliffs, flocks screaming at dusk.",
+    "Little Rush Warbler": "Dry \"trrp-trrp-trrp\" notes speeding up into a rattle, like a bouncing ball, often with wing-snaps, from reedbeds.",
+    "Tambourine Dove": "Long run of soft \"du-du-du\" coos, slow then faster and fading, staying on one pitch (Emerald-spotted Wood Dove's falls away at the end).",
+}
+
+# The user's iconic sounds of their area (2026-11-17): ease 0, met before every other bird
+# (if common enough in the region, see ICONIC_CAP in app.js).
+ICONIC = {
+    "Southern Boubou", "Burchell's Coucal", "Jackal Buzzard", "Black-headed Oriole", "Narina Trogon",
+    "Red-chested Flufftail", "Buff-spotted Flufftail", "Knysna Turaco", "Little Rush Warbler",
+    "Hadeda Ibis", "Tambourine Dove", "Bar-throated Apalis", "Fork-tailed Drongo", "Cape Batis",
+    "Southern Fiscal",
 }
 
 # Have a memory aid, but still easy to confuse: keep their family's ease.
@@ -210,7 +221,7 @@ SIMILAR = [
 def main():
     species = json.loads((DATA / "species.json").read_text(encoding="utf-8"))["species"]
     by_name = {b["names"]["en_ZA"]: b for b in species}
-    missing = [n for n in [*TIPS, *NOTES, *EASY_EXTRA, *(n for p in SIMILAR for n in p)] if n not in by_name]
+    missing = [n for n in [*TIPS, *NOTES, *ICONIC, *EASY_EXTRA, *(n for p in SIMILAR for n in p)] if n not in by_name]
     if missing:
         raise SystemExit(f"names not in species.json (en_ZA): {sorted(set(missing))}")
 
@@ -218,14 +229,14 @@ def main():
     birds = {}
     for b in species:
         n = b["names"]["en_ZA"]
-        ease = 1 if n in easy else 3 if b["family"] in SIMILAR_FAMILIES else 4 if b["family"] in QUIET_FAMILIES else 2
+        ease = 0 if n in ICONIC else 1 if n in easy else 3 if b["family"] in SIMILAR_FAMILIES else 4 if b["family"] in QUIET_FAMILIES else 2
         e = {"ease": ease}
         if n in TIPS or n in NOTES:
             e["tip"] = TIPS.get(n) or NOTES[n]
         birds[b["id"]] = e
     similar = [[by_name[a]["id"], by_name[b]["id"]] for a, b in SIMILAR]
     (DATA / "guide.json").write_text(json.dumps({"birds": birds, "similar": similar}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    counts = {k: sum(1 for e in birds.values() if e["ease"] == k) for k in (1, 2, 3, 4)}
+    counts = {k: sum(1 for e in birds.values() if e["ease"] == k) for k in (0, 1, 2, 3, 4)}
     print(f"guide.json: ease counts {counts}, {sum(1 for e in birds.values() if 'tip' in e)} memory aids, {len(similar)} sound-alike pairs")
 
 

@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.6 (2026-11-17)
+- Iconic sounds come first of all: Southern Boubou, Burchell's Coucal, Jackal Buzzard, Black-headed Oriole, Narina Trogon, both flufftails, Knysna Turaco, Little Rush Warbler, Hadeda, Tambourine Dove, Bar-throated Apalis, Fork-tailed Drongo, Cape Batis and Southern Fiscal (when among the region's 250 commonest).
+- Sound notes for Little Rush Warbler and Tambourine Dove.
+
 ## 1.3.5 (2026-11-17)
 - "Easiest to tell apart first" now really puts distinctive sounds first: all distinctive birds among the region's 150 commonest come before average ones, and similar-sounding families come last (before, common look-alikes like Cape Weaver still beat Hadeda).
 

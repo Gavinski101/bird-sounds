@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.5';
+const VERSION = '1.3.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1480,9 +1480,12 @@ const ORDERS = {
 // group 1 among the area's DISTINCT_CAP commonest, so rare iconic birds don't jump the queue.
 // (A rank x factor blend let common look-alikes like Cape Weaver beat Hadeda: user 2026-11-17.)
 const DISTINCT_CAP = 150;
+// Group 0 = the user's iconic sounds of their area (ICONIC in build_sound_guide.py), first of all
+// when among the area's ICONIC_CAP commonest; otherwise they count as distinctive (group 1).
+const ICONIC_CAP = 250;
 const SPREAD = 6; // a new bird avoids the family / sound-alikes of the last 6 added
 
-const easeOf = (id) => guide.birds[id]?.ease || 2;
+const easeOf = (id) => guide.birds[id]?.ease ?? 2;
 
 // Sound-alike pairs: hand-made ones plus pairs you've mixed up twice or more.
 function soundAlikes() {
@@ -1497,7 +1500,11 @@ function soundAlikes() {
 
 function learnOrder(list) {
   if ((S.prefs.order || 'distinct') !== 'distinct') return list;
-  const group = (b) => { const e = easeOf(b.id); return e === 1 && b.rank > DISTINCT_CAP ? 2 : e; };
+  const group = (b) => {
+    let e = easeOf(b.id);
+    if (e === 0 && b.rank > ICONIC_CAP) e = 1;
+    return e === 1 && b.rank > DISTINCT_CAP ? 2 : e;
+  };
   const queue = [...list].sort((x, y) => group(x) - group(y) || x.rank - y.rank);
   const alike = soundAlikes();
   const out = [];
