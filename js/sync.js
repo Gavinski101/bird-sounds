@@ -153,6 +153,16 @@ export async function recScores() {
   return call('/rest/v1/rpc/rec_scores', { method: 'POST', body: {} });
 }
 
+// Shared difficulty totals (supabase/9-shared-bird-difficulty.sql): per bird, how many
+// people struggle with it; per pair, how many people mix it up. Totals only.
+export async function birdStats() {
+  return call('/rest/v1/rpc/bird_stats', { method: 'POST', body: {} });
+}
+
+export async function mixStats() {
+  return call('/rest/v1/rpc/mix_stats', { method: 'POST', body: {} });
+}
+
 export async function signOut() {
   try { await call('/auth/v1/logout', { method: 'POST', token: await token() }); } catch { /* sign out locally anyway */ }
   saveAuth(null);

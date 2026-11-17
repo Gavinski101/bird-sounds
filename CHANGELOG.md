@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.1 (2026-11-17)
+- Shared difficulty: a bird that 3+ people (and at least half of those who answered it 3+ times) miss more often than they get right moves one group later for new learners; pairs 3+ people mix up are kept apart and used as hint choices. Your iconic birds never move. Needs supabase/9-shared-bird-difficulty.sql.
+- Removed the keyboard shortcuts (typing elsewhere while the app had focus answered cards).
+
 ## 1.4.0 (2026-11-17)
 - Birds waiting in your study set that you haven't met yet are re-picked in the current order (and on every region or order change), so the iconic-first order applies straight away instead of after old picks like Southern Masked Weaver. Birds you've met keep their progress.
 

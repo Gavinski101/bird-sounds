@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -364,6 +364,40 @@ async function loadScores(force = false) {
     scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars }]));
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
   } catch (e) { console.warn('recording scores', e); }
+}
+
+// Shared difficulty (supabase/9-shared-bird-difficulty.sql): a bird many people struggle
+// with moves one ease group later for everyone (only affects birds not yet in play), and
+// pairs many people mix up are kept apart like the hand-made sound-alikes. The user's
+// iconic birds (ease 0) never move. Cached 6 h like the recording scores.
+const DIFF_KEY = 'bird-sounds-difficulty';
+const SHARED_HARD_USERS = 3;   // people who miss the bird more often than they get it right...
+const SHARED_HARD_SHARE = 0.5; // ...and at least this share of all who answered it 3+ times
+const SHARED_PAIR_USERS = 3;   // people who mixed the pair up 2+ times
+let community = { hard: [], pairs: [] };
+try { community = JSON.parse(localStorage.getItem(DIFF_KEY))?.data || community; } catch { /* none yet */ }
+let communityHard = new Set(community.hard);
+
+async function loadDifficulty() {
+  if (!Sync.configured || !navigator.onLine) return;
+  try {
+    const c = JSON.parse(localStorage.getItem(DIFF_KEY));
+    if (c && Date.now() - c.at < 6 * 3600e3) return;
+  } catch { /* fetch */ }
+  try {
+    const [birds, mixes] = await Promise.all([Sync.birdStats(), Sync.mixStats()]);
+    const data = {
+      hard: (birds || []).filter((x) => x.strugglers >= SHARED_HARD_USERS && x.strugglers / x.users >= SHARED_HARD_SHARE).map((x) => x.bird).sort(),
+      pairs: (mixes || []).filter((x) => x.users >= SHARED_PAIR_USERS).map((x) => [x.a, x.b]).sort(),
+    };
+    localStorage.setItem(DIFF_KEY, JSON.stringify({ at: Date.now(), data }));
+    if (JSON.stringify(data) !== JSON.stringify(community)) {
+      community = data;
+      communityHard = new Set(data.hard);
+      applyArea();
+      renderTop();
+    }
+  } catch (e) { console.warn('shared difficulty', e); }
 }
 
 function isOff(r) {
@@ -1499,13 +1533,16 @@ const DISTINCT_CAP = 150;
 const ICONIC_CAP = 250;
 const SPREAD = 6; // a new bird avoids the family / sound-alikes of the last 6 added
 
-const easeOf = (id) => guide.birds[id]?.ease ?? 2;
+const easeOf = (id) => {
+  const e = guide.birds[id]?.ease ?? 2;
+  return e >= 1 && communityHard.has(id) ? Math.min(4, e + 1) : e; // see loadDifficulty
+};
 
 // Sound-alike pairs: hand-made ones plus pairs you've mixed up twice or more.
 function soundAlikes() {
   const set = new Set();
   const add = (a, b) => { set.add(`${a}|${b}`); set.add(`${b}|${a}`); };
-  for (const [a, b] of guide.similar || []) add(a, b);
+  for (const [a, b] of [...(guide.similar || []), ...community.pairs]) add(a, b);
   for (const [heard, row] of Object.entries(S.learn.mix || {})) {
     for (const [thought, n] of Object.entries(row)) if (n >= 2) add(heard, thought);
   }
@@ -1531,8 +1568,9 @@ function learnOrder(list) {
   return out;
 }
 
-// Birds that can sound like this one (hand-made pairs only), for the reveal and bird page.
-const similarTo = (id) => (guide.similar || []).flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : [])).filter((x) => byId[x]);
+// Birds that can sound like this one (hand-made pairs + pairs many people mix up), used as
+// hint choices.
+const similarTo = (id) => [...(guide.similar || []), ...community.pairs].flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : [])).filter((x) => byId[x]);
 
 function tierFor(rank) {
   return rank <= 40 ? 'Beginner' : rank <= 100 ? 'Easy' : rank <= 180 ? 'Medium' : 'Hard';
@@ -1700,20 +1738,7 @@ document.querySelector('.tabs').addEventListener('click', (e) => {
   if (t) showView(t.dataset.view);
 });
 
-// Keyboard (on a computer): space play, h hint, r reveal, 1 missed, 2 got, n next.
-document.addEventListener('keydown', (e) => {
-  if (!$('view-study').classList.contains('active') || e.target.matches('input, textarea, select')) return;
-  if (!$('rateSheet').hidden || !$('birdSheet').hidden) return;
-  const k = e.key.toLowerCase();
-  const act = { h: 'hint', r: 'reveal', 1: 'missed', 2: 'got', n: 'next' }[k];
-  if (k === ' ') { e.preventDefault(); $('playBtn').click(); }
-  else if (k === 'o') $('otherRecBtn').click();
-  else if (act) {
-    const b = $('actions').querySelector(`[data-act="${act}"]`) ||
-      (k === 'n' || k === '2' ? $('actions').querySelector('[data-act="introDone"], [data-act="next"]') : null);
-    if (b && !b.disabled) b.click();
-  }
-});
+// No keyboard shortcuts: typing elsewhere while this window had focus answered cards (user 2026-11-17).
 
 // ---------- start ----------
 
@@ -1944,6 +1969,7 @@ async function start() {
     if (back === 'recovery') openPwSheet();
     syncNow({ firstSignIn: !!back });
     loadScores();
+    loadDifficulty();
     Sync.refreshProfile().then(renderAvatar).catch(() => {});
     if (await updateOwner()) { applyArea(); renderTop(); }
   } catch (e) {
