@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -371,9 +371,9 @@ async function loadScores(force = false) {
 // pairs many people mix up are kept apart like the hand-made sound-alikes. The user's
 // iconic birds (ease 0) never move. Cached 6 h like the recording scores.
 const DIFF_KEY = 'bird-sounds-difficulty';
-const SHARED_HARD_USERS = 3;   // people who miss the bird more often than they get it right...
-const SHARED_HARD_SHARE = 0.5; // ...and at least this share of all who answered it 3+ times
-const SHARED_PAIR_USERS = 3;   // people who mixed the pair up 2+ times
+// Votes scale with the user base (user 2026-11-17): with one user, they are the whole base.
+const SHARED_HARD_SHARE = 0.5;  // share of people (who answered it 3+ times) missing it more than not
+const SHARED_PAIR_SHARE = 0.25; // share of people who mixed the pair up 2+ times (min 1 person)
 let community = { hard: [], pairs: [] };
 try { community = JSON.parse(localStorage.getItem(DIFF_KEY))?.data || community; } catch { /* none yet */ }
 let communityHard = new Set(community.hard);
@@ -386,9 +386,10 @@ async function loadDifficulty() {
   } catch { /* fetch */ }
   try {
     const [birds, mixes] = await Promise.all([Sync.birdStats(), Sync.mixStats()]);
+    const base = Math.max(1, ...(birds || []).map((x) => x.users)); // people answering, roughly
     const data = {
-      hard: (birds || []).filter((x) => x.strugglers >= SHARED_HARD_USERS && x.strugglers / x.users >= SHARED_HARD_SHARE).map((x) => x.bird).sort(),
-      pairs: (mixes || []).filter((x) => x.users >= SHARED_PAIR_USERS).map((x) => [x.a, x.b]).sort(),
+      hard: (birds || []).filter((x) => x.strugglers >= 1 && x.strugglers / x.users >= SHARED_HARD_SHARE).map((x) => x.bird).sort(),
+      pairs: (mixes || []).filter((x) => x.users >= Math.max(1, Math.ceil(base * SHARED_PAIR_SHARE))).map((x) => [x.a, x.b]).sort(),
     };
     localStorage.setItem(DIFF_KEY, JSON.stringify({ at: Date.now(), data }));
     if (JSON.stringify(data) !== JSON.stringify(community)) {
@@ -466,6 +467,7 @@ const TIPS = {
     mastered: 'Mastered: you know this one. It comes back less and less often to check you still remember it.',
     learning: "Learning: you've met this bird and are being tested on it.",
     new: "New: in your study set, but you haven't met it yet. It will be introduced soon.",
+    later: "Later: you've met this bird, but it's set aside for now because easier birds come first in the current order. Your progress is kept and it comes back when the order reaches it.",
     locked: 'Not yet: not in your study set. Added as you master other birds, or use Progress, Add all birds now.',
   },
 };
@@ -475,7 +477,7 @@ function tierTip(sp) {
 }
 
 function chip(status) {
-  const label = { mastered: 'Mastered', learning: 'Learning', new: 'New', locked: 'Not yet' }[status];
+  const label = { mastered: 'Mastered', learning: 'Learning', new: 'New', later: 'Later', locked: 'Not yet' }[status];
   return `<span class="chip ${status}" data-tip="${esc(TIPS.status[status])}">${label}</span>`;
 }
 
@@ -1315,7 +1317,7 @@ function renderProgress() {
     html += `<div class="panel">
       <div class="tier-head" style="margin:0"><span class="tier-name" data-tip="${esc(`${tier}: how common these birds are around ${area}. Beginner = the 40 most recorded birds, Easy = 41-100, Medium = 101-180, Hard = rarer.`)}">${tier}</span><span>${t.mastered} of ${t.total} mastered</span></div>
       <div class="tier-bar"><div class="m" style="width:${pct(t.mastered)}%"></div><div class="l" style="width:${pct(t.learning + t.new)}%"></div></div>
-      <div class="legend"><span data-tip="${esc(TIPS.status.mastered)}">Mastered ${t.mastered}</span><span data-tip="${esc(TIPS.status.learning)}">Learning ${t.learning + t.new}</span><span data-tip="${esc(TIPS.status.locked)}">Not yet ${t.locked}</span></div>
+      <div class="legend"><span data-tip="${esc(TIPS.status.mastered)}">Mastered ${t.mastered}</span><span data-tip="${esc(TIPS.status.learning)}">Learning ${t.learning + t.new}</span>${t.later ? `<span data-tip="${esc(TIPS.status.later)}">Later ${t.later}</span>` : ''}<span data-tip="${esc(TIPS.status.locked)}">Not yet ${t.locked}</span></div>
     </div>`;
   }
   html += mixUpsHtml() + hardestHtml();
@@ -1390,7 +1392,7 @@ $('orderSel').addEventListener('change', (e) => {
   S.prefs.order = e.target.value;
   applyArea();
   save();
-  toast(`${ORDERS[e.target.value].label}: birds you've met keep their progress`);
+  toast(`${ORDERS[e.target.value].label}: progress on every bird is kept`);
 });
 
 // Settings region picker: the survey's tree + search, shown in a sheet.
@@ -1588,7 +1590,7 @@ function applyArea() {
     .sort((x, y) => x.rank - y.rank));
   byId = { ...Object.fromEntries(allSpecies.map((b) => [b.id, b])), ...Object.fromEntries(species.map((b) => [b.id, b])) };
   areaIds = new Set(species.map((b) => b.id));
-  L.repickUnmet(S.learn, species, cur?.id); // unmet birds follow the current order
+  L.realign(S.learn, species, cur?.id); // birds in play follow the current order (learn.js)
 }
 
 $('autoplay').addEventListener('change', (e) => {

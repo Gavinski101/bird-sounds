@@ -180,18 +180,32 @@ function play(state, knows, cards) {
   }
 }
 
-// Unmet birds are re-picked when the order changes; met birds stay.
+// Re-line-up when the order changes: the study set follows the new order; mastered and
+// nearly mastered birds stay; other met birds are set aside for later with their progress.
 {
   const s = L.newState();
   L.ensurePool(s, species);
-  for (const id of s.pool.slice(0, 5)) L.introduced(s, id);
-  const met = s.pool.slice(0, 5);
+  const [mastered, nearly, hard, unmet] = s.pool;
+  for (const id of [mastered, nearly, hard]) L.introduced(s, id);
+  Object.assign(s.birds[mastered], { m: true, s: 6, right: 3 });
+  Object.assign(s.birds[nearly], { s: 4, right: 2 });
+  Object.assign(s.birds[hard], { s: -2, right: 1, wrong: 3 });
   const reversed = [...species].reverse();
-  L.repickUnmet(s, reversed);
-  for (const id of met) assert.ok(s.pool.includes(id), 'met bird kept');
-  const unmet = s.pool.filter((id) => !met.includes(id));
-  assert.equal(s.pool.length, 20);
-  assert.deepEqual(unmet, reversed.filter((sp) => !met.includes(sp.id)).slice(0, 15).map((sp) => sp.id), 'unmet birds follow the new order');
+  L.realign(s, reversed);
+  assert.ok(s.pool.includes(mastered), 'mastered bird stays');
+  assert.ok(s.pool.includes(nearly), 'nearly mastered bird stays');
+  assert.ok(!s.pool.includes(hard), 'hard met bird set aside');
+  assert.ok(!s.pool.includes(unmet), 'unmet bird re-picked');
+  assert.equal(L.status(s, hard), 'later');
+  assert.equal(s.birds[hard].wrong, 3, 'progress kept');
+  for (const sp of reversed.slice(0, 18)) assert.ok(s.pool.includes(sp.id), 'new order fills the set');
+  // Stable: running it again changes nothing.
+  const pool = [...s.pool];
+  L.realign(s, reversed);
+  assert.deepEqual(s.pool, pool, 'no churn');
+  // The set-aside bird comes back when the order reaches it, without a new-bird card.
+  L.ensurePool(s, reversed, { all: true });
+  assert.equal(L.status(s, hard), 'learning');
 }
 
 // Starting pool follows the experience level.

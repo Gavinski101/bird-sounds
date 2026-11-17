@@ -59,19 +59,32 @@ export function ensurePool(state, species, { all = false } = {}) {
   }
 }
 
-// Birds of the area that are in the study set but were never met or answered are dropped
-// and re-picked in the current `species` order, so a changed learning order or region takes
-// effect straight away (they were chosen under an older order: user saw Southern Masked
-// Weaver introduced after the iconic-first order shipped). Met birds are untouched.
-export function repickUnmet(state, species, keep = null) {
+export const NEARLY_SCORE = MASTER_SCORE - 2; // one clean answer from mastered
+
+// Re-line-up: when the order changes (iconic first, shared difficulty, another region) the
+// study set is made to match what the CURRENT order would give you now. Birds near the front
+// of the order stay; further down, unmet birds are re-picked and
+// met birds that aren't mastered or nearly mastered are set aside ("later", progress kept)
+// until the order reaches them again. Existing users were stuck with hard birds lined up
+// before the iconic-first order (user 2026-11-17). Mastered birds stay for their checks.
+export function realign(state, species, keep = null) {
   const ids = new Set(species.map((sp) => sp.id));
+  const k = state.pool.filter((id) => ids.has(id)).length;
+  // Room to spare (2x the set, at least 40 birds), so only birds far down the order are set
+  // aside, not easy ones just past the current set size.
+  const target = new Set(species.slice(0, Math.max(2 * k, 40)).map((sp) => sp.id));
   const before = state.pool.length;
   state.pool = state.pool.filter((id) => {
-    if (!ids.has(id) || id === keep) return true;
+    if (!ids.has(id) || id === keep || target.has(id)) return true;
     const b = bird(state, id);
-    return b.intro || b.right || b.wrong;
+    if (b.m) return true;
+    if (!(b.intro || b.right || b.wrong)) return false;
+    return b.s >= NEARLY_SCORE;
   });
-  if (state.pool.length !== before) ensurePool(state, species);
+  if (state.pool.length !== before) {
+    if (state.pairTest && !state.pool.includes(state.pairTest.id)) state.pairTest = null;
+    ensurePool(state, species);
+  }
 }
 
 // Adds the next `count` birds of the area (in `species` order) to the study set.
@@ -305,6 +318,7 @@ function duePair(state, inArea) {
 
 export function status(state, id) {
   const b = state.birds[id];
+  if (b && b.intro && !b.m && !state.pool.includes(id)) return 'later'; // set aside by realign
   if (!b || !state.pool.includes(id)) return 'locked';
   if (!b.intro) return 'new';
   return b.m ? 'mastered' : 'learning';
@@ -313,7 +327,7 @@ export function status(state, id) {
 export function summary(state, species) {
   const tiers = {};
   for (const sp of species) {
-    const t = (tiers[sp.tier] ||= { mastered: 0, learning: 0, new: 0, locked: 0, total: 0 });
+    const t = (tiers[sp.tier] ||= { mastered: 0, learning: 0, new: 0, later: 0, locked: 0, total: 0 });
     t[status(state, sp.id)]++;
     t.total++;
   }
