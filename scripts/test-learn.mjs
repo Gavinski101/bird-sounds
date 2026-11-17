@@ -180,6 +180,20 @@ function play(state, knows, cards) {
   }
 }
 
+// Unmet birds are re-picked when the order changes; met birds stay.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of s.pool.slice(0, 5)) L.introduced(s, id);
+  const met = s.pool.slice(0, 5);
+  const reversed = [...species].reverse();
+  L.repickUnmet(s, reversed);
+  for (const id of met) assert.ok(s.pool.includes(id), 'met bird kept');
+  const unmet = s.pool.filter((id) => !met.includes(id));
+  assert.equal(s.pool.length, 20);
+  assert.deepEqual(unmet, reversed.filter((sp) => !met.includes(sp.id)).slice(0, 15).map((sp) => sp.id), 'unmet birds follow the new order');
+}
+
 // Starting pool follows the experience level.
 {
   const s = L.newState();

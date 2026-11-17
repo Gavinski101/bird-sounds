@@ -59,6 +59,21 @@ export function ensurePool(state, species, { all = false } = {}) {
   }
 }
 
+// Birds of the area that are in the study set but were never met or answered are dropped
+// and re-picked in the current `species` order, so a changed learning order or region takes
+// effect straight away (they were chosen under an older order: user saw Southern Masked
+// Weaver introduced after the iconic-first order shipped). Met birds are untouched.
+export function repickUnmet(state, species, keep = null) {
+  const ids = new Set(species.map((sp) => sp.id));
+  const before = state.pool.length;
+  state.pool = state.pool.filter((id) => {
+    if (!ids.has(id) || id === keep) return true;
+    const b = bird(state, id);
+    return b.intro || b.right || b.wrong;
+  });
+  if (state.pool.length !== before) ensurePool(state, species);
+}
+
 // Adds the next `count` birds of the area (in `species` order) to the study set.
 export function addBirds(state, species, count) {
   const inPool = new Set(state.pool);

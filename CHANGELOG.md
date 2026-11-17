@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.0 (2026-11-17)
+- Birds waiting in your study set that you haven't met yet are re-picked in the current order (and on every region or order change), so the iconic-first order applies straight away instead of after old picks like Southern Masked Weaver. Birds you've met keep their progress.
+
 ## 1.3.9 (2026-11-17)
 - Clearer flag reasons, each with a short explanation: Not its typical sound, Sounds like other birds, Other sounds in the way, Bad recording, Wrong bird.
 - A bird's page shows why a recording was flagged, and its flag link opens the same choices.

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.9';
+const VERSION = '1.4.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1356,7 +1356,7 @@ $('orderSel').addEventListener('change', (e) => {
   S.prefs.order = e.target.value;
   applyArea();
   save();
-  toast(`${ORDERS[e.target.value].label}: birds already in play stay in play`);
+  toast(`${ORDERS[e.target.value].label}: birds you've met keep their progress`);
 });
 
 // Settings region picker: the survey's tree + search, shown in a sheet.
@@ -1550,6 +1550,7 @@ function applyArea() {
     .sort((x, y) => x.rank - y.rank));
   byId = { ...Object.fromEntries(allSpecies.map((b) => [b.id, b])), ...Object.fromEntries(species.map((b) => [b.id, b])) };
   areaIds = new Set(species.map((b) => b.id));
+  L.repickUnmet(S.learn, species, cur?.id); // unmet birds follow the current order
 }
 
 $('autoplay').addEventListener('change', (e) => {
