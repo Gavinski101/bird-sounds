@@ -303,6 +303,10 @@ textarea { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
   display: flex; align-items: flex-end; justify-content: center;
 }
 .sheet-bg[hidden] { display: none; }
+#rateSheet { z-index: 21; } /* opens on top of the bird page too */
+.flag-opt { text-align: left; padding-top: 10px; padding-bottom: 10px; }
+.flag-opt b { display: block; }
+.flag-opt span { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 2px; }
 .sheet {
   background: var(--surface);
   width: 100%; max-width: 560px;

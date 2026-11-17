@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.8';
+const VERSION = '1.3.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -911,6 +911,16 @@ $('skipBtn').addEventListener('click', () => {
 
 let rateTarget = null; // { rec, after }
 
+// Flag reasons (keys are stored with the user's progress; 'indistinct', 'busy' and 'quality'
+// are older keys kept with these meanings so earlier flags still make sense).
+const FLAGS = {
+  atypical: 'Not its typical sound',
+  indistinct: 'Sounds like other birds',
+  busy: 'Other sounds in the way',
+  quality: 'Bad recording',
+  wrong: 'Wrong bird',
+};
+
 function openRate(rec, after) {
   rateTarget = { rec, after };
   renderStars($('stars'), rec, true);
@@ -953,7 +963,7 @@ $('rateSheet').addEventListener('click', (e) => {
   const f = e.target.closest('[data-flag]');
   if (f && rateTarget) {
     setFlag(recKey(rateTarget.rec), f.dataset.flag);
-    toast('Flagged: using another recording');
+    toast(`Flagged (${FLAGS[f.dataset.flag]}): using another recording`);
     closeRate(true);
   } else if (e.target === $('rateSheet') || e.target === $('rateClose')) {
     closeRate(false);
@@ -1167,13 +1177,13 @@ function openBird(id) {
       <div class="rc-top">
         <button class="mini-play" id="dp-${esc(recKey(r))}" data-dplay="${esc(recKey(r))}" aria-label="Play">${PLAY_SVG}</button>
         <div class="nm">${esc(r.type)} · ${r.secs ? `${r.secs}s ` : ''}${active.has(recKey(r)) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
-          ${pref.flag ? `<span class="chip">Flagged</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}
+          ${pref.flag ? `<span class="chip">Flagged: ${esc(FLAGS[pref.flag] || 'yes')}</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}
           ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span> <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
       </div>
       <div class="stars small" data-rate="${esc(recKey(r))}"></div>
       ${shared(r)?.raters ? `<div class="small muted" data-tip="${esc(TIPS.sharedStars)}">Everyone: ${shared(r).avg.toFixed(1)}★ from ${shared(r).raters} ${shared(r).raters === 1 ? 'person' : 'people'}</div>` : ''}
       <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
-      ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Not distinctive</button>`}
+      ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Rate / flag</button>`}
     </div>`;
   }
   if (sp.photo) html += `<p class="credit">Photo: ${esc(sp.photo.attr)}</p>`;
@@ -1197,7 +1207,11 @@ $('birdDetail').addEventListener('click', (e) => {
   const s = e.target.closest('[data-star]');
   if (s) { setStars(s.dataset.xc, +s.dataset.star); return openBird(id); }
   const f = e.target.closest('[data-flagrec]');
-  if (f) { setFlag(f.dataset.flagrec, 'indistinct'); return openBird(id); }
+  if (f) {
+    const rec = (calls[id] || []).find((r) => recKey(r) === f.dataset.flagrec);
+    if (rec) openRate(rec, () => openBird(id));
+    return;
+  }
   const u = e.target.closest('[data-unflag]');
   if (u) { setFlag(u.dataset.unflag, undefined); return openBird(id); }
 });

@@ -208,9 +208,12 @@
       <h2 id="rateTitle">This recording</h2>
       <div class="stars" id="stars" role="radiogroup" aria-label="Rating"></div>
       <p class="muted small">5 stars plays this recording first. 1–2 stars swaps it for another one.</p>
-      <button class="btn block" data-flag="indistinct">Not distinctive, use another</button>
-      <button class="btn block ghost" data-flag="busy">Can't hear the bird / too many sounds / noise, use another</button>
-      <button class="btn block ghost" data-flag="quality">Poor quality or wrong bird, use another</button>
+      <p class="small" style="margin:14px 0 0"><b>Flag it</b> <span class="muted">(uses another recording)</span></p>
+      <button class="btn block flag-opt ghost" data-flag="atypical"><b>Not its typical sound</b><span>The bird is clear, but this isn't the call you'd know it by.</span></button>
+      <button class="btn block flag-opt ghost" data-flag="indistinct"><b>Sounds like other birds</b><span>A generic call, too much like other species to tell apart.</span></button>
+      <button class="btn block flag-opt ghost" data-flag="busy"><b>Other sounds in the way</b><span>Other birds, wind, traffic or people are louder than this bird.</span></button>
+      <button class="btn block flag-opt ghost" data-flag="quality"><b>Bad recording</b><span>Too faint, distorted, crackly, or mostly silence.</span></button>
+      <button class="btn block flag-opt ghost" data-flag="wrong"><b>Wrong bird</b><span>Doesn't sound like this bird at all.</span></button>
       <button class="btn block ghost" id="rateClose">Close</button>
     </div>
   </div>
