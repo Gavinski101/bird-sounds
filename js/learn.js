@@ -14,6 +14,9 @@ export const FIRST_INTERVAL = 15;
 export const MAX_INTERVAL = 400;
 export const REVIEW_SHARE = 0.25;
 export const MAX_STRUGGLING = 3; // no new birds while this many met birds are still a struggle
+export const NEW_EVERY = 15;     // a new bird at least this often (in cards)...
+export const NEW_EVERY_STRUGGLING = 30; // ...or this often while MAX_STRUGGLING+ birds are a struggle
+export const MISS_REST = 8;      // a bird missed twice in a row rests this many cards (+0-2)
 export const PAIR_EVERY = 8;   // at most one compare card per this many cards
 export const PAIR_MIN = 2;     // mix-ups (either direction) before a pair gets compare cards
 export const PAIR_REST = 25;   // cards before the same pair comes up again
@@ -56,6 +59,20 @@ export function ensurePool(state, species, { all = false } = {}) {
   }
 }
 
+// Adds the next `count` birds of the area (in `species` order) to the study set.
+export function addBirds(state, species, count) {
+  const inPool = new Set(state.pool);
+  for (const sp of species) {
+    if (count <= 0) break;
+    if (!inPool.has(sp.id)) { state.pool.push(sp.id); bird(state, sp.id); count--; }
+  }
+}
+
+// Struggling = met, not mastered, and doing badly NOW (score 0 or less after a miss).
+// It used to be "missed at least as often as got right" over all time, which kept birds
+// you'd since improved on blocking new birds for ages (user 2026-11-17: getting stuck).
+export const isStruggling = (b) => b.intro && !b.m && b.wrong > 0 && b.s <= 0;
+
 // species: when given, count only birds in that list (the current area).
 export function learningCount(state, species = null) {
   const ids = species ? new Set(species.map((sp) => sp.id)) : null;
@@ -70,6 +87,19 @@ function pickFrom(list, rand) {
 // Without intros, new birds are tested straight away and the reveal teaches them.
 export function nextCard(state, species, rand = Math.random, { intros = false } = {}) {
   ensurePool(state, species);
+  // Steady trickle: with every bird in play already met, one new bird joins every
+  // NEW_EVERY cards (NEW_EVERY_STRUGGLING while struggling), so a few hard birds can't
+  // stall progress. The user wants met birds learnt first, so struggling slows it down.
+  {
+    const ids = new Set(species.map((sp) => sp.id));
+    const inPlay = state.pool.filter((id) => ids.has(id)).map((id) => bird(state, id));
+    const struggling = inPlay.filter(isStruggling).length;
+    const every = struggling < MAX_STRUGGLING ? NEW_EVERY : NEW_EVERY_STRUGGLING;
+    if (inPlay.every((b) => b.intro) && state.sinceIntro >= every && inPlay.length < species.length) {
+      addBirds(state, species, 1);
+      if (!intros) state.sinceIntro = 0;
+    }
+  }
   if (!intros) {
     for (const id of state.pool) {
       const b = bird(state, id);
@@ -85,8 +115,9 @@ export function nextCard(state, species, rand = Math.random, { intros = false } 
   const fresh = pool.filter(([, b]) => !b.intro);
 
   // Struggling = met, not mastered, and missed at least as often as got right.
-  const struggling = pool.filter(([, b]) => b.intro && !b.m && b.wrong > 0 && b.wrong >= b.right).length;
-  if (fresh.length && struggling < MAX_STRUGGLING && !learningDue.some(([, b]) => b.miss)
+  const struggling = pool.filter(([, b]) => isStruggling(b)).length;
+  const mayIntro = struggling < MAX_STRUGGLING || state.sinceIntro >= NEW_EVERY_STRUGGLING;
+  if (fresh.length && mayIntro && !learningDue.some(([, b]) => b.miss)
       && (learningDue.length === 0 || state.sinceIntro >= 3)) {
     return { id: fresh[0][0], intro: true };
   }
@@ -171,6 +202,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   state.history = [...state.history.slice(-49), { id, correct, hinted, n: state.n }];
   let event = null;
   b.miss = !correct;
+  b.missRun = correct ? 0 : (b.missRun || 0) + 1;
   if (correct) {
     b.right++;
     if (b.m) {
@@ -198,7 +230,9 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
     } else {
       b.s = Math.max(b.s - 2, -4);
     }
-    b.due = state.n + 3 + Math.floor(rand() * 3);
+    // Missed: back after 3-5 cards. Missed twice in a row: rest longer, so the same hard
+    // birds don't take over the session.
+    b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);
   }
   if (day) logDay(state, day);
   ensurePool(state, species);

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.7';
+const VERSION = '1.3.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1278,8 +1278,8 @@ function renderProgress() {
     ? `You start with common birds around ${esc(area)} that have distinctive calls. Birds that sound alike (one family, or pairs people often mix up) are spread out and come later.`
     : `You start with the most common birds around ${esc(area)}.`}
     Each right answer moves a bird toward mastered (3 clean answers, or 6 with hints).
-    When fewer than 8 birds are still being learned, the next 5 are added, but not while 3 or more birds you've met are still a struggle.
-    Missed birds come back after a few cards; mastered birds come back less and less often. Change the order in Settings.</p>
+    When fewer than 8 birds are still being learned, the next 5 are added, and a new bird joins at least every 15 cards. While 3 or more birds you've met are still a struggle (score at zero or below), that slows to one every 30 cards, so you can catch up on them first.
+    Missed birds come back after a few cards (a bird missed twice in a row rests a bit longer); mastered birds come back less and less often. Change the order in Settings.</p>
     ${s.inPlay < species.length ? '<button class="btn block ghost" id="unlockAll">Add all birds now</button>' : ''}
   </div>
   <p class="small muted" style="text-align:center">${s.answered} answers so far</p>`;

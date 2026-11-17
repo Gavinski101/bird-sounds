@@ -146,7 +146,7 @@ function play(state, knows, cards) {
     picked.add(t.pairTest.id);
   }
   assert.equal(picked.size, 2, 'either bird can be tested');
-  assert.equal(L.summary(s, species).met, 20);
+  assert.ok(L.summary(s, species).met >= 20, 'met birds kept (the trickle may add more)');
 }
 
 // Skip for later: a new bird goes to the back of the new-bird queue; a met bird waits SKIP_LATER cards.
@@ -202,16 +202,22 @@ function play(state, knows, cards) {
   assert.ok(s.pool.includes('b0'), 'birds from the first area are kept');
 }
 
-// No new birds while 3 met birds are still a struggle.
+// While 3 met birds are a struggle, new birds slow down to one per NEW_EVERY_STRUGGLING cards.
 {
   const s = L.newState();
   L.ensurePool(s, species);
   for (const id of ['b0', 'b1', 'b2']) { L.introduced(s, id); L.answer(s, species, id, { correct: false }, rand); }
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < L.NEW_EVERY_STRUGGLING - 5; i++) {
     const c = L.nextCard(s, species, rand, { intros: true });
-    assert.equal(c.intro, false, 'no introduction while struggling');
+    assert.equal(c.intro, false, 'no introduction yet while struggling');
     L.answer(s, species, c.id, { correct: false }, rand);
   }
+  let slowIntro = false;
+  for (let i = 0; i < 10 && !slowIntro; i++) {
+    const c = L.nextCard(s, species, rand, { intros: true });
+    if (c.intro) { slowIntro = true; L.introduced(s, c.id); } else L.answer(s, species, c.id, { correct: false }, rand);
+  }
+  assert.ok(slowIntro, 'a new bird after NEW_EVERY_STRUGGLING cards even while struggling');
   // Getting them right releases new birds again.
   for (const id of ['b0', 'b1', 'b2']) for (let k = 0; k < 4; k++) L.answer(s, species, id, { correct: true }, rand);
   let introduced = false;
@@ -220,6 +226,34 @@ function play(state, knows, cards) {
     if (c.intro) introduced = true; else L.answer(s, species, c.id, { correct: true }, rand);
   }
   assert.ok(introduced, 'new bird once no longer struggling');
+}
+
+// Steady trickle: with all birds met and none struggling, a new bird comes within NEW_EVERY cards.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of s.pool) L.introduced(s, id);
+  const before = s.pool.length;
+  let intro = null;
+  for (let i = 0; i < L.NEW_EVERY + 5 && !intro; i++) {
+    const c = L.nextCard(s, species, rand, { intros: true });
+    if (c.intro) intro = c; else L.answer(s, species, c.id, { correct: true }, rand);
+  }
+  assert.ok(intro, 'a new bird within NEW_EVERY cards');
+  assert.ok(s.pool.length > before, 'study set grew');
+}
+
+// A bird missed twice in a row rests longer than one missed once.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  L.introduced(s, 'b0');
+  L.answer(s, species, 'b0', { correct: false }, () => 0);
+  assert.equal(s.birds.b0.due, s.n + 3);
+  L.answer(s, species, 'b0', { correct: false }, () => 0);
+  assert.equal(s.birds.b0.due, s.n + L.MISS_REST);
+  L.answer(s, species, 'b0', { correct: true }, () => 0);
+  assert.equal(s.birds.b0.missRun, 0);
 }
 
 console.log('learn.js: all checks passed');

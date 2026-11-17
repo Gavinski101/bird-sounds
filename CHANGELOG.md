@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.8 (2026-11-17)
+- More new birds, less getting stuck: a new bird joins at least every 15 cards (every 30 while 3+ birds are a struggle, instead of none at all); "struggling" now means doing badly now (score 0 or below), not missed as often as got right over all time; a bird missed twice in a row rests about 8 cards instead of coming straight back. In a simulation of 300 cards: 25 birds met instead of 19, and the 3 most-shown birds take 33% of cards instead of 43%.
+
 ## 1.3.7 (2026-11-17)
 - Cuckoos join the iconic sounds that come first: Red-chested, Black, Diederik, Klaas's, African Emerald, Jacobin, Levaillant's and African Cuckoo. New sound notes for Jacobin, Levaillant's and African Cuckoo.
 
