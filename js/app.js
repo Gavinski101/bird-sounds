@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.3.4';
+const VERSION = '1.3.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1475,7 +1475,11 @@ const ORDERS = {
   distinct: { label: 'Easiest to tell apart first', desc: 'Common birds with distinctive calls first. Birds that sound alike are spread out and added later.' },
   common: { label: 'Most common first', desc: 'Strictly the most recorded birds in your region first, however alike they sound.' },
 };
-const EASE_FACTOR = { 1: 0.4, 2: 1, 3: 1.8, 4: 2.5 };
+// Ease groups go strictly in order (1 distinctive, 2 average, 3 similar-sounding families,
+// 4 seen more than heard), commonest first within each. A distinctive bird only counts as
+// group 1 among the area's DISTINCT_CAP commonest, so rare iconic birds don't jump the queue.
+// (A rank x factor blend let common look-alikes like Cape Weaver beat Hadeda: user 2026-11-17.)
+const DISTINCT_CAP = 150;
 const SPREAD = 6; // a new bird avoids the family / sound-alikes of the last 6 added
 
 const easeOf = (id) => guide.birds[id]?.ease || 2;
@@ -1493,7 +1497,8 @@ function soundAlikes() {
 
 function learnOrder(list) {
   if ((S.prefs.order || 'distinct') !== 'distinct') return list;
-  const queue = [...list].sort((x, y) => x.rank * EASE_FACTOR[easeOf(x.id)] - y.rank * EASE_FACTOR[easeOf(y.id)]);
+  const group = (b) => { const e = easeOf(b.id); return e === 1 && b.rank > DISTINCT_CAP ? 2 : e; };
+  const queue = [...list].sort((x, y) => group(x) - group(y) || x.rank - y.rank);
   const alike = soundAlikes();
   const out = [];
   while (queue.length) {

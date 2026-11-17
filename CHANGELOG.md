@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.5 (2026-11-17)
+- "Easiest to tell apart first" now really puts distinctive sounds first: all distinctive birds among the region's 150 commonest come before average ones, and similar-sounding families come last (before, common look-alikes like Cape Weaver still beat Hadeda).
+
 ## 1.3.4 (2026-11-16)
 - Region switch: compare cards, hint choices, "Birds you mix up" and "Birds you miss most" now only use birds of the current region (counts and cards already did). Progress on birds outside the region is kept for when you switch back.
 
