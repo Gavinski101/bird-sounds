@@ -172,6 +172,9 @@ NOTES = {
     "African Firefinch": "Fast, rolling \"trrrrt\" trill and a clear \"vee-vee\" call.",
     "Black-winged Kite": "Thin, high \"weeeep\" whistle; mostly quiet.",
     "African Black Swift": "Shrill screams around cliffs, flocks screaming at dusk.",
+    "Jacobin Cuckoo": "Loud, ringing \"kleeuw, kleeuw\" and a fast, bubbling \"pewpewpew\" in summer.",
+    "Levaillant's Cuckoo": "Loud, rising \"kow-kow-kow-kow\" followed by a harsh, chattering \"chi-chi-chi-cherrrr\".",
+    "African Cuckoo": "Soft, two-note \"hoop-hoop\", the second note lower; like a hoopoe but slower.",
     "Little Rush Warbler": "Dry \"trrp-trrp-trrp\" notes speeding up into a rattle, like a bouncing ball, often with wing-snaps, from reedbeds.",
     "Tambourine Dove": "Long run of soft \"du-du-du\" coos, slow then faster and fading, staying on one pitch (Emerald-spotted Wood Dove's falls away at the end).",
 }
@@ -183,6 +186,10 @@ ICONIC = {
     "Red-chested Flufftail", "Buff-spotted Flufftail", "Knysna Turaco", "Little Rush Warbler",
     "Hadeda Ibis", "Tambourine Dove", "Bar-throated Apalis", "Fork-tailed Drongo", "Cape Batis",
     "Southern Fiscal",
+    # Cuckoos (user: "all the cuckoos have distinct iconic sounds"). Not Common Cuckoo: mostly
+    # silent while in Africa.
+    "Red-chested Cuckoo", "Black Cuckoo", "Diederik Cuckoo", "Klaas's Cuckoo", "African Emerald Cuckoo",
+    "Jacobin Cuckoo", "Levaillant's Cuckoo", "African Cuckoo",
 }
 
 # Have a memory aid, but still easy to confuse: keep their family's ease.

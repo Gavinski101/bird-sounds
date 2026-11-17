@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.3.7 (2026-11-17)
+- Cuckoos join the iconic sounds that come first: Red-chested, Black, Diederik, Klaas's, African Emerald, Jacobin, Levaillant's and African Cuckoo. New sound notes for Jacobin, Levaillant's and African Cuckoo.
+
 ## 1.3.6 (2026-11-17)
 - Iconic sounds come first of all: Southern Boubou, Burchell's Coucal, Jackal Buzzard, Black-headed Oriole, Narina Trogon, both flufftails, Knysna Turaco, Little Rush Warbler, Hadeda, Tambourine Dove, Bar-throated Apalis, Fork-tailed Drongo, Cape Batis and Southern Fiscal (when among the region's 250 commonest).
 - Sound notes for Little Rush Warbler and Tambourine Dove.
