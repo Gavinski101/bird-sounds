@@ -315,6 +315,9 @@ function duePair(state, inArea) {
     if (!met.has(heard)) continue;
     for (const { id: other, count } of confusedWith(state, heard)) {
       if (!met.has(other) || count < PAIR_MIN) continue;
+      // Both mastered: you can tell them apart now, so no more compare cards (a miss on
+      // either puts it back in learning and the pair can return).
+      if (state.birds[heard]?.m && state.birds[other]?.m) continue;
       const shown = state.pairShown?.[pairKey(heard, other)];
       if (shown !== undefined && state.n - shown < PAIR_REST) continue;
       if (!best || count > best.count) best = { pair: [heard, other], count };

@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.5 (2026-11-18)
+- "You mix these two up" compare cards stop once both birds are mastered (they return if you miss either one again).
+
 ## 1.4.4 (2026-11-18)
 - Pressing "Other recording" before answering is counted per bird and feeds the shared difficulty: pressing it 3+ times on a bird, and at least once per 2 answers, counts as struggling with it. Needs the updated supabase/9-shared-bird-difficulty.sql.
 

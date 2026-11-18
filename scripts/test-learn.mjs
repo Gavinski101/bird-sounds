@@ -208,6 +208,21 @@ function play(state, knows, cards) {
   assert.equal(L.status(s, hard), 'learning');
 }
 
+// No compare cards once both birds of a pair are mastered.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of s.pool) L.introduced(s, id);
+  for (let k = 0; k < 3; k++) L.recordMix(s, 'b1', 'b2');
+  for (const id of ['b1', 'b2']) Object.assign(s.birds[id], { m: true, s: 6, iv: 400, due: 9999 });
+  s.sincePair = 99;
+  for (let i = 0; i < 40; i++) {
+    const c = L.nextCard(s, species, rand);
+    assert.ok(!c.compare, 'no compare card for a mastered pair');
+    L.answer(s, species, c.id, { correct: true }, rand);
+  }
+}
+
 // Starting pool follows the experience level.
 {
   const s = L.newState();
