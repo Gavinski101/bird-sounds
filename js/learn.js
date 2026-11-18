@@ -184,6 +184,13 @@ function tick(state, id) {
   bird(state, id).last = state.n;
 }
 
+// "Other recording" pressed before answering: counted per bird (b.oth). Needing more
+// recordings to place a bird is a sign it's hard; shared difficulty uses it (bird_stats).
+export function otherPressed(state, id) {
+  const b = bird(state, id);
+  b.oth = (b.oth || 0) + 1;
+}
+
 export function introduced(state, id) {
   const b = bird(state, id);
   b.intro = true;

@@ -1,12 +1,13 @@
 -- Saved in the Supabase SQL editor as "9 - Shared bird difficulty". Safe to run more than once.
 
--- Shared difficulty (app v1.4.1). Totals across every account, read from the saved progress
+-- Shared difficulty (app v1.4.1; Other-recording presses count from v1.4.4). Totals across every account, read from the saved progress
 -- rows; only totals come out, never who answered, so signed-out visitors may read them too.
 -- The app moves a bird later for new learners when many people struggle with it, and keeps
 -- pairs many people mix up apart. The thresholds live in the app (js/app.js, SHARED_*).
 
--- Per bird: how many people answered it 3+ times, and how many of those missed it more
--- often than they got it right.
+-- Per bird: how many people answered it 3+ times, and how many of those struggle with it:
+-- missed it more often than they got it right, or pressed "Other recording" before answering
+-- at least 3 times and at least once per 2 answers (app v1.4.4, learn.birds[id].oth).
 create or replace function public.bird_stats()
 returns table (bird text, users int, strugglers int)
 language sql
@@ -17,12 +18,13 @@ as $$
   with b as (
     select b.key as bird,
            case when b.value->>'right' ~ '^[0-9]+$' then (b.value->>'right')::int else 0 end as r,
-           case when b.value->>'wrong' ~ '^[0-9]+$' then (b.value->>'wrong')::int else 0 end as w
+           case when b.value->>'wrong' ~ '^[0-9]+$' then (b.value->>'wrong')::int else 0 end as w,
+           case when b.value->>'oth' ~ '^[0-9]+$' then (b.value->>'oth')::int else 0 end as o
     from public.progress p
     cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'birds') = 'object' then p.data->'learn'->'birds' else '{}'::jsonb end) b
     where jsonb_typeof(b.value) = 'object'
   )
-  select bird, count(*)::int, (count(*) filter (where w > r))::int
+  select bird, count(*)::int, (count(*) filter (where w > r or (o >= 3 and o * 2 >= r + w)))::int
   from b
   where r + w >= 3
   group by bird;

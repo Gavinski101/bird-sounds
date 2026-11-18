@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.4 (2026-11-18)
+- Pressing "Other recording" before answering is counted per bird and feeds the shared difficulty: pressing it 3+ times on a bird, and at least once per 2 answers, counts as struggling with it. Needs the updated supabase/9-shared-bird-difficulty.sql.
+
 ## 1.4.3 (2026-11-18)
 - "Other recording" now goes through every xeno-canto recording of the bird made in Africa (39,000 in all), nearest to your region and best quality first, after your study recordings. Each bird's list is only downloaded when you use the button. The recording line shows how far away it was recorded.
 - Rate any of them 4-5 stars to make it one of your study recordings.
