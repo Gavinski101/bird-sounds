@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.3 (2026-11-18)
+- "Other recording" now goes through every xeno-canto recording of the bird made in Africa (39,000 in all), nearest to your region and best quality first, after your study recordings. Each bird's list is only downloaded when you use the button. The recording line shows how far away it was recorded.
+- Rate any of them 4-5 stars to make it one of your study recordings.
+
 ## 1.4.2 (2026-11-17)
 - Re-line-up: birds in play now follow the current order. Met birds far down the order (e.g. weavers and white-eyes lined up before the iconic-first order) are set aside as "Later" with their progress kept, and come back when the order reaches them; mastered and nearly mastered birds stay.
 - Shared difficulty scales with the number of users: a bird is hard when at least half of those who answered it 3+ times miss it more than they get it right; a pair counts when a quarter of users mixed it up twice (with one user, that user is the whole base).

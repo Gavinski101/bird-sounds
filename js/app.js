@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.2';
+const VERSION = '1.4.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -408,11 +408,90 @@ function isOff(r) {
   return sharedOff(r);
 }
 
+// ---------- every recording of a bird ("Other recording") ----------
+// "Other recording" goes through the 1-2 study recordings, then the bird's other candidates,
+// then EVERY xeno-canto recording made in Africa (data/recs/<id>.json from
+// scripts/build_all_recs.py, fetched only when needed), nearest to the user and best quality
+// first (user 2026-11-18: e.g. no Southern Boubou whistle among the 8 candidates).
+const allRecs = {}; // bird id -> recordings from data/recs, once loaded
+const allRecsLoading = {};
+
+function loadAllRecs(id) {
+  if (allRecs[id] || allRecsLoading[id]) return allRecsLoading[id] || Promise.resolve();
+  allRecsLoading[id] = fetch(`data/recs/${id}.json`)
+    .then((res) => (res.ok ? res.json() : []))
+    .then((rows) => { allRecs[id] = rows.map((r) => ({ ...r, file: `https://xeno-canto.org/${r.xc}/download`, bird: id })); })
+    .catch(() => { allRecs[id] = []; })
+    .finally(() => { delete allRecsLoading[id]; });
+  return allRecsLoading[id];
+}
+
+// Rough centre of each region, for "nearest recordings first" (not in areas.json).
+const AREA_CENTER = {
+  all: [-28, 25], za: [-29, 25], wc: [-33.5, 20.5], 'cape-town': [-33.95, 18.5], 'table-mountain': [-34.1, 18.4],
+  'west-coast-np': [-33.15, 18.1], cederberg: [-32.35, 19.05], overberg: [-34.4, 19.8], 'de-hoop': [-34.45, 20.4],
+  'karoo-np': [-32.3, 22.5], 'garden-route': [-33.9, 22.8], george: [-33.97, 22.52], mylist: [-33.97, 22.52],
+  ec: [-32.3, 26.5], gqeberha: [-33.95, 25.6], addo: [-33.45, 25.75], 'mountain-zebra': [-32.25, 25.45],
+  nc: [-29.5, 21.5], kgalagadi: [-25.8, 20.5], augrabies: [-28.6, 20.35], namaqua: [-30.1, 17.6],
+  fs: [-28.7, 26.5], 'golden-gate': [-28.5, 28.6], kzn: [-28.7, 30.8], durban: [-29.85, 31.0],
+  isimangaliso: [-28.0, 32.5], hluhluwe: [-28.2, 31.95], drakensberg: [-29.3, 29.3], gp: [-26.1, 28.1],
+  johannesburg: [-26.2, 28.05], pretoria: [-25.75, 28.2], lp: [-23.6, 29.5], mapungubwe: [-22.2, 29.4],
+  marakele: [-24.45, 27.6], magoebaskloof: [-23.88, 29.98], mp: [-25.6, 30.5], kruger: [-24.0, 31.5],
+  wakkerstroom: [-27.35, 30.15], nw: [-26.0, 25.5], pilanesberg: [-25.25, 27.1], na: [-22.5, 17.5],
+  etosha: [-18.85, 16.3], 'namib-naukluft': [-24.5, 15.5], bw: [-22.3, 24.0], okavango: [-19.3, 22.9],
+  chobe: [-18.6, 24.5], zw: [-19.0, 29.8], hwange: [-18.75, 26.5], 'victoria-falls': [-17.93, 25.85],
+  gonarezhou: [-21.5, 31.8], mz: [-23.5, 33.5], 'maputo-reserve': [-26.4, 32.8], ls: [-29.6, 28.25], sz: [-26.5, 31.5],
+};
+
+// Where the user is: their Near me location, else the centre of their region (or a parent).
+function userPoint() {
+  if (currentAreaId() === 'near') {
+    try {
+      const n = JSON.parse(localStorage.getItem(NEAR_KEY));
+      if (n?.lat != null) return [n.lat, n.lng];
+    } catch { /* fall through */ }
+  }
+  for (let a = areaById(currentAreaId()); a; a = areaById(a.parent)) if (AREA_CENTER[a.id]) return AREA_CENTER[a.id];
+  return AREA_CENTER.george;
+}
+
+function kmBetween([la1, lo1], [la2, lo2]) {
+  const rad = Math.PI / 180;
+  const h = Math.sin(((la2 - la1) * rad) / 2) ** 2
+    + Math.cos(la1 * rad) * Math.cos(la2 * rad) * Math.sin(((lo2 - lo1) * rad) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+const recKm = (r) => (r.lat != null && r.lon != null ? kmBetween(userPoint(), [r.lat, r.lon]) : null);
+// Nearest first; lower quality and other birds in the background count as "further away".
+const Q_KM = { A: 0, B: 150, C: 400, D: 900 };
+const nearScore = (r) => (recKm(r) ?? 3000) + (Q_KM[r.q] ?? 600) + 40 * (r.bg || 0);
+
+// Recordings from the full list that you rated 4-5 stars become study recordings too. Their
+// details are kept with the rating (synced), since the full list isn't always loaded.
+function pickedExtras(id) {
+  return Object.values(S.recs || {}).filter((p) => p.meta?.bird === id && (p.stars || 0) >= 4).map((p) => p.meta);
+}
+
+// Everything "Other recording" goes through, in order.
+// After the study recordings, every other one (spares from calls.json included) is sorted by
+// distance and quality; the full list supplies the coordinates calls.json doesn't have.
+function recList(id) {
+  const full = Object.fromEntries((allRecs[id] || []).map((r) => [recKey(r), r]));
+  const withPlace = (r) => (full[recKey(r)] ? { ...r, lat: full[recKey(r)].lat, lon: full[recKey(r)].lon, bg: full[recKey(r)].bg } : r);
+  const first = activeRecs(id).map(withPlace);
+  const seen = new Set(first.map(recKey));
+  const rest = [...(calls[id] || []).map(withPlace), ...(allRecs[id] || [])]
+    .filter((r) => !seen.has(recKey(r)) && !isOff(r) && seen.add(recKey(r)))
+    .sort((a, b) => nearScore(a) - nearScore(b));
+  return [...first, ...rest];
+}
+
 // The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first
 // (your rating, else everyone's), otherwise in the order the build script ranked them.
 const recStars = (r) => recPref(r).stars ?? sharedStars(r) ?? 3;
 function activeRecs(id) {
-  const all = calls[id] || [];
+  const all = [...(calls[id] || []), ...pickedExtras(id)];
   const ok = all.filter((r) => !isOff(r));
   return (ok.length ? ok : all)
     .map((r, i) => ({ r, i }))
@@ -457,7 +536,7 @@ const TIPS = {
   mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
   streak: 'Birds right in a row. A miss starts it again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
-  recInfo: "Which of this bird's 2 study recordings is playing, and what kind of sound it is (song, call, alarm...).",
+  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Other recording then goes through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
@@ -663,7 +742,7 @@ audio.addEventListener('error', () => {
 // ---------- study ----------
 
 function currentRec() {
-  const recs = activeRecs(cur.id);
+  const recs = recList(cur.id);
   return recs[Math.min(cur.recIdx, recs.length - 1)];
 }
 
@@ -715,7 +794,7 @@ async function prefetchSoon() {
 
 function renderCard() {
   const sp = byId[cur.id];
-  const recs = activeRecs(cur.id);
+  const recs = recList(cur.id);
   const r = currentRec();
   const shown = cur.stage !== 'guess' && cur.stage !== 'compare';
 
@@ -729,8 +808,11 @@ function renderCard() {
   document.querySelector('.player').hidden = cur.stage === 'compare';
 
   $('recInfo').dataset.tip = TIPS.recInfo;
-  $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${recs.length} · ${r ? r.type : ''}`;
-  $('otherRecBtn').disabled = recs.length < 2;
+  const km = r ? recKm(r) : null;
+  const total = allRecs[cur.id] ? recs.length : `${recs.length}+`;
+  $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${total} · ${r ? r.type : ''}`
+    + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '');
+  $('otherRecBtn').disabled = false;
   $('recError').hidden = true;
   $('bar').hidden = false;
 
@@ -928,10 +1010,13 @@ $('playBtn').addEventListener('click', () => {
   if (r) playRec(r, $('playBtn'));
 });
 
-$('otherRecBtn').addEventListener('click', () => {
-  const n = activeRecs(cur.id).length;
-  if (n < 2) return;
+$('otherRecBtn').addEventListener('click', async () => {
+  const id = cur.id;
   stopAudio();
+  await loadAllRecs(id); // the full list, the first time
+  if (!cur || cur.id !== id) return;
+  const n = recList(id).length;
+  if (n < 2) return toast('No other recordings of this bird');
   cur.recIdx = (cur.recIdx + 1) % n;
   renderCard();
   playRec(currentRec(), $('playBtn'));
@@ -970,6 +1055,15 @@ function renderStars(el, rec, big) {
   el.classList.toggle('small', !big);
 }
 
+// A recording from the full list (not in calls.json): keep its details with the rating.
+function keepMeta(rec) {
+  if (!rec?.bird || (calls[rec.bird] || []).some((r) => recKey(r) === recKey(rec))) return;
+  const p = (S.recs[recKey(rec)] ||= {});
+  const { xc, file, rec: who, lic, type, secs, loc, cnt, lat, lon, q, bg, bird } = rec;
+  p.meta = { xc, file, rec: who, lic, type, secs, loc, cnt, lat, lon, q, bg, bird };
+  save();
+}
+
 function setStars(xc, stars) {
   const p = (S.recs[xc] ||= {});
   p.stars = p.stars === stars ? undefined : stars; // tap the same star again to clear
@@ -988,6 +1082,7 @@ $('stars').addEventListener('click', (e) => {
   if (!b || !rateTarget) return;
   const stars = +b.dataset.star;
   setStars(recKey(rateTarget.rec), stars);
+  keepMeta(rateTarget.rec);
   renderStars($('stars'), rateTarget.rec, true);
   if (stars <= 2 && recPref(rateTarget.rec).stars) {
     toast('Rated low: swapped for another recording');
@@ -1018,7 +1113,7 @@ $('rateBtn').addEventListener('click', () => {
   openRate(r, (changed) => {
     if (!changed) return;
     stopAudio();
-    cur.recIdx = Math.min(cur.recIdx, activeRecs(cur.id).length - 1);
+    cur.recIdx = Math.min(cur.recIdx, recList(cur.id).length - 1);
     renderCard();
   });
 });
