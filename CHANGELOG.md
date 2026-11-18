@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.6 (2026-11-18)
+- Each answer is saved against the recording that was playing. Across everyone, recordings people often get right move up (and can become study recordings); one most people get wrong (under 30% after 8 answers) is dropped like a flagged one. A bird's page shows "Everyone: right N% of M answers". Your own rating always wins. Needs the updated supabase/3-shared-recording-scores.sql.
+
 ## 1.4.5 (2026-11-18)
 - "You mix these two up" compare cards stop once both birds are mastered (they return if you miss either one again).
 

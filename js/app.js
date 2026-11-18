@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.5';
+const VERSION = '1.4.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -350,7 +350,23 @@ const SHARED_MIN = 2;
 let scores = {};
 try { scores = JSON.parse(localStorage.getItem(SCORES_KEY))?.map || {}; } catch { /* none yet */ }
 const shared = (r) => scores[recKey(r)];
-const sharedOff = (r) => { const c = shared(r); return !!c && (c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2)); };
+// How often a recording led to a right answer, across everyone (v1.4.6): only once it has
+// been answered on REC_ANSWERS_MIN times. A recording people mostly get wrong (below
+// REC_CONFUSING) is dropped like a flagged one; otherwise the rate nudges the order.
+const REC_ANSWERS_MIN = 5;
+const REC_CONFUSING_MIN = 8;
+const REC_CONFUSING = 0.3;
+const rightRate = (r, min = REC_ANSWERS_MIN) => {
+  const c = shared(r);
+  const n = c ? (c.ok || 0) + (c.no || 0) : 0;
+  return n >= min ? c.ok / n : null;
+};
+const sharedOff = (r) => {
+  const c = shared(r);
+  if (!c) return false;
+  const rate = rightRate(r, REC_CONFUSING_MIN);
+  return c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2) || (rate != null && rate < REC_CONFUSING);
+};
 const sharedStars = (r) => { const c = shared(r); return c && c.raters >= SHARED_MIN ? c.avg : null; };
 
 async function loadScores(force = false) {
@@ -361,7 +377,7 @@ async function loadScores(force = false) {
   } catch { /* fetch */ }
   try {
     const rows = await Sync.recScores();
-    scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars }]));
+    scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0 }]));
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
   } catch (e) { console.warn('recording scores', e); }
 }
@@ -489,7 +505,11 @@ function recList(id) {
 
 // The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first
 // (your rating, else everyone's), otherwise in the order the build script ranked them.
-const recStars = (r) => recPref(r).stars ?? sharedStars(r) ?? 3;
+const recStars = (r) => {
+  if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
+  const rate = rightRate(r);
+  return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0); // 100% right = +1, 20% = -1
+};
 function activeRecs(id) {
   const all = [...(calls[id] || []), ...pickedExtras(id)];
   const ok = all.filter((r) => !isOff(r));
@@ -540,6 +560,7 @@ const TIPS = {
   family: 'The bird family this species belongs to.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
+  rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
   sharedStars: 'Average star rating from everyone signed in who rated this recording. Your own rating counts first for you.',
   inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',
   status: {
@@ -927,6 +948,12 @@ async function grade(correct) {
   const hinted = cur.hint > 0;
   const day = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
   const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null, day });
+  // Which recording you answered on: shared totals show which recordings help people.
+  const heard = currentRec();
+  if (heard) {
+    const p = (S.recs[recKey(heard)] ||= {});
+    if (correct) p.ok = (p.ok || 0) + 1; else p.no = (p.no || 0) + 1;
+  }
   const record = bumpStreak(correct);
   save();
   if (record && !(S.streak.best % 5)) toast(`🔥 New record: ${S.streak.best} right in a row!`);
@@ -1310,10 +1337,11 @@ function openBird(id) {
         <button class="mini-play" id="dp-${esc(recKey(r))}" data-dplay="${esc(recKey(r))}" aria-label="Play">${PLAY_SVG}</button>
         <div class="nm">${esc(r.type)} · ${r.secs ? `${r.secs}s ` : ''}${active.has(recKey(r)) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
           ${pref.flag ? `<span class="chip">Flagged: ${esc(FLAGS[pref.flag] || 'yes')}</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}
-          ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span> <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
+          ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `${shared(r).flags >= SHARED_MIN || (shared(r).raters >= SHARED_MIN && shared(r).avg <= 2) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span>` : `<span class="chip" data-tip="${esc(TIPS.rightRate)}">Often answered wrong</span>`} <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
       </div>
       <div class="stars small" data-rate="${esc(recKey(r))}"></div>
       ${shared(r)?.raters ? `<div class="small muted" data-tip="${esc(TIPS.sharedStars)}">Everyone: ${shared(r).avg.toFixed(1)}★ from ${shared(r).raters} ${shared(r).raters === 1 ? 'person' : 'people'}</div>` : ''}
+      ${rightRate(r, 3) != null ? `<div class="small muted" data-tip="${esc(TIPS.rightRate)}">Everyone: right ${Math.round(rightRate(r, 3) * 100)}% of ${shared(r).ok + shared(r).no} answers</div>` : ''}
       <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
       ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Rate / flag</button>`}
     </div>`;
