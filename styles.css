@@ -136,7 +136,11 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 
 .bar { width: 100%; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
 .bar-row { display: flex; align-items: center; gap: 6px; width: 100%; }
-.bar-row .bar { flex: 1; }
+/* Tap or drag the bar to jump around the recording; the padding makes it easy to hit. */
+.seek { flex: 1; padding: 10px 0; cursor: pointer; touch-action: none; }
+.seek .bar { transition: height 0.15s; }
+.seek:hover .bar, .seek.dragging .bar { height: 9px; }
+.seek.dragging .bar-fill { transition: none; }
 /* Volume: a small speaker icon; the slider slides out on hover (desktop) or tap (phone). */
 .vol { display: inline-flex; align-items: center; }
 .vol-btn { background: none; border: 0; padding: 4px; color: var(--muted); cursor: pointer; display: flex; border-radius: 50%; }
@@ -147,6 +151,7 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 @media (hover: hover) { .vol:hover input, .vol:focus-within input { width: 90px; opacity: 1; margin-left: 4px; } }
 .bar-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s linear; }
 
+.rec-nav { display: inline-flex; gap: 14px; }
 .rec-line { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
 .rec-error { color: var(--bad); font-size: 14px; text-align: center; }
 

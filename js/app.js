@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.6';
+const VERSION = '1.4.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -556,7 +556,7 @@ const TIPS = {
   mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
   streak: 'Birds right in a row. A miss starts it again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
-  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Other recording then goes through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
+  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
@@ -754,6 +754,47 @@ audio.addEventListener('timeupdate', () => {
   const p = d ? Math.min(100, (audio.currentTime / d) * 100) : 0;
   $('barFill').style.width = `${p}%`;
 });
+// Tap or drag the progress bar to jump to another part of the recording. If this recording
+// isn't playing yet, it starts and then jumps once the browser knows where it can go.
+let pendingSeek = null;
+function audioLength() {
+  return Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs;
+}
+function seekTo(frac) {
+  frac = Math.max(0, Math.min(1, frac));
+  $('barFill').style.width = `${frac * 100}%`;
+  const r = currentRec();
+  if (!r) return;
+  if (audioKey !== recKey(r) || audioOwner !== $('playBtn')) {
+    pendingSeek = frac;
+    playRec(r, $('playBtn'));
+    return;
+  }
+  const d = audioLength();
+  if (d) audio.currentTime = frac * d;
+  else pendingSeek = frac;
+  if (audio.paused) audio.play().catch(() => {});
+}
+['loadedmetadata', 'playing'].forEach((ev) => audio.addEventListener(ev, () => {
+  const d = audioLength();
+  if (pendingSeek == null || !d || audioOwner !== $('playBtn')) return;
+  audio.currentTime = pendingSeek * d;
+  pendingSeek = null;
+}));
+{
+  const seek = $('seek');
+  const frac = (e) => { const b = seek.getBoundingClientRect(); return (e.clientX - b.left) / b.width; };
+  seek.addEventListener('pointerdown', (e) => {
+    seek.setPointerCapture(e.pointerId);
+    seek.classList.add('dragging');
+    seekTo(frac(e));
+  });
+  seek.addEventListener('pointermove', (e) => { if (seek.classList.contains('dragging')) seekTo(frac(e)); });
+  const end = () => seek.classList.remove('dragging');
+  seek.addEventListener('pointerup', end);
+  seek.addEventListener('pointercancel', end);
+}
+
 audio.addEventListener('error', () => {
   if (!audioKey) return;
   if (audioOwner === $('playBtn')) $('recError').hidden = false;
@@ -834,6 +875,7 @@ function renderCard() {
   $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${total} · ${r ? r.type : ''}`
     + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '');
   $('otherRecBtn').disabled = false;
+  $('prevRecBtn').disabled = cur.recIdx === 0 && !allRecs[cur.id]; // nothing behind the first until the list is loaded
   $('recError').hidden = true;
   $('bar').hidden = false;
 
@@ -1037,7 +1079,8 @@ $('playBtn').addEventListener('click', () => {
   if (r) playRec(r, $('playBtn'));
 });
 
-$('otherRecBtn').addEventListener('click', async () => {
+// Next / previous recording (wraps around both ways).
+async function stepRec(step) {
   const id = cur.id;
   stopAudio();
   if (cur.stage === 'guess') { L.otherPressed(S.learn, id); save(); } // only before answering
@@ -1045,10 +1088,12 @@ $('otherRecBtn').addEventListener('click', async () => {
   if (!cur || cur.id !== id) return;
   const n = recList(id).length;
   if (n < 2) return toast('No other recordings of this bird');
-  cur.recIdx = (cur.recIdx + 1) % n;
+  cur.recIdx = (Math.min(cur.recIdx, n - 1) + step + n) % n;
   renderCard();
   playRec(currentRec(), $('playBtn'));
-});
+}
+$('otherRecBtn').addEventListener('click', () => stepRec(1));
+$('prevRecBtn').addEventListener('click', () => stepRec(-1));
 
 $('skipBtn').addEventListener('click', () => {
   L.skip(S.learn, cur.id);
