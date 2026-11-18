@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.7';
+const VERSION = '1.4.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -701,6 +701,9 @@ async function srcFor(r) {
 
 async function playRec(r, button) {
   const key = recKey(r);
+  // Still loading this one: ignore extra taps. (They used to resume the PREVIOUS sound,
+  // which was still in the player, so the button seemed to need several taps.)
+  if (audioKey === key && audioOwner === button && button.classList.contains('loading')) return;
   if (audioKey === key && audioOwner === button) {
     if (!audio.paused) return audio.pause();
     if (audio.ended) audio.currentTime = 0;
@@ -823,11 +826,29 @@ function newCard() {
   const photo = byId[cur.id]?.photo?.url;
   if (photo) new Image().src = photo; // fetch the answer photo while the sound plays
   setTimeout(prefetchSoon, 1500);
+  // Compare card: download the SECOND bird's recording while the first one plays, so its
+  // play button starts straight away (it used to take a few taps).
+  if (cur.stage === 'compare') cacheRec(activeRecs(cur.pair)[0]);
   if (!S.prefs.autoplay) return;
   if (cur.stage === 'compare') {
     const first = $('hintArea').querySelector('[data-cplay]');
     if (first) playRec(activeRecs(first.dataset.cplay)[0], first);
   } else playRec(currentRec(), $('playBtn'));
+}
+
+// Save one recording on the device (Cache API) so it plays at once; best effort.
+const caching = new Set();
+async function cacheRec(r) {
+  if (!r || caching.has(r.file) || !navigator.onLine) return;
+  caching.add(r.file);
+  try {
+    const cache = await caches.open(MEDIA_CACHE);
+    if (!(await cache.match(r.file))) {
+      const res = await fetch(r.file, { mode: 'cors' });
+      if (res.ok) await cache.put(r.file, res);
+    }
+  } catch { /* plays from the network instead */ }
+  caching.delete(r.file);
 }
 
 // Quietly save the recordings of the birds most likely to come up next, so the next card
