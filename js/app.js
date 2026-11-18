@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.8';
+const VERSION = '1.4.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -554,7 +554,7 @@ const TIPS = {
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
   confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
   mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
-  streak: 'Birds right in a row. A miss starts it again from 0. Answers with a hint still count.',
+  streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
@@ -1308,7 +1308,7 @@ function renderTop() {
     + `<span data-tip="${esc(birdListTip('inPlay'))}">${s.inPlay} birds in play</span> · `
     + `<span data-tip="${esc(birdListTip('met'))}">${s.met} met</span> · `
     + `<span data-tip="${esc(birdListTip('mastered'))}">${s.mastered} mastered</span>`
-    + (st ? ` · <span data-tip="${esc(`${TIPS.streak} Your record is ${streakState().best}.`)}">🔥 ${st}</span>` : '');
+    + (streakState().best ? ` · <span data-tip="${esc(TIPS.streak)}">🔥 ${st}/${streakState().best}</span>` : '');
 }
 
 // ---------- birds view ----------
@@ -1499,7 +1499,7 @@ function renderProgress() {
     <div class="stat" data-tip="${esc(birdListTip('inPlay'))}"><b>${s.inPlay}</b><span>in play</span></div>
     <div class="stat" data-tip="${esc(TIPS.accuracy)}"><b>${s.recentAccuracy == null ? '–' : Math.round(s.recentAccuracy * 100) + '%'}</b><span>last 20 right</span></div>
   </div>
-  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st} right in a row · record ${streakState().best}</div>`;
+  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st}/${streakState().best} right in a row (now / record)</div>`;
   for (const tier of TIER_ORDER) {
     const t = s.tiers[tier];
     if (!t) continue;

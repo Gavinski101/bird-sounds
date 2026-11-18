@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.4.9 (2026-11-18)
+- Streak shows "now/record", e.g. 🔥 3/12, at the top and on the Progress tab (at the top it stays visible after a miss, as 0/12).
+
 ## 1.4.8 (2026-11-18)
 - Compare cards: the second bird's recording downloads while the first plays, and taps on a play button that is still loading are ignored (they used to resume the previous sound, so it took a few taps).
 
