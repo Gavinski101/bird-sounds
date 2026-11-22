@@ -189,6 +189,9 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 .chip { font-size: 12px; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
 .chip.mastered { background: var(--good-soft); color: var(--good); }
 .chip.learning { background: var(--accent-soft); color: var(--accent); }
+.chip + .chip.medal { margin-left: 4px; }
+.chip.medal { background: var(--surface-2); color: var(--text); }
+.big-stats.medals { margin-top: 10px; }
 .chip.new { background: #fbefd6; color: #8a5a00; }
 @media (prefers-color-scheme: dark) { .chip.new { background: #3a2f17; color: var(--gold); } }
 .credit { color: var(--muted); font-size: 12px; margin-top: 10px; }

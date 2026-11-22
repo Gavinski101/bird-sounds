@@ -3,8 +3,16 @@
 //
 // Each bird has a score. Got it adds 2 (1 if a hint was used), Missed it takes 2.
 // At MASTER_SCORE the bird is mastered and comes back at growing intervals; getting
-// a mastered bird right again is "remembered", missing it drops it back to learning.
+// a mastered bird right again is "remembered" (see medals below for a miss).
 // Time is counted in cards, not days, so the order adapts to how much you study.
+//
+// Medals (v1.5.0): mastering a bird on its 1-2 study recordings earns bronze (level 1).
+// After that its check cards are played at the next level: silver = a random one of its
+// other good recordings nearby (varied sounds), gold = any recording of it at all. Getting
+// MASTER_SCORE at that level earns the medal. A medal is never taken away (user 2026-11-22:
+// "once he has it he has it"), and a mastered bird no longer drops back to learning: a miss
+// only brings it back sooner. Answers at silver/gold are counted apart (b.ur / b.uw) so the
+// harder recordings don't make a bird look hard for beginners (shared difficulty).
 
 export const START_POOL = 20;
 export const MASTER_SCORE = 6;
@@ -20,6 +28,8 @@ export const MISS_REST = 8;      // a bird missed twice in a row rests this many
 export const PAIR_EVERY = 8;   // at most one compare card per this many cards
 export const PAIR_MIN = 2;     // mix-ups (either direction) before a pair gets compare cards
 export const PAIR_REST = 25;   // cards before the same pair comes up again
+export const MEDALS = 3;        // bronze, silver, gold
+export const CLIMB_MAX = 60;    // while working towards the next medal, checks come at least this often
 
 export function newState() {
   return { v: 1, n: 0, pool: [], birds: {}, lastId: null, sinceIntro: 99, history: [], mix: {}, pairShown: {}, sincePair: 0 };
@@ -30,6 +40,33 @@ function bird(state, id) {
     state.birds[id] = { s: 0, intro: false, due: 0, m: false, iv: 0, right: 0, wrong: 0, last: -1 };
   }
   return state.birds[id];
+}
+
+// The highest medal earned (0 = none). Birds mastered before medals existed have bronze.
+export function medalOf(b) {
+  if (!b) return 0;
+  return b.medal ?? (b.m || b.firstM != null ? 1 : 0);
+}
+
+// The level a card for this bird is played at: 1 while learning, else the next medal up.
+export function cardLevel(state, id) {
+  const b = state.birds[id];
+  if (!b?.m) return 1;
+  return Math.min(medalOf(b) + 1, MEDALS);
+}
+
+// Once: give birds mastered before v1.5.0 their bronze, and bring their next check within
+// CLIMB_MAX cards (long-known birds were due hundreds of cards away) so silver can start.
+function migrateMedals(state, rand) {
+  if (state.medals) return;
+  state.medals = 1;
+  for (const b of Object.values(state.birds)) {
+    if (medalOf(b) && b.medal == null) b.medal = medalOf(b);
+    if (b.m && b.due > state.n + CLIMB_MAX) {
+      b.iv = FIRST_INTERVAL;
+      b.due = state.n + FIRST_INTERVAL + Math.floor(rand() * (CLIMB_MAX - FIRST_INTERVAL));
+    }
+  }
 }
 
 // species must be sorted commonest first.
@@ -113,7 +150,17 @@ function pickFrom(list, rand) {
 
 // intros: show each new bird (name, photo, sound) once before testing it.
 // Without intros, new birds are tested straight away and the reveal teaches them.
-export function nextCard(state, species, rand = Math.random, { intros = false } = {}) {
+// c.level (2-3, see medals above) is set on a mastered bird's check card; otherwise level 1.
+// Intro, compare and pair-test cards are always level 1.
+export function nextCard(state, species, rand = Math.random, opts = {}) {
+  migrateMedals(state, rand);
+  const c = drawCard(state, species, rand, opts);
+  const level = c.intro || c.pair ? 1 : cardLevel(state, c.id);
+  if (level > 1) c.level = level;
+  return c;
+}
+
+function drawCard(state, species, rand, { intros = false } = {}) {
   ensurePool(state, species);
   // Steady trickle: with every bird in play already met, one new bird joins every
   // NEW_EVERY cards (NEW_EVERY_STRUGGLING while struggling), so a few hard birds can't
@@ -220,9 +267,10 @@ export function skip(state, id) {
   if (state.pairTest?.id === id) state.pairTest.due = state.n + SKIP_LATER;
 }
 
-// Returns 'mastered' | 'remembered' | 'lost' | null for the celebration popups.
+// Returns 'mastered' | 'remembered' | 'medal' | 'slipped' (mastered bird missed) | null.
 // day (YYYY-MM-DD, optional): logs answers and mastered count per day for usage reports.
-export function answer(state, species, id, { correct, hinted = false, pair = null, day = null }, rand = Math.random) {
+// level: the card's level (nextCard's c.level). 'medal' = a silver or gold medal earned.
+export function answer(state, species, id, { correct, hinted = false, pair = null, day = null, level = 1 }, rand = Math.random) {
   const b = bird(state, id);
   tick(state, id);
   state.sinceIntro++;
@@ -238,33 +286,44 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   let event = null;
   b.miss = !correct;
   b.missRun = correct ? 0 : (b.missRun || 0) + 1;
-  if (correct) {
-    b.right++;
-    if (b.m) {
+  const climbing = b.m && level > medalOf(b);
+  if (level > 1) { if (correct) b.ur = (b.ur || 0) + 1; else b.uw = (b.uw || 0) + 1; }
+  else if (correct) b.right++;
+  else b.wrong++;
+  if (b.m) {
+    // Mastered: checks at the next medal's level. Never back to learning, medals kept.
+    if (correct) {
       event = 'remembered';
-      b.iv = Math.min(b.iv * 2, MAX_INTERVAL);
+      if (climbing) {
+        b.up = (b.up || 0) + (hinted ? 1 : 2);
+        if (b.up >= MASTER_SCORE) {
+          b.medal = level;
+          b.up = 0;
+          b.iv = FIRST_INTERVAL;
+          event = 'medal';
+        } else b.iv = Math.min(Math.max(b.iv, FIRST_INTERVAL) * 2, CLIMB_MAX);
+      } else b.iv = Math.min(b.iv * 2, b.medal >= MEDALS ? MAX_INTERVAL : CLIMB_MAX);
       b.due = state.n + b.iv;
     } else {
-      b.s += hinted ? 1 : 2;
-      if (b.s >= MASTER_SCORE) {
-        b.m = true;
-        if (b.firstM == null) b.firstM = b.right + b.wrong; // cards it took to master
-        b.iv = FIRST_INTERVAL;
-        b.due = state.n + b.iv;
-        event = 'mastered';
-      } else {
-        b.due = state.n + 2 + b.s * 2 + Math.floor(rand() * 3);
-      }
+      if (climbing) b.up = Math.max((b.up || 0) - 2, 0);
+      b.iv = FIRST_INTERVAL;
+      b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);
+      event = 'slipped';
+    }
+  } else if (correct) {
+    b.s += hinted ? 1 : 2;
+    if (b.s >= MASTER_SCORE) {
+      b.m = true;
+      b.medal = Math.max(medalOf(b), 1); // bronze
+      if (b.firstM == null) b.firstM = b.right + b.wrong; // cards it took to master
+      b.iv = FIRST_INTERVAL;
+      b.due = state.n + b.iv;
+      event = 'mastered';
+    } else {
+      b.due = state.n + 2 + b.s * 2 + Math.floor(rand() * 3);
     }
   } else {
-    b.wrong++;
-    if (b.m) {
-      b.m = false;
-      b.s = 2;
-      event = 'lost';
-    } else {
-      b.s = Math.max(b.s - 2, -4);
-    }
+    b.s = Math.max(b.s - 2, -4);
     // Missed: back after 3-5 cards. Missed twice in a row: rest longer, so the same hard
     // birds don't take over the session.
     b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);
@@ -332,6 +391,16 @@ export function status(state, id) {
   if (!b || !state.pool.includes(id)) return 'locked';
   if (!b.intro) return 'new';
   return b.m ? 'mastered' : 'learning';
+}
+
+// How many birds of `species` hold each medal (their highest): { 1: bronze, 2: silver, 3: gold }.
+export function medalCounts(state, species) {
+  const out = { 1: 0, 2: 0, 3: 0 };
+  for (const sp of species) {
+    const m = medalOf(state.birds[sp.id]);
+    if (m) out[m]++;
+  }
+  return out;
 }
 
 export function summary(state, species) {

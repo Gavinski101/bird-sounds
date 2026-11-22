@@ -11,7 +11,7 @@ function play(state, knows, cards) {
   for (let i = 0; i < cards; i++) {
     const c = L.nextCard(state, species, rand, { intros: true });
     if (c.intro) { L.introduced(state, c.id); continue; }
-    const ev = L.answer(state, species, c.id, { correct: knows(c.id) }, rand);
+    const ev = L.answer(state, species, c.id, { correct: knows(c.id), level: c.level }, rand);
     if (ev) events.push([ev, c.id]);
   }
   return events;
@@ -78,13 +78,71 @@ function play(state, knows, cards) {
   assert.ok(L.learningCount(s) >= L.MIN_LEARNING || s.pool.length === species.length);
 }
 
-// Missing a mastered bird sends it back to learning.
+// Missing a mastered bird keeps it mastered with its medal; it just comes back soon.
 {
   const s = L.newState();
   play(s, () => true, 200);
   const m = s.pool.find((id) => s.birds[id].m);
-  assert.equal(L.answer(s, species, m, { correct: false }, rand), 'lost');
-  assert.equal(L.status(s, m), 'learning');
+  const medal = L.medalOf(s.birds[m]);
+  assert.ok(medal >= 1);
+  assert.equal(L.answer(s, species, m, { correct: false, level: L.cardLevel(s, m) }, rand), 'slipped');
+  assert.equal(L.status(s, m), 'mastered');
+  assert.equal(L.medalOf(s.birds[m]), medal);
+  assert.ok(s.birds[m].due <= s.n + 5);
+}
+
+// Medals: mastering = bronze; then checks are silver-level cards, 3 right = silver, then gold.
+// Silver/gold answers are kept apart from right/wrong (shared difficulty uses those).
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  L.introduced(s, 'b0');
+  for (let i = 0; i < 3; i++) L.answer(s, species, 'b0', { correct: true }, rand);
+  const b = s.birds.b0;
+  assert.equal(L.medalOf(b), 1);
+  assert.equal(L.cardLevel(s, 'b0'), 2);
+  const right = b.right;
+  const evs = [];
+  for (let i = 0; i < 3; i++) evs.push(L.answer(s, species, 'b0', { correct: true, level: 2 }, rand));
+  assert.deepEqual(evs, ['remembered', 'remembered', 'medal']);
+  assert.equal(L.medalOf(b), 2);
+  assert.equal(L.cardLevel(s, 'b0'), 3);
+  assert.equal(b.right, right);
+  assert.equal(b.ur, 3);
+  assert.ok(b.iv <= L.CLIMB_MAX);
+  L.answer(s, species, 'b0', { correct: false, level: 3 }, rand);
+  assert.equal(L.medalOf(b), 2); // never taken away
+  assert.equal(b.uw, 1);
+  for (let i = 0; i < 3; i++) L.answer(s, species, 'b0', { correct: true, level: 3 }, rand);
+  assert.equal(L.medalOf(b), 3);
+  assert.equal(L.cardLevel(s, 'b0'), 3);
+  assert.deepEqual(L.medalCounts(s, species), { 1: 0, 2: 0, 3: 1 });
+}
+
+// Birds mastered before medals get bronze, and long-away checks are brought closer.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  Object.assign(s.birds.b0, { intro: true, m: true, iv: 400, due: 500, firstM: 3, s: 6 });
+  Object.assign(s.birds.b1, { intro: true, m: false, firstM: 4, s: 2 }); // lost under the old rules
+  L.nextCard(s, species, rand, { intros: true });
+  assert.equal(s.birds.b0.medal, 1);
+  assert.equal(s.birds.b1.medal, 1);
+  assert.ok(s.birds.b0.due <= s.n + L.CLIMB_MAX);
+}
+
+// Intro, compare and pair-test cards are level 1; a mastered bird's check is the next level.
+{
+  const s = L.newState();
+  const seen = new Set();
+  for (let i = 0; i < 400; i++) {
+    const c = L.nextCard(s, species, rand, { intros: true });
+    if (c.intro) { assert.equal(c.level, undefined); L.introduced(s, c.id); continue; }
+    if (s.birds[c.id].m && !c.pair) assert.equal(c.level, L.cardLevel(s, c.id));
+    seen.add(c.level || 1);
+    L.answer(s, species, c.id, { correct: true, level: c.level }, rand);
+  }
+  assert.ok(seen.has(2) && seen.has(3), [...seen].join());
 }
 
 // Hints halve the gain: 6 hinted answers to master instead of 3.

@@ -2,6 +2,13 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.0 (2026-11-22)
+- Medals per bird: 🥉 bronze = mastered on its 1-2 study recordings; 🥈 silver = its varied sounds (random recordings from its other good ones); 🥇 gold = any recording of it, in random order. A mastered bird's check cards are played at the next medal's level, 3 right (6 with hints) earns it.
+- Medals are never taken away, and a mastered bird no longer drops back to learning: a miss only brings it back sooner.
+- Medals show on the reveal, the Birds list, the bird page (with how far to the next one) and Progress (counts per medal). Popups for silver and gold.
+- Birds mastered before this get bronze; their next check comes within 60 cards.
+- Silver/gold answers are counted apart, so harder recordings don't make birds look hard in the shared difficulty data or get recordings dropped.
+
 ## 1.4.9 (2026-11-18)
 - Streak shows "now/record", e.g. 🔥 3/12, at the top and on the Progress tab (at the top it stays visible after a miss, as 0/12).
 

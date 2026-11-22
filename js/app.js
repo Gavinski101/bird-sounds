@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.4.9';
+const VERSION = '1.5.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -503,6 +503,35 @@ function recList(id) {
   return [...first, ...rest];
 }
 
+// ---------- medals (v1.5.0, learn.js) ----------
+// Bronze = mastered on the study recordings. A mastered bird's check cards then play at the
+// next level: silver = a random one of its other good recordings (hand-picked spares, then
+// the nearest A/B quality ones), gold = any recording of it at all, in random order.
+const MEDAL = { 1: '🥉', 2: '🥈', 3: '🥇' };
+const MEDAL_NAME = { 1: 'Bronze', 2: 'Silver', 3: 'Gold' };
+const LEVEL_NAME = { 2: 'varied sounds', 3: 'any recording' };
+const SILVER_SET = 12;
+
+// The recordings a card at this level plays, in order (Next / Previous go on through the rest).
+function levelRecs(id, level) {
+  const all = recList(id); // study recordings first, then nearest and best first, flagged left out
+  const study = new Set(activeRecs(id).map(recKey));
+  const others = all.filter((r) => !study.has(recKey(r)));
+  let pick = level >= 3 ? others.slice() : others.filter((r) => !r.q || r.q === 'A' || r.q === 'B').slice(0, SILVER_SET);
+  if (pick.length < 2) pick = others.length ? others.slice() : all.slice(); // too few: whatever there is
+  const picked = new Set(pick.map(recKey));
+  return [...shuffle(pick), ...all.filter((r) => !picked.has(recKey(r)))];
+}
+
+// What this card plays: its own shuffled list on a silver/gold card, else the usual list.
+const cardRecs = () => cur.recs || recList(cur.id);
+
+const medalOf = (id) => L.medalOf(S.learn.birds[id]);
+function medalChip(id) {
+  const m = medalOf(id);
+  return m ? `<span class="chip medal" data-tip="${esc(TIPS.medal[m])}">${MEDAL[m]} ${MEDAL_NAME[m]}</span>` : '';
+}
+
 // The 1-2 recordings used for study: not flagged, not rated 1-2, highest rated first
 // (your rating, else everyone's), otherwise in the order the build script ranked them.
 const recStars = (r) => {
@@ -553,7 +582,17 @@ const TIPS = {
   inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
   confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
-  mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints). They still come back now and then to check.",
+  mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
+  medal: {
+    1: 'Bronze: mastered on its 1-2 study recordings (its typical sound).',
+    2: "Silver: also mastered on its varied sounds: random recordings from the bird's other good ones, other calls and songs included.",
+    3: 'Gold: mastered from any recording of it at all, any quality, in random order.',
+  },
+  level: {
+    2: 'Silver test: a random recording from this bird\'s varied sounds. 3 right (6 with hints) earns silver. Medals are never taken away; a miss just brings it back sooner.',
+    3: 'Gold test: any recording of this bird, in random order. 3 right (6 with hints) earns gold. Medals are never taken away.',
+  },
+  medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
@@ -564,7 +603,7 @@ const TIPS = {
   sharedStars: 'Average star rating from everyone signed in who rated this recording. Your own rating counts first for you.',
   inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',
   status: {
-    mastered: 'Mastered: you know this one. It comes back less and less often to check you still remember it.',
+    mastered: 'Mastered: you know this one. It comes back now and then, with harder recordings to earn silver and gold medals. Once mastered it stays mastered.',
     learning: "Learning: you've met this bird and are being tested on it.",
     new: "New: in your study set, but you haven't met it yet. It will be introduced soon.",
     later: "Later: you've met this bird, but it's set aside for now because easier birds come first in the current order. Your progress is kept and it comes back when the order reaches it.",
@@ -807,16 +846,22 @@ audio.addEventListener('error', () => {
 // ---------- study ----------
 
 function currentRec() {
-  const recs = recList(cur.id);
+  const recs = cardRecs();
   return recs[Math.min(cur.recIdx, recs.length - 1)];
 }
 
-function newCard() {
+async function newCard() {
   if (overlayOpen()) return; // welcome or survey showing: start when it closes
   stopAudio();
   const c = L.nextCard(S.learn, species, Math.random, { intros: S.prefs.intros });
   save();
-  cur = { ...c, recIdx: 0, stage: c.intro ? 'intro' : c.compare ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
+  const card = { ...c, level: c.level || 1, recs: null, recIdx: 0, stage: c.intro ? 'intro' : c.compare ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
+  cur = card;
+  if (card.level > 1) { // silver / gold: a random recording from the bird's wider set
+    await loadAllRecs(c.id);
+    if (cur !== card) return;
+    card.recs = levelRecs(c.id, card.level);
+  }
   if (c.test) { // "which of the two?" test: both names shown as the choices
     cur.hint = 1;
     cur.choices = shuffle([c.id, c.pair]);
@@ -864,6 +909,7 @@ async function prefetchSoon() {
       .map((id) => [id, S.learn.birds[id] || {}])
       .sort((a, b) => (a[1].intro === b[1].intro ? (a[1].due || 0) - (b[1].due || 0) : a[1].intro ? -1 : 1))
       .slice(0, 4);
+    for (const [id] of soon) if (L.cardLevel(S.learn, id) > 1) loadAllRecs(id);
     const cache = await caches.open(MEDIA_CACHE);
     for (const [id] of soon) {
       const r = activeRecs(id)[0];
@@ -877,7 +923,7 @@ async function prefetchSoon() {
 
 function renderCard() {
   const sp = byId[cur.id];
-  const recs = recList(cur.id);
+  const recs = cardRecs();
   const r = currentRec();
   const shown = cur.stage !== 'guess' && cur.stage !== 'compare';
 
@@ -887,7 +933,9 @@ function renderCard() {
     : cur.stage === 'compare' ? 'You mix these two up: compare'
     : shown ? 'Answer'
     : cur.pair ? 'Which of the two is this?'
+    : cur.level > 1 ? `Who's calling? ${MEDAL[cur.level]} ${LEVEL_NAME[cur.level]}`
     : "Who's calling?";
+  if (cur.level > 1 && !shown) label.dataset.tip = TIPS.level[cur.level]; else delete label.dataset.tip;
   document.querySelector('.player').hidden = cur.stage === 'compare';
 
   $('recInfo').dataset.tip = TIPS.recInfo;
@@ -953,7 +1001,7 @@ function renderCard() {
     } else img.hidden = true;
     $('revealName').textContent = nm(sp);
     $('revealSci').textContent = sp.sci;
-    $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}`;
+    $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)}`;
     $('revealTip').innerHTML = soundTipHtml(sp.id);
     $('revealTip').hidden = !$('revealTip').innerHTML;
     $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? `Photo: ${esc(sp.photo.attr)}` : '');
@@ -1010,10 +1058,11 @@ function makeChoices() {
 async function grade(correct) {
   const hinted = cur.hint > 0;
   const day = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
-  const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null, day });
-  // Which recording you answered on: shared totals show which recordings help people.
+  const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null, day, level: cur.level });
+  // Which recording you answered on: shared totals show which recordings help people. Only
+  // level-1 answers: silver/gold play hard recordings on purpose, which would get them dropped.
   const heard = currentRec();
-  if (heard) {
+  if (heard && cur.level === 1) {
     const p = (S.recs[recKey(heard)] ||= {});
     if (correct) p.ok = (p.ok || 0) + 1; else p.no = (p.no || 0) + 1;
   }
@@ -1021,8 +1070,8 @@ async function grade(correct) {
   save();
   if (record && !(S.streak.best % 5)) toast(`🔥 New record: ${S.streak.best} right in a row!`);
   renderTop();
-  if (event === 'mastered' || event === 'remembered') await celebrate(event, byId[cur.id]);
-  else if (event === 'lost') toast(`${nm(byId[cur.id])} is back in learning`);
+  if (event === 'mastered' || event === 'remembered' || event === 'medal') await celebrate(event, byId[cur.id]);
+  else if (event === 'slipped') toast(`${nm(byId[cur.id])} keeps its ${MEDAL[medalOf(cur.id)]} medal and comes back soon`);
 }
 
 async function onAction(act) {
@@ -1104,10 +1153,11 @@ $('playBtn').addEventListener('click', () => {
 async function stepRec(step) {
   const id = cur.id;
   stopAudio();
-  if (cur.stage === 'guess') { L.otherPressed(S.learn, id); save(); } // only before answering
+  // Only before answering, and only on level-1 cards (silver/gold are meant to be harder).
+  if (cur.stage === 'guess' && cur.level === 1) { L.otherPressed(S.learn, id); save(); }
   await loadAllRecs(id); // the full list, the first time
   if (!cur || cur.id !== id) return;
-  const n = recList(id).length;
+  const n = cardRecs().length;
   if (n < 2) return toast('No other recordings of this bird');
   cur.recIdx = (Math.min(cur.recIdx, n - 1) + step + n) % n;
   renderCard();
@@ -1207,7 +1257,8 @@ $('rateBtn').addEventListener('click', () => {
   openRate(r, (changed) => {
     if (!changed) return;
     stopAudio();
-    cur.recIdx = Math.min(cur.recIdx, recList(cur.id).length - 1);
+    if (cur.recs) cur.recs = cur.recs.filter((x) => !isOff(x));
+    cur.recIdx = Math.min(cur.recIdx, cardRecs().length - 1);
     renderCard();
   });
 });
@@ -1219,13 +1270,16 @@ function celebrate(kind, sp) {
     const box = $('celebrate');
     const total = species.length;
     const mastered = L.summary(S.learn, species).mastered;
+    const medal = medalOf(sp.id);
     box.className = 'celebrate ' + kind;
-    $('celebrateBurst').textContent = kind === 'mastered' ? '🏆' : '🧠';
-    $('celebrateTitle').textContent = kind === 'mastered' ? 'Mastered!' : 'Remembered!';
+    $('celebrateBurst').textContent = kind === 'mastered' ? '🥉' : kind === 'medal' ? MEDAL[medal] : '🧠';
+    $('celebrateTitle').textContent = kind === 'mastered' ? 'Mastered!' : kind === 'medal' ? `${MEDAL_NAME[medal]} medal!` : 'Remembered!';
     $('celebrateName').textContent = nm(sp);
     $('celebrateSub').textContent = kind === 'mastered'
-      ? `${mastered} of ${total} birds mastered`
-      : 'Still know it by ear. It will come back later.';
+      ? `Bronze medal · ${mastered} of ${total} birds mastered`
+      : kind === 'medal'
+        ? (medal >= 3 ? 'You know it from any recording.' : 'You know its varied sounds. Next: gold, any recording.')
+        : medalNextText(sp.id) || 'Still know it by ear. It will come back later.';
     const inner = box.querySelector('.celebrate-box');
     inner.querySelectorAll('.confetti').forEach((c) => c.remove());
     const colours = ['#1f6b4a', '#5cc08d', '#f0b84a', '#c98a12', '#ef7a6c', '#7fb6e0'];
@@ -1324,7 +1378,7 @@ function renderBirds() {
     for (const sp of list) {
       html += `<div class="bird-row" data-bird="${sp.id}" role="button" tabindex="0">
         <img src="${esc(sp.photo?.url || '')}" alt="" loading="lazy">
-        <div class="nm"><div>${esc(nm(sp))}</div><div class="small muted">${chip(L.status(S.learn, sp.id))} ${esc(sp.family)}</div></div>
+        <div class="nm"><div>${esc(nm(sp))}</div><div class="small muted">${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)} ${esc(sp.family)}</div></div>
         <button class="mini-play" data-play="${sp.id}" aria-label="Play ${esc(nm(sp))}">${PLAY_SVG}</button>
       </div>`;
     }
@@ -1390,8 +1444,9 @@ function openBird(id) {
     <div class="reveal-name">${esc(nm(sp))}</div>
     <div class="reveal-sci">${esc(sp.sci)}</div>
     ${others.length ? `<div class="detail-names">Also: ${[...new Set(others)].join(', ')}</div>` : ''}
-    <div class="reveal-meta"><span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, id))}</div>
-    ${b && (b.right || b.wrong) ? `<p class="small muted" style="text-align:center">Right ${b.right} · Missed ${b.wrong}</p>` : ''}
+    <div class="reveal-meta"><span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, id))}${medalChip(id)}</div>
+    ${b && (b.right || b.wrong) ? `<p class="small muted" style="text-align:center">Right ${b.right} · Missed ${b.wrong}${b.ur || b.uw ? ` <span data-tip="${esc(TIPS.medalAnswers)}">· harder recordings: right ${b.ur || 0} · missed ${b.uw || 0}</span>` : ''}</p>` : ''}
+    ${medalNextHtml(id)}
     ${soundTipHtml(id) ? `<div class="sound-tip">${soundTipHtml(id)}</div>` : ''}
     ${confusedHtml(id)}
     <h2 style="margin-top:14px">Recordings</h2>
@@ -1490,6 +1545,31 @@ function hardestHtml() {
     + '</div>';
 }
 
+// Medal counts for the current area, each with a tip listing the birds.
+function medalsHtml() {
+  const c = L.medalCounts(S.learn, species);
+  const names = (m) => species.filter((sp) => medalOf(sp.id) === m).map(nm).sort();
+  const cell = (m) => {
+    const list = names(m);
+    const tip = `${TIPS.medal[m]}\n\n${list.length ? list.join(', ') : 'None yet.'}`;
+    return `<div class="stat" data-tip="${esc(tip)}"><b>${MEDAL[m]} ${c[m]}</b><span>${MEDAL_NAME[m].toLowerCase()}</span></div>`;
+  };
+  return `<div class="big-stats medals">${cell(1)}${cell(2)}${cell(3)}</div>`;
+}
+
+// How far a mastered bird is towards its next medal ('' at gold or while learning).
+function medalNextText(id) {
+  const b = S.learn.birds[id];
+  const m = medalOf(id);
+  if (!b?.m || m >= 3) return '';
+  const steps = Math.ceil((L.MASTER_SCORE - (b.up || 0)) / 2);
+  return `Next: ${MEDAL[m + 1]} ${MEDAL_NAME[m + 1]} (${LEVEL_NAME[m + 1]}), ${steps} more right`;
+}
+function medalNextHtml(id) {
+  const t = medalNextText(id);
+  return t ? `<p class="small muted" style="text-align:center" data-tip="${esc(TIPS.level[medalOf(id) + 1])}">${esc(t)}</p>` : '';
+}
+
 function renderProgress() {
   const s = L.summary(S.learn, species);
   const st = currentStreak();
@@ -1499,7 +1579,8 @@ function renderProgress() {
     <div class="stat" data-tip="${esc(birdListTip('inPlay'))}"><b>${s.inPlay}</b><span>in play</span></div>
     <div class="stat" data-tip="${esc(TIPS.accuracy)}"><b>${s.recentAccuracy == null ? '–' : Math.round(s.recentAccuracy * 100) + '%'}</b><span>last 20 right</span></div>
   </div>
-  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st}/${streakState().best} right in a row (now / record)</div>`;
+  <div class="streak-line" data-tip="${esc(TIPS.streak)}">🔥 ${st}/${streakState().best} right in a row (now / record)</div>
+  ${medalsHtml()}`;
   for (const tier of TIER_ORDER) {
     const t = s.tiers[tier];
     if (!t) continue;
