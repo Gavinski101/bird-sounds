@@ -48,10 +48,12 @@ export function medalOf(b) {
   return b.medal ?? (b.m || b.firstM != null ? 1 : 0);
 }
 
-// The level a card for this bird is played at: 1 while learning, else the next medal up.
+// The level a card for this bird is played at: while learning, state.startLevel (2 for the
+// "Experienced" level: varied sounds from the start, mastering earns bronze and silver at once,
+// user 2026-11-22), else 1; once mastered, the next medal up.
 export function cardLevel(state, id) {
   const b = state.birds[id];
-  if (!b?.m) return 1;
+  if (!b?.m) return Math.min(state.startLevel || 1, MEDALS);
   return Math.min(medalOf(b) + 1, MEDALS);
 }
 
@@ -136,7 +138,7 @@ export function addBirds(state, species, count) {
 // Struggling = met, not mastered, and doing badly NOW (score 0 or less after a miss).
 // It used to be "missed at least as often as got right" over all time, which kept birds
 // you'd since improved on blocking new birds for ages (user 2026-11-17: getting stuck).
-export const isStruggling = (b) => b.intro && !b.m && b.wrong > 0 && b.s <= 0;
+export const isStruggling = (b) => b.intro && !b.m && (b.wrong > 0 || b.uw > 0) && b.s <= 0;
 
 // species: when given, count only birds in that list (the current area).
 export function learningCount(state, species = null) {
@@ -314,8 +316,8 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
     b.s += hinted ? 1 : 2;
     if (b.s >= MASTER_SCORE) {
       b.m = true;
-      b.medal = Math.max(medalOf(b), 1); // bronze
-      if (b.firstM == null) b.firstM = b.right + b.wrong; // cards it took to master
+      b.medal = Math.max(medalOf(b), level); // bronze (silver when learnt on varied sounds)
+      if (b.firstM == null) b.firstM = b.right + b.wrong + (b.ur || 0) + (b.uw || 0); // cards it took to master
       b.iv = FIRST_INTERVAL;
       b.due = state.n + b.iv;
       event = 'mastered';

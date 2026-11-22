@@ -357,4 +357,19 @@ function play(state, knows, cards) {
   assert.equal(s.birds.b0.missRun, 0);
 }
 
+// "Experienced": learning cards are level 2, mastering gives silver straight away.
+{
+  const s = L.newState();
+  s.startLevel = 2;
+  L.ensurePool(s, species);
+  L.introduced(s, 'b0');
+  assert.equal(L.cardLevel(s, 'b0'), 2);
+  let ev = null;
+  while (!ev) ev = L.answer(s, species, 'b0', { correct: true, level: L.cardLevel(s, 'b0') }, rand);
+  assert.equal(ev, 'mastered');
+  assert.equal(L.medalOf(s.birds.b0), 2);
+  assert.equal(L.cardLevel(s, 'b0'), 3);
+  assert.equal(s.birds.b0.firstM, 3);
+}
+
 console.log('learn.js: all checks passed');

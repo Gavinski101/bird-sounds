@@ -2,6 +2,11 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.1 (2026-11-22)
+- Habitats to focus on (Forest, Woodland & bushveld, Fynbos/karoo & scrub, Grassland, Dry/desert & rocky, Wetlands & rivers, Coast & sea, Gardens & towns): birds of the habitats you pick come first, the rest follow. In the first-start survey and in Settings; the bird page shows each bird's habitats. Data from AVONET (CC BY 4.0) plus hand-added habitats for well-known birds.
+- The survey also asks which bird names to use.
+- "Experienced" level: varied recordings from the start, so a bird you master earns silver straight away.
+
 ## 1.5.0 (2026-11-22)
 - Medals per bird: 🥉 bronze = mastered on its 1-2 study recordings; 🥈 silver = its varied sounds (random recordings from its other good ones); 🥇 gold = any recording of it, in random order. A mastered bird's check cards are played at the next medal's level, 3 right (6 with hints) earns it.
 - Medals are never taken away, and a mastered bird no longer drops back to learning: a miss only brings it back sooner.

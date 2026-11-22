@@ -456,6 +456,10 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .opt.on { border-color: var(--accent); background: var(--accent-soft); }
 .opt:disabled { opacity: 0.55; cursor: default; }
 #surveyDone { margin-top: 20px; }
+.hab-grid { grid-template-columns: 1fr 1fr; }
+.hab-opt { padding: 10px 12px; }
+.hab-opt b { font-size: 14px; }
+.hab-opt span { font-size: 12px; }
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 12px; padding: 4px; margin-bottom: 10px; }
 .seg button { border: 0; background: none; padding: 9px 6px; border-radius: 9px; font-weight: 600; color: var(--muted); }

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -23,6 +23,7 @@ let areaIds = new Set(); // ids of `species`: birds of the current area
 let calls = {};
 let nameSets = {};
 let guide = { birds: {}, similar: [] }; // data/guide.json: ease by ear, memory aids, sound-alike pairs
+let habitats = {}; // data/habitats.json (scripts/build_habitats.py): bird id -> habitat keys
 let area = '';
 let areaTotal = 0;
 let S = loadStore();
@@ -592,6 +593,8 @@ const TIPS = {
     2: 'Silver test: a random recording from this bird\'s varied sounds. 3 right (6 with hints) earns silver. Medals are never taken away; a miss just brings it back sooner.',
     3: 'Gold test: any recording of this bird, in random order. 3 right (6 with hints) earns gold. Medals are never taken away.',
   },
+  habitat: "Where this bird is usually found. From AVONET (Tobias et al. 2022, CC BY 4.0), plus extra habitats for birds often heard elsewhere too.",
+  habitats: 'Birds of the habitats you pick join your study set first, in the usual order among themselves; the other birds follow after them. Pick none to mix all habitats. Progress on every bird is kept.',
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
@@ -1272,11 +1275,11 @@ function celebrate(kind, sp) {
     const mastered = L.summary(S.learn, species).mastered;
     const medal = medalOf(sp.id);
     box.className = 'celebrate ' + kind;
-    $('celebrateBurst').textContent = kind === 'mastered' ? '🥉' : kind === 'medal' ? MEDAL[medal] : '🧠';
+    $('celebrateBurst').textContent = kind === 'mastered' || kind === 'medal' ? MEDAL[medal] : '🧠';
     $('celebrateTitle').textContent = kind === 'mastered' ? 'Mastered!' : kind === 'medal' ? `${MEDAL_NAME[medal]} medal!` : 'Remembered!';
     $('celebrateName').textContent = nm(sp);
     $('celebrateSub').textContent = kind === 'mastered'
-      ? `Bronze medal · ${mastered} of ${total} birds mastered`
+      ? `${MEDAL_NAME[medal]} medal · ${mastered} of ${total} birds mastered`
       : kind === 'medal'
         ? (medal >= 3 ? 'You know it from any recording.' : 'You know its varied sounds. Next: gold, any recording.')
         : medalNextText(sp.id) || 'Still know it by ear. It will come back later.';
@@ -1444,6 +1447,7 @@ function openBird(id) {
     <div class="reveal-name">${esc(nm(sp))}</div>
     <div class="reveal-sci">${esc(sp.sci)}</div>
     ${others.length ? `<div class="detail-names">Also: ${[...new Set(others)].join(', ')}</div>` : ''}
+    ${habitatChips(id) ? `<div class="reveal-meta">${habitatChips(id)}</div>` : ''}
     <div class="reveal-meta"><span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, id))}${medalChip(id)}</div>
     ${b && (b.right || b.wrong) ? `<p class="small muted" style="text-align:center">Right ${b.right} · Missed ${b.wrong}${b.ur || b.uw ? ` <span data-tip="${esc(TIPS.medalAnswers)}">· harder recordings: right ${b.ur || 0} · missed ${b.uw || 0}</span>` : ''}</p>` : ''}
     ${medalNextHtml(id)}
@@ -1634,6 +1638,8 @@ function renderSettings() {
   $('orderLabel').dataset.tip = TIPS.order;
   $('orderSel').innerHTML = Object.entries(ORDERS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.order || 'distinct') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+  $('habSettings').innerHTML = habitatOpts(S.prefs.habitats || [], true);
+  $('habLabel').dataset.tip = TIPS.habitats;
   const ca = areaById(currentAreaId()) || areaById(DEFAULT_AREA);
   const caWhere = areaPath(areaById(ca.parent) || { name: '' }).split(' › ').slice(1).join(' › ');
   $('areaBtn').innerHTML = `<b>${esc(ca.name)} <span class="change">Change</span></b>`
@@ -1657,6 +1663,18 @@ $('levelSel').addEventListener('change', (e) => {
   renderTop();
   const added = S.learn.pool.length - before;
   toast(added > 0 ? `${LEVELS[e.target.value].label}: ${added} more birds added` : `${LEVELS[e.target.value].label}: birds already in play stay in play`);
+});
+
+$('habSettings').addEventListener('click', (e) => {
+  const hb = e.target.closest('[data-hab]');
+  if (!hb) return;
+  S.prefs.habitats = toggleIn(S.prefs.habitats || [], hb.dataset.hab);
+  applyArea();
+  save();
+  renderSettings();
+  renderTop();
+  const n = S.prefs.habitats.length;
+  toast(n ? `${S.prefs.habitats.map((h) => HABITATS[h].label).join(', ')} first: progress on every bird is kept` : 'No habitat focus: all habitats mixed');
 });
 
 $('orderSel').addEventListener('change', (e) => {
@@ -1822,14 +1840,22 @@ function soundAlikes() {
   return set;
 }
 
+// Habitats to focus on (v1.5.1, prefs.habitats; none = all): birds of those habitats come
+// first, in the usual order among themselves; the rest follow.
+const inFocus = (id) => {
+  const want = S.prefs.habitats || [];
+  return !want.length || (habitats[id] || []).some((h) => want.includes(h));
+};
+
 function learnOrder(list) {
-  if ((S.prefs.order || 'distinct') !== 'distinct') return list;
+  const focus = (b) => (inFocus(b.id) ? 0 : 1);
+  if ((S.prefs.order || 'distinct') !== 'distinct') return [...list].sort((x, y) => focus(x) - focus(y) || x.rank - y.rank);
   const group = (b) => {
     let e = easeOf(b.id);
     if (e === 0 && b.rank > ICONIC_CAP) e = 1;
     return e === 1 && b.rank > DISTINCT_CAP ? 2 : e;
   };
-  const queue = [...list].sort((x, y) => group(x) - group(y) || x.rank - y.rank);
+  const queue = [...list].sort((x, y) => focus(x) - focus(y) || group(x) - group(y) || x.rank - y.rank);
   const alike = soundAlikes();
   const out = [];
   while (queue.length) {
@@ -2066,21 +2092,49 @@ function closeWelcome() {
   else newCard();
 }
 
+// ---------- habitats ----------
+const HABITATS = {
+  forest: { icon: '🌳', label: 'Forest' },
+  woodland: { icon: '🌿', label: 'Woodland & bushveld' },
+  scrub: { icon: '🌸', label: 'Fynbos, karoo & scrub' },
+  grassland: { icon: '🌾', label: 'Grassland' },
+  dry: { icon: '🏜️', label: 'Dry, desert & rocky' },
+  water: { icon: '💧', label: 'Wetlands & rivers' },
+  coast: { icon: '🌊', label: 'Coast & sea' },
+  town: { icon: '🏡', label: 'Gardens & towns' },
+};
+
+// Toggle buttons, one per habitat; counts = birds of the current region in that habitat.
+function habitatOpts(chosen, counts) {
+  return Object.entries(HABITATS).map(([k, v]) => {
+    const n = counts ? species.filter((b) => (habitats[b.id] || []).includes(k)).length : null;
+    return `<button type="button" class="opt hab-opt ${chosen.includes(k) ? 'on' : ''}" data-hab="${k}" aria-pressed="${chosen.includes(k)}">
+      <b>${v.icon} ${esc(v.label)}</b>${n != null ? `<span>${n} birds</span>` : ''}</button>`;
+  }).join('');
+}
+const toggleIn = (list, k) => (list.includes(k) ? list.filter((x) => x !== k) : [...list, k]);
+
+function habitatChips(id) {
+  return (habitats[id] || []).map((h) => HABITATS[h]
+    ? `<span class="chip" data-tip="${esc(TIPS.habitat)}">${HABITATS[h].icon} ${esc(HABITATS[h].label)}</span>` : '').join('');
+}
+
 // ---------- survey (experience + area) ----------
 
 const LEVELS = {
   new: { label: 'New to bird calls', desc: 'Start with 10 birds. Each new bird is introduced before you are tested on it.', pool: 10, intros: true },
   some: { label: 'I know a few calls', desc: 'Start with 20 birds, with an introduction for each new one.', pool: 20, intros: true },
   good: { label: 'I know most common calls', desc: 'Start with 40 birds, with introductions.', pool: 40, intros: true },
-  expert: { label: 'Experienced', desc: 'All birds in play from the start, no introductions: straight to testing.', pool: 0, intros: false },
+  expert: { label: 'Experienced', desc: 'All birds in play from the start, no introductions, and varied recordings from the start: a bird you master earns silver straight away.', pool: 0, intros: false, startLevel: 2 },
 };
 
 const overlayOpen = () => !$('welcome').hidden || !$('survey').hidden;
 const needsSurvey = () => !S.prefs.surveyDone;
-let surveyPick = { level: 'some', area: DEFAULT_AREA, order: 'distinct' };
+let surveyPick = { level: 'some', area: DEFAULT_AREA, order: 'distinct', habitats: [], nameSet: 'en_ZA' };
 
 function openSurvey() {
-  surveyPick = { level: S.prefs.level || 'some', area: currentAreaId(), order: S.prefs.order || 'distinct' };
+  surveyPick = { level: S.prefs.level || 'some', area: currentAreaId(), order: S.prefs.order || 'distinct',
+    habitats: [...(S.prefs.habitats || [])], nameSet: S.prefs.nameSet || 'en_ZA' };
   renderSurvey();
   $('survey').hidden = false;
 }
@@ -2091,6 +2145,9 @@ function renderSurvey() {
     `<button class="opt ${k === surveyPick.level ? 'on' : ''}" data-level="${k}"><b>${esc(v.label)}</b><span>${esc(v.desc)}</span></button>`).join('');
   $('orderOpts').innerHTML = Object.entries(ORDERS).map(([k, v]) =>
     `<button class="opt ${k === surveyPick.order ? 'on' : ''}" data-order="${k}"><b>${esc(v.label)}${k === 'distinct' ? ' (recommended)' : ''}</b><span>${esc(v.desc)}</span></button>`).join('');
+  $('habOpts').innerHTML = habitatOpts(surveyPick.habitats, false);
+  $('nameOpts').innerHTML = Object.entries(nameSets).map(([k, v]) =>
+    `<button class="opt ${k === surveyPick.nameSet ? 'on' : ''}" data-nameset="${k}"><b>${esc(v)}${k === 'en_ZA' ? ' (as in Merlin set to South Africa)' : ''}</b></button>`).join('');
   renderAreaPicker();
 }
 
@@ -2146,6 +2203,7 @@ function applyLevel(level) {
   S.prefs.intros = L0.intros;
   S.prefs.introsChosen = true;
   S.learn.startPool = L0.pool || species.length;
+  S.learn.startLevel = L0.startLevel || 1;
   L.ensurePool(S.learn, species, { all: !L0.pool });
 }
 
@@ -2165,6 +2223,10 @@ $('survey').addEventListener('click', (e) => {
   if (toggleArea(e)) return;
   const od = e.target.closest('[data-order]');
   if (od) { surveyPick.order = od.dataset.order; return renderSurvey(); }
+  const hb = e.target.closest('[data-hab]');
+  if (hb) { surveyPick.habitats = toggleIn(surveyPick.habitats, hb.dataset.hab); return renderSurvey(); }
+  const ns = e.target.closest('[data-nameset]');
+  if (ns) { surveyPick.nameSet = ns.dataset.nameset; return renderSurvey(); }
   if (lv) surveyPick.level = lv.dataset.level;
   if (ar) surveyPick.area = ar.dataset.area;
   if (lv) renderSurvey();
@@ -2176,6 +2238,8 @@ async function finishSurvey() {
   {
     $('surveyDone').disabled = true;
     S.prefs.order = surveyPick.order;
+    S.prefs.habitats = surveyPick.habitats;
+    S.prefs.nameSet = surveyPick.nameSet;
     const ok = await chooseArea(surveyPick.area);
     $('surveyDone').disabled = false;
     if (!ok) return;
@@ -2202,13 +2266,15 @@ $('replayWelcome').addEventListener('click', () => {
 async function start() {
   $('buildNo').textContent = `v${VERSION}`;
   try {
-    const [sp, cl, ar, gd] = await Promise.all([
+    const [sp, cl, ar, gd, hb] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),
       fetch('data/calls.json').then((r) => r.json()),
       fetch('data/areas.json').then((r) => r.json()),
       fetch('data/guide.json').then((r) => r.json()).catch(() => null),
+      fetch('data/habitats.json').then((r) => r.json()).catch(() => ({})),
     ]);
     if (gd) guide = gd;
+    habitats = hb;
     allSpecies = sp.species.filter((b) => (cl[b.id] || []).length);
     areas = ar.areas;
     nameSets = sp.nameSets;

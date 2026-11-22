@@ -97,6 +97,8 @@
         <select id="levelSel"></select>
         <label class="small muted" for="orderSel" style="display:block;margin-top:10px"><span id="orderLabel">Which birds come first?</span></label>
         <select id="orderSel"></select>
+        <p class="small muted" style="margin:10px 0 4px"><span id="habLabel">Habitats to focus on (none = all)</span></p>
+        <div class="opts hab-grid" id="habSettings"></div>
         <p class="small muted" style="margin:10px 0 4px">Region: pick a whole region or a smaller area inside it</p>
         <button class="opt area-opt block" id="areaBtn" type="button"></button>
       </div>
@@ -137,7 +139,8 @@
         <h2>About</h2>
         <p>Sounds from <a href="https://xeno-canto.org" target="_blank" rel="noopener">xeno-canto.org</a>, shared by their recordists under Creative Commons licences (credited on each bird).
         Photos from <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a>. Names from the <a href="https://ebird.org" target="_blank" rel="noopener">eBird</a> taxonomy, as used by Merlin.
-        How common each bird is comes from iNaturalist records in the region you pick.</p>
+        How common each bird is comes from iNaturalist records in the region you pick.
+        Habitats from <a href="https://doi.org/10.1111/ele.13898" target="_blank" rel="noopener">AVONET</a> (Tobias et al. 2022, CC BY 4.0), grouped and with a few habitats added.</p>
         <p class="muted">A free, personal, non-commercial learning app. <a href="privacy.html">Privacy policy</a></p>
       </div>
     </section>
@@ -168,11 +171,17 @@
   <div class="welcome" id="survey" hidden>
     <div class="welcome-box">
       <h1>A bit about you</h1>
-      <p class="muted">So the app starts at the right level and region. You can change both later in Settings.</p>
+      <p class="muted">So the app starts at the right level, region and habitats. You can change all of these later in Settings.</p>
       <h2 class="survey-q">How well do you know bird calls?</h2>
       <div class="opts" id="levelOpts"></div>
       <h2 class="survey-q">Which birds first?</h2>
       <div class="opts" id="orderOpts"></div>
+      <h2 class="survey-q">Any habitats to focus on?</h2>
+      <p class="muted small" style="text-align:left;margin:-4px 0 8px">Their birds come first; the others follow later. Pick none to mix all habitats.</p>
+      <div class="opts hab-grid" id="habOpts"></div>
+      <h2 class="survey-q">Bird names</h2>
+      <p class="muted small" style="text-align:left;margin:-4px 0 8px">Match the names your field guide or Merlin uses.</p>
+      <div class="opts" id="nameOpts"></div>
       <h2 class="survey-q">Which birds do you want to learn?</h2>
       <p class="muted small" style="text-align:left;margin:-4px 0 8px">Pick a whole region or open it (▸) to choose a smaller area inside it.
         The commonest birds there come first.</p>
