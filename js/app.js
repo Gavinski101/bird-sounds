@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.8';
+const VERSION = '1.5.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1748,6 +1748,7 @@ const THEMES = {
   ocean: { label: 'Ocean', c: ['#3f6680', '#9fc0d6'] },
   granite: { label: 'Granite', c: ['#4a4f57', '#c3c7ce'] },
   dusk: { label: 'Dusk', c: ['#5e5a8a', '#b7b2e0'] },
+  black: { label: 'Black', c: ['#161616', '#e8e8e8'], bar: ['#161616', '#000000'] },
 };
 const DEFAULT_THEME = 'forest'; // for everyone who hasn't picked one (index.html sets it before paint too)
 const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : DEFAULT_THEME);
@@ -1755,7 +1756,7 @@ function applyTheme() {
   const t = themeOf();
   if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].c[dark ? 1 : 0]);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', (THEMES[t].bar || THEMES[t].c)[dark ? 1 : 0]);
 }
 
 function renderSettings() {

@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.9 (2026-11-24)
+- Black colour theme: greys with a black accent; in dark mode true black with a white accent.
+
 ## 1.5.8 (2026-11-24)
 - The original green logo is back (browser tab and home-screen icon).
 
