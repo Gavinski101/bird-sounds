@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.7 (2026-11-25)
+- A recording that is still downloading after 3 seconds (and not nearly done) starts playing straight from xeno-canto while it loads, instead of waiting for the whole file.
+
 ## 1.8.6 (2026-11-25)
 - Load times only count until the sound is ready and starts by itself; if the phone blocked the sound or it was paused, the time until you tapped play is no longer counted as waiting.
 

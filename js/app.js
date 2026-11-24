@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.6';
+const VERSION = '1.8.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -844,10 +844,22 @@ async function playRec(r, button) {
   loadingFile = r.file;
   showLoad(r.file);
   // Whole file first (ring shows how far), so it plays straight through; if the download
-  // fails it streams from xeno-canto as before.
-  await cacheRec(r);
+  // fails it streams from xeno-canto as before. A slow download (v1.8.7: a 1.7 MB file took
+  // 35 s from xeno-canto) isn't waited for: after STREAM_AFTER_MS, unless it's nearly done, the
+  // download is stopped and the recording streams, starting as soon as the first part arrives.
+  const late = await Promise.race([cacheRec(r).then(() => false), new Promise((ok) => setTimeout(() => ok(true), STREAM_AFTER_MS))]);
   if (seq !== playSeq) return;
-  const src = await srcFor(r);
+  let src;
+  const st = late && loads.get(r.file);
+  if (st && !(st.total && st.got / st.total > 0.7)) {
+    st.ctrl.abort();
+    button.classList.add('spin');
+    src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+  } else {
+    if (late) await cacheRec(r);
+    if (seq !== playSeq) return;
+    src = await srcFor(r);
+  }
   if (seq !== playSeq) return; // a newer card or sound started while this one was loading
   audio.src = src;
   audio.play().then(() => {
@@ -1034,18 +1046,19 @@ async function newCard() {
 // Save one recording on the device (Cache API) so it plays at once. Resolves true once it is
 // saved (false: plays from the network instead). Download progress is kept in `loads`, for
 // the ring around the play button. One download per file, however many callers.
-const loads = new Map(); // file -> { got, total, done }
+const loads = new Map(); // file -> { got, total, done, ctrl }
+const STREAM_AFTER_MS = 3000; // a sound still downloading after this streams instead (playRec)
 const fileSizes = new Map(); // file -> bytes, for the load-time totals
 function cacheRec(r) {
   if (!r) return Promise.resolve(false);
   if (loads.has(r.file)) return loads.get(r.file).done;
-  const st = { got: 0, total: 0 };
+  const st = { got: 0, total: 0, ctrl: new AbortController() };
   st.done = (async () => {
     try {
       const cache = await caches.open(MEDIA_CACHE);
       if (await cache.match(r.file)) return true;
       if (!navigator.onLine) return false;
-      const res = await fetch(r.file, { mode: 'cors' });
+      const res = await fetch(r.file, { mode: 'cors', signal: st.ctrl.signal });
       if (!res.ok) return false;
       st.total = +res.headers.get('content-length') || 0;
       let blob;
