@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.7 (2026-11-24)
+- Calmer colours: solid, muted themes instead of bright gradients. Five greens (Forest, the new default; Fynbos, Eucalyptus, Moss, Olive) plus Savanna, Terracotta, Ocean, Granite and Dusk. Kalahari, Baobab, Sunbird, Protea and Sky are gone (anyone on them gets Forest). Forest-green icon.
+
 ## 1.5.6 (2026-11-24)
 - Sunset is the default colour theme for everyone who hasn't picked one (the choice in Settings → Colours is still remembered). Sunset-coloured icon.
 

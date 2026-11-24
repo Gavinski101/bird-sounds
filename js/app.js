@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.6';
+const VERSION = '1.5.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1734,33 +1734,35 @@ $('progress').addEventListener('click', (e) => {
 // ---------- settings ----------
 
 // Colour themes (Settings -> Colours); colours are in styles.css under :root[data-theme].
-// [light accent, light accent-2, dark accent, dark accent-2] for the swatches and the browser bar.
+// c = [light accent, dark accent], for the swatches and the browser bar. Calmer set (v1.5.7,
+// user: the bright ones looked 'vibe coded'; greens were the best). Picks of removed themes
+// fall back to the default.
 const THEMES = {
-  savanna: { label: 'Savanna', c: ['#8b5a2b', '#c9772e', '#e3a86f', '#f2c265'] },
-  kalahari: { label: 'Kalahari', c: ['#a5701a', '#d9a63a', '#f0c060', '#ffd98a'] },
-  baobab: { label: 'Baobab', c: ['#6b5a4a', '#9c8670', '#d6c2ab', '#efdcc4'] },
-  sunset: { label: 'Sunset', c: ['#b8441c', '#e39a2d', '#ff8a5c', '#ffc15e'] },
-  sunbird: { label: 'Sunbird', c: ['#b0203a', '#e2503d', '#ff7a8a', '#ff9e6e'] },
-  protea: { label: 'Protea', c: ['#a3325c', '#e0785c', '#f28bb0', '#ffad8a'] },
-  ocean: { label: 'Ocean', c: ['#1d5f8c', '#1c9aa3', '#74c3ec', '#6fe0d6'] },
-  sky: { label: 'Sky', c: ['#2a6fc0', '#4fa8e8', '#8cc4ff', '#9fe0ff'] },
-  granite: { label: 'Granite', c: ['#3d4451', '#6b7686', '#c3cad6', '#e2e7ee'] },
-  dusk: { label: 'Dusk', c: ['#4b3fc0', '#c2417f', '#a99cff', '#f07aae'] },
+  forest: { label: 'Forest', c: ['#2f5d45', '#8fc1a3'] },
+  fynbos: { label: 'Fynbos', c: ['#5f7a5a', '#a9c3a0'] },
+  eucalyptus: { label: 'Eucalyptus', c: ['#4f7a74', '#9cc7c0'] },
+  moss: { label: 'Moss', c: ['#55703a', '#aac68a'] },
+  olive: { label: 'Olive', c: ['#66663a', '#c4c38a'] },
+  savanna: { label: 'Savanna', c: ['#8a6a4a', '#d4b494'] },
+  sunset: { label: 'Terracotta', c: ['#a5583a', '#e3a084'] },
+  ocean: { label: 'Ocean', c: ['#3f6680', '#9fc0d6'] },
+  granite: { label: 'Granite', c: ['#4a4f57', '#c3c7ce'] },
+  dusk: { label: 'Dusk', c: ['#5e5a8a', '#b7b2e0'] },
 };
-const DEFAULT_THEME = 'sunset'; // for everyone who hasn't picked one (index.html sets it before paint too)
+const DEFAULT_THEME = 'forest'; // for everyone who hasn't picked one (index.html sets it before paint too)
 const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : DEFAULT_THEME);
 function applyTheme() {
   const t = themeOf();
   if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].c[dark ? 2 : 0]);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].c[dark ? 1 : 0]);
 }
 
 function renderSettings() {
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
   $('themeOpts').innerHTML = Object.entries(THEMES).map(([k, v]) =>
     `<button type="button" class="theme-opt ${k === themeOf() ? 'on' : ''}" data-theme-pick="${k}" aria-pressed="${k === themeOf()}">
-      <i style="background:linear-gradient(145deg, ${v.c[dark ? 2 : 0]}, ${v.c[dark ? 3 : 1]})"></i>${esc(v.label)}</button>`).join('');
+      <i style="background:${v.c[dark ? 1 : 0]}"></i>${esc(v.label)}</button>`).join('');
   $('nameSet').innerHTML = Object.entries(nameSets).map(([k, v]) =>
     `<option value="${k}" ${k === S.prefs.nameSet ? 'selected' : ''}>${esc(v)}</option>`).join('');
   $('autoplay').checked = S.prefs.autoplay;
