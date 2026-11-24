@@ -6,7 +6,7 @@
   <title>Bird Sounds</title>
   <meta name="description" content="Learn Southern African birds by their calls.">
   <meta name="theme-color" content="#1f4d3a">
-  <script>try { const t = JSON.parse(localStorage.getItem('bird-sounds-v1'))?.prefs?.theme; if (t) document.documentElement.dataset.theme = t; } catch (e) { /* default colours */ }</script>
+  <script>try { const p = JSON.parse(localStorage.getItem('bird-sounds-v1'))?.prefs; if (p?.theme) document.documentElement.dataset.theme = p.theme; if (p?.accent) document.documentElement.dataset.accent = p.accent; } catch (e) { /* default colours */ }</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Bird Sounds">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -113,8 +113,10 @@
       </div>
       <div class="panel">
         <h2>Colours</h2>
-        <p class="muted">The background colour. Buttons and highlights always stay green.</p>
+        <p class="muted" style="margin-bottom:0">Background</p>
         <div class="theme-opts" id="themeOpts"></div>
+        <p class="muted" style="margin:14px 0 0">Green (buttons, links and highlights)</p>
+        <div class="theme-opts" id="accentOpts"></div>
       </div>
       <div class="panel">
         <h2>Playback</h2>

@@ -21,6 +21,13 @@
 :root[data-theme="white"] { --bg: #fafafa; --surface: #ffffff; --surface-2: #f0f0ef; --text: #1c1f1d; --muted: #5f6461; --line: #e3e4e2; }
 :root[data-theme="black"] { --bg: #ececec; --surface: #ffffff; --surface-2: #e2e2e2; --text: #141414; --muted: #5e5e5e; --line: #d4d4d4; }
 
+/* Greens (v1.6.6): Settings -> Colours -> Green sets <html data-accent>; Original = :root. */
+:root[data-accent="bushveld"] { --accent: #174f37; --accent-soft: #d8e8de; }
+:root[data-accent="spring"] { --accent: #2a8a5c; --accent-soft: #ddf3e6; }
+:root[data-accent="jade"] { --accent: #1d6b5e; --accent-soft: #d9eeea; }
+:root[data-accent="moss"] { --accent: #4f6f2f; --accent-soft: #e4ecd6; }
+:root[data-accent="sage"] { --accent: #5b7a63; --accent-soft: #e2ebe4; }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #111814; --surface: #1a231e; --surface-2: #232e28; --text: #e8eee9; --muted: #9aa8a0; --line: #2f3b34;
@@ -40,6 +47,11 @@
   :root[data-theme="mist"] { --bg: #12171a; --surface: #1a2125; --surface-2: #242c31; --text: #e8eef1; --muted: #a0adb4; --line: #323d43; }
   :root[data-theme="white"] { --bg: #161816; --surface: #1f2220; --surface-2: #292d2a; --text: #ecefed; --muted: #a3aaa6; --line: #353a37; }
   :root[data-theme="black"] { --bg: #000000; --surface: #0f0f0f; --surface-2: #1c1c1c; --text: #ededed; --muted: #a0a0a0; --line: #2a2a2a; }
+  :root[data-accent="bushveld"] { --accent: #4fae7f; --accent-soft: #1b3326; }
+  :root[data-accent="spring"] { --accent: #6fd39f; --accent-soft: #1f3d2e; }
+  :root[data-accent="jade"] { --accent: #5cc0ad; --accent-soft: #1d3a35; }
+  :root[data-accent="moss"] { --accent: #a6c97a; --accent-soft: #2c3a1f; }
+  :root[data-accent="sage"] { --accent: #a6c4ac; --accent-soft: #283830; }
 }
 
 * { box-sizing: border-box; }
@@ -91,6 +103,7 @@ a { color: var(--accent); }
 .theme-opt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border-radius: 14px; border: 2px solid var(--line); background: var(--surface); font-size: 14px; font-weight: 650; }
 .theme-opt.on { border-color: var(--accent); }
 .theme-opt i { width: 34px; height: 34px; border-radius: 50%; display: block; border: 6px solid var(--accent); }
+.theme-opt i.solid { border: 0; }
 .top-title { font-weight: 800; font-size: 21px; letter-spacing: -0.01em; color: var(--accent); }
 .top-sub { color: var(--muted); font-size: 14px; }
 

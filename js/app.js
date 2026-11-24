@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.5';
+const VERSION = '1.6.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1766,7 +1766,7 @@ $('progress').addEventListener('click', (e) => {
 // always stay the original green (v1.6.4, user). Colours are in styles.css under
 // :root[data-theme]. c = swatch [light, dark], bar = browser bar [light, dark].
 const THEMES = {
-  original: { label: 'Cream', c: ['#f4f1ea', '#111814'], bar: ['#1f4d3a', '#111814'] },
+  original: { label: 'Original', c: ['#f4f1ea', '#111814'], bar: ['#1f4d3a', '#111814'] },
   stone: { label: 'Stone', c: ['#e8e9e0', '#262b24'], bar: ['#1f4d3a', '#141713'] },
   sand: { label: 'Sand', c: ['#e8dcc8', '#2d261f'], bar: ['#1f4d3a', '#18140f'] },
   mist: { label: 'Mist', c: ['#e1e8ec', '#242c31'], bar: ['#1f4d3a', '#12171a'] },
@@ -1775,6 +1775,18 @@ const THEMES = {
 };
 // Picks from the earlier colour themes (v1.5.2-1.6.3) map to the nearest background.
 const OLD_THEMES = { forest: 'stone', fynbos: 'stone', eucalyptus: 'stone', moss: 'stone', olive: 'stone', bushveld: 'original', spring: 'original', jade: 'original', savanna: 'sand', sunset: 'sand', ocean: 'mist', granite: 'mist', dusk: 'mist' };
+// Greens for buttons, links and highlights (v1.6.6, user: variations of the original green).
+// c = swatch [light, dark]; colours in styles.css under :root[data-accent]. Original = :root.
+const ACCENTS = {
+  original: { label: 'Original', c: ['#1f6b4a', '#5cc08d'] },
+  bushveld: { label: 'Bushveld', c: ['#174f37', '#4fae7f'] },
+  spring: { label: 'Spring', c: ['#2a8a5c', '#6fd39f'] },
+  jade: { label: 'Jade', c: ['#1d6b5e', '#5cc0ad'] },
+  moss: { label: 'Moss', c: ['#4f6f2f', '#a6c97a'] },
+  sage: { label: 'Sage', c: ['#5b7a63', '#a6c4ac'] },
+};
+const accentOf = () => (ACCENTS[S.prefs.accent] ? S.prefs.accent : 'original');
+
 const DEFAULT_THEME = 'original'; // for everyone who hasn't picked one (index.html sets it before paint too)
 const themeOf = () => {
   const t = OLD_THEMES[S.prefs.theme] || S.prefs.theme;
@@ -1783,12 +1795,17 @@ const themeOf = () => {
 function applyTheme() {
   const t = themeOf();
   if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+  const a = accentOf();
+  if (document.documentElement.dataset.accent !== a) document.documentElement.dataset.accent = a;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].bar[dark ? 1 : 0]);
 }
 
 function renderSettings() {
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  $('accentOpts').innerHTML = Object.entries(ACCENTS).map(([k, v]) =>
+    `<button type="button" class="theme-opt ${k === accentOf() ? 'on' : ''}" data-accent-pick="${k}" aria-pressed="${k === accentOf()}">
+      <i class="solid" style="background:${v.c[dark ? 1 : 0]}"></i>${esc(v.label)}</button>`).join('');
   $('themeOpts').innerHTML = Object.entries(THEMES).map(([k, v]) =>
     `<button type="button" class="theme-opt ${k === themeOf() ? 'on' : ''}" data-theme-pick="${k}" aria-pressed="${k === themeOf()}">
       <i style="background:${v.c[dark ? 1 : 0]}"></i>${esc(v.label)}</button>`).join('');
@@ -2060,6 +2077,15 @@ function applyArea() {
   areaIds = new Set(species.map((b) => b.id));
   L.realign(S.learn, species, cur?.id); // birds in play follow the current order (learn.js)
 }
+
+$('accentOpts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-accent-pick]');
+  if (!b) return;
+  S.prefs.accent = b.dataset.accentPick;
+  applyTheme();
+  save();
+  renderSettings();
+});
 
 $('themeOpts').addEventListener('click', (e) => {
   const b = e.target.closest('[data-theme-pick]');
