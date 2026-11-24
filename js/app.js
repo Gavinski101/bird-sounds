@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.3';
+const VERSION = '1.7.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -612,7 +612,7 @@ const TIPS = {
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
-  share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name or email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
+  share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
