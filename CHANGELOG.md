@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.1 (2026-11-24)
+- The first green theme is back as "Original", with three variations on it: Bushveld (deeper), Spring (brighter) and Jade (bluer). All on the original cream background.
+
 ## 1.6.0 (2026-11-24)
 - Privacy agreement: signed-in users who haven't agreed to the current privacy policy are asked once ("I agree", or sign out and keep progress on the device). Signing in from the form counts as agreeing. The agreement is saved with the account, so other devices don't ask again; when the policy changes in a way that affects accounts, everyone is asked again.
 - Moss is the default colour theme for anyone who hasn't picked one.

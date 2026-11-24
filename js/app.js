@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.0';
+const VERSION = '1.6.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1741,6 +1741,10 @@ $('progress').addEventListener('click', (e) => {
 // user: the bright ones looked 'vibe coded'; greens were the best). Picks of removed themes
 // fall back to the default.
 const THEMES = {
+  original: { label: 'Original', c: ['#1f6b4a', '#5cc08d'] },
+  bushveld: { label: 'Bushveld', c: ['#174f37', '#4fae7f'] },
+  spring: { label: 'Spring', c: ['#2a8a5c', '#6fd39f'] },
+  jade: { label: 'Jade', c: ['#1d6b5e', '#5cc0ad'] },
   forest: { label: 'Forest', c: ['#2f5d45', '#8fc1a3'] },
   fynbos: { label: 'Fynbos', c: ['#5f7a5a', '#a9c3a0'] },
   eucalyptus: { label: 'Eucalyptus', c: ['#4f7a74', '#9cc7c0'] },
