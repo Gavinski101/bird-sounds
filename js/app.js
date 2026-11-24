@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.3';
+const VERSION = '1.6.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1755,34 +1755,29 @@ $('progress').addEventListener('click', (e) => {
 
 // ---------- settings ----------
 
-// Colour themes (Settings -> Colours); colours are in styles.css under :root[data-theme].
-// c = [light accent, dark accent], for the swatches and the browser bar. Calmer set (v1.5.7,
-// user: the bright ones looked 'vibe coded'; greens were the best). Picks of removed themes
-// fall back to the default.
+// Colours (Settings -> Colours): the background family only; buttons, links and highlights
+// always stay the original green (v1.6.4, user). Colours are in styles.css under
+// :root[data-theme]. c = swatch [light, dark], bar = browser bar [light, dark].
 const THEMES = {
-  original: { label: 'Original', c: ['#1f6b4a', '#5cc08d'] },
-  bushveld: { label: 'Bushveld', c: ['#174f37', '#4fae7f'] },
-  spring: { label: 'Spring', c: ['#2a8a5c', '#6fd39f'] },
-  jade: { label: 'Jade', c: ['#1d6b5e', '#5cc0ad'] },
-  forest: { label: 'Forest', c: ['#2f5d45', '#8fc1a3'] },
-  fynbos: { label: 'Fynbos', c: ['#5f7a5a', '#a9c3a0'] },
-  eucalyptus: { label: 'Eucalyptus', c: ['#4f7a74', '#9cc7c0'] },
-  moss: { label: 'Moss', c: ['#55703a', '#aac68a'] },
-  olive: { label: 'Olive', c: ['#66663a', '#c4c38a'] },
-  savanna: { label: 'Savanna', c: ['#8a6a4a', '#d4b494'] },
-  sunset: { label: 'Terracotta', c: ['#a5583a', '#e3a084'] },
-  ocean: { label: 'Ocean', c: ['#3f6680', '#9fc0d6'] },
-  granite: { label: 'Granite', c: ['#4a4f57', '#c3c7ce'] },
-  dusk: { label: 'Dusk', c: ['#5e5a8a', '#b7b2e0'] },
-  black: { label: 'Black', c: ['#161616', '#e8e8e8'], bar: ['#161616', '#000000'] },
+  original: { label: 'Cream', c: ['#f4f1ea', '#111814'], bar: ['#1f4d3a', '#111814'] },
+  stone: { label: 'Stone', c: ['#e8e9e0', '#262b24'], bar: ['#1f4d3a', '#141713'] },
+  sand: { label: 'Sand', c: ['#e8dcc8', '#2d261f'], bar: ['#1f4d3a', '#18140f'] },
+  mist: { label: 'Mist', c: ['#e1e8ec', '#242c31'], bar: ['#1f4d3a', '#12171a'] },
+  white: { label: 'White', c: ['#ffffff', '#292d2a'], bar: ['#1f4d3a', '#161816'] },
+  black: { label: 'Black', c: ['#1c1c1c', '#000000'], bar: ['#1f4d3a', '#000000'] },
 };
-const DEFAULT_THEME = 'moss'; // for everyone who hasn't picked one (index.html sets it before paint too)
-const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : DEFAULT_THEME);
+// Picks from the earlier colour themes (v1.5.2-1.6.3) map to the nearest background.
+const OLD_THEMES = { forest: 'stone', fynbos: 'stone', eucalyptus: 'stone', moss: 'stone', olive: 'stone', bushveld: 'original', spring: 'original', jade: 'original', savanna: 'sand', sunset: 'sand', ocean: 'mist', granite: 'mist', dusk: 'mist' };
+const DEFAULT_THEME = 'original'; // for everyone who hasn't picked one (index.html sets it before paint too)
+const themeOf = () => {
+  const t = OLD_THEMES[S.prefs.theme] || S.prefs.theme;
+  return THEMES[t] ? t : DEFAULT_THEME;
+};
 function applyTheme() {
   const t = themeOf();
   if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
   const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', (THEMES[t].bar || THEMES[t].c)[dark ? 1 : 0]);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].bar[dark ? 1 : 0]);
 }
 
 function renderSettings() {

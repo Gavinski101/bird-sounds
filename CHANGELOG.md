@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.4 (2026-11-24)
+- Buttons, links and highlights are always the original green. Settings → Colours now picks only the background: Cream (the original, default), Stone, Sand, Mist, White or Black. Earlier colour picks move to the nearest background.
+
 ## 1.6.3 (2026-11-24)
 - Icon links get a new address (?v=orig) so browsers drop their cached copy of the temporary icons and show the original green logo.
 
