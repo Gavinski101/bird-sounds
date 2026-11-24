@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.4';
+const VERSION = '1.8.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1110,9 +1110,17 @@ async function prefetchSoon() {
   if (!card) return;
   const now = card.stage === 'compare' ? [activeRecs(card.id)[0], activeRecs(card.pair)[0]] : [currentRec()];
   const slow = slowNet(); // this device often waits: two at a time, and more of the likely next birds
+  if (card.stage !== 'compare') loadAllRecs(card.id); // full list now, so "Next recording" knows its order
   if (!slow || navigator.connection?.saveData) for (const r of now) await cacheRec(r);
   if (run !== prefetchRun || !navigator.onLine || navigator.connection?.saveData) return;
   const tasks = slow ? now.map((r) => () => cacheRec(r)) : [];
+  // This card's next recording second (v1.8.5: people press "Next recording" when unsure),
+  // in the order the full list gives it.
+  tasks.push(async () => {
+    if (card.stage === 'compare') return;
+    await loadAllRecs(card.id);
+    if (cur === card) await cacheRec(cardRecs()[card.recIdx + 1]);
+  });
   for (const [id, level] of likelyNext(slow ? 8 : 4)) {
     tasks.push(async () => {
       let r = activeRecs(id)[0];
@@ -1125,7 +1133,6 @@ async function prefetchSoon() {
       await cacheRec(r);
     });
   }
-  tasks.push(() => (cur === card && card.stage !== 'compare' ? cacheRec(cardRecs()[card.recIdx + 1]) : null));
   let i = 0;
   const worker = async () => {
     while (i < tasks.length && run === prefetchRun) {
@@ -1390,10 +1397,14 @@ async function stepRec(step) {
   stopAudio();
   // Only before answering, and only on level-1 cards (silver/gold are meant to be harder).
   if (cur.stage === 'guess' && cur.level === 1) { L.otherPressed(S.learn, id); save(); }
-  await loadAllRecs(id); // the full list, the first time
+  if (!allRecs[id]) { // the full list, the first time: show it's loading straight away (v1.8.5)
+    setPlaying($('playBtn'), 'loading');
+    $('playBtn').classList.add('spin');
+    await loadAllRecs(id);
+  }
   if (!cur || cur.id !== id) return;
   const n = cardRecs().length;
-  if (n < 2) return toast('No other recordings of this bird');
+  if (n < 2) { setPlaying($('playBtn'), 'paused'); return toast('No other recordings of this bird'); }
   cur.recIdx = (Math.min(cur.recIdx, n - 1) + step + n) % n;
   renderCard();
   playRec(currentRec(), $('playBtn'));

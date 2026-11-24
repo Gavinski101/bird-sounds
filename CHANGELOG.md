@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.5 (2026-11-25)
+- "Next recording": the play button shows it is loading straight away, and the next recording is downloaded earlier (right after the current one) and in the right order, so it usually plays at once.
+
 ## 1.8.4 (2026-11-25)
 - Dropping a recording for everyone also weighs how many people the share rests on: one person flagging it (1 of 1) only moves it to the back; 2 of 2, 2 of 3 or 5 of 10 drop it.
 
