@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.8 (2026-11-25)
+- Hint choices: all 4 are from the same habitats, mixed-up birds included (they come first when they share a habitat). Compare cards for two birds you mix up can still pair birds from different habitats.
+
 ## 1.7.7 (2026-11-25)
 - Hint choices: only birds other people often mix it up with may come from another habitat; your own mix-ups and sound-alikes must share a habitat, like the other choices.
 

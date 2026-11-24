@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.7';
+const VERSION = '1.7.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1201,18 +1201,17 @@ function makeChoices() {
   const sp = byId[cur.id];
   const pool = new Set(S.learn.pool);
   // Only birds that share a habitat with it (v1.6.9, user: those are the ones you'd really
-  // confuse it with in the field; the habitats also show on the card). The one exception
-  // (v1.7.6, user): birds other people often mix it up with (shared totals) may come from
-  // any habitat. Others only fill in when too few share one.
+  // confuse it with in the field; the habitats also show on the card). That goes for the
+  // mixed-up birds too (v1.7.8, user); mixed-up pairs from different habitats still get their
+  // compare cards ("You mix these two up"). Others only fill in when too few share one.
   const habs = habitats[sp.id] || [];
   const near = (x) => !habs.length || (habitats[x.id] || []).some((h) => habs.includes(h));
   // Birds it gets mixed up with, first (up to 2): your own mix-ups, then the ones other
   // people often mix up, then the hand-made sound-alikes.
   const partners = (pairs) => pairs.flatMap(([a, b]) => (a === sp.id ? [b] : b === sp.id ? [a] : []));
   const inArea = (ids) => ids.filter((id) => areaIds.has(id) && byId[id]).map((id) => byId[id]);
-  const others2 = new Set(partners(community.pairs));
-  const confused = [...new Set([...inArea(L.confusedWith(S.learn, sp.id).map((c) => c.id)), ...inArea([...others2]), ...inArea(partners(guide.similar || []))])]
-    .filter((x) => others2.has(x.id) || near(x));
+  const confused = [...new Set([...inArea(L.confusedWith(S.learn, sp.id).map((c) => c.id)), ...inArea(partners(community.pairs)), ...inArea(partners(guide.similar || []))])]
+    .filter(near);
   const confusedIds = new Set(confused.map((x) => x.id));
   const others = species.filter((x) => x.id !== sp.id && !confusedIds.has(x.id));
   const sameFam = shuffle(others.filter((x) => x.familySci === sp.familySci));
