@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.2 (2026-11-25)
+- Slow recordings are judged by the share of the people who played them who had to wait (1 of 1 counts fully, 2 of 10 a little), not by a fixed number of people (Supabase snippet 14).
+
 ## 1.8.1 (2026-11-25)
 - Big recordings (over 3 MB, known from anyone's download, or over 2 minutes long before that) move behind smaller ones when the bird has another recording.
 

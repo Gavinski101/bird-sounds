@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.1';
+const VERSION = '1.8.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -379,13 +379,14 @@ const sharedOff = (r) => {
   return c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2) || (rate != null && rate < REC_CONFUSING);
 };
 const sharedStars = (r) => { const c = shared(r); return c && c.raters >= SHARED_MIN ? c.avg : null; };
-// Slow to start for several people (v1.7.9, shared load times, supabase/13): at least
-// SLOW_PEOPLE people waited and at least half the plays had to wait. Such a recording moves
-// down the order when the bird has others; it is never dropped for it.
-const SLOW_PEOPLE = 2;
+// How slow a recording is to start, 0-1 (v1.8.2, shared load times, supabase/14): the share
+// of the people who played it who had to wait. Scales with how many encountered it, not a
+// fixed number of people (user's rule): 1 of 1 = 1, 2 of 5 = 0.4, 2 of 10 = 0.2. Moves it
+// down the order by that much when the bird has others; it is never dropped for it.
 const slowShared = (r) => {
   const c = shared(r);
-  return !!c && c.waitPeople >= SLOW_PEOPLE && c.plays >= 3 && c.waits / c.plays >= 0.5;
+  const people = c ? Math.max(c.playPeople || 0, c.waitPeople || 0) : 0;
+  return people ? Math.min(1, (c.waitPeople || 0) / people) : 0;
 };
 // Big file (v1.8.1, user): over BIG_KB, by the size anyone who shares has seen (shared
 // totals) or this device has, so it needs only one download by anyone; before that, very long
@@ -405,7 +406,7 @@ async function loadScores(force = false) {
   try {
     const rows = await Sync.recScores();
     scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0,
-      plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0 }]));
+      plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0, playPeople: x.play_people || 0 }]));
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
   } catch (e) { console.warn('recording scores', e); }
 }
@@ -550,7 +551,7 @@ function levelRecs(id, level) {
   const picked = new Set(pick.map(recKey));
   // Random, but quick ones first: slow-to-start (shared load times) and long (> 90 s, big
   // files) recordings go after the others (v1.7.9).
-  const heavy = (r) => (slowShared(r) ? 2 : 0) + (bigRec(r) ? 2 : 0) + ((r.secs || 0) > 90 ? 1 : 0);
+  const heavy = (r) => slowShared(r) * 2 + (bigRec(r) ? 2 : 0) + ((r.secs || 0) > 90 ? 1 : 0);
   return [...shuffle(pick).sort((a, b) => heavy(a) - heavy(b)), ...all.filter((r) => !picked.has(recKey(r)))];
 }
 
@@ -569,7 +570,7 @@ const recStars = (r) => {
   if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
   const rate = rightRate(r);
   return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0) // 100% right = +1, 20% = -1
-    - (slowShared(r) ? 1 : 0) // slow to start for several people
+    - slowShared(r) * 1.5 // slow to start for the people who played it (0-1.5)
     - (bigRec(r) ? 1 : 0); // big file: slow to download
 };
 function activeRecs(id) {

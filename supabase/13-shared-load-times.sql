@@ -9,7 +9,7 @@
 drop function if exists public.rec_scores();
 create function public.rec_scores()
 returns table (rec text, flags int, raters int, avg_stars numeric, right_answers int, wrong_answers int,
-               plays int, waits int, wait_people int, size_kb int)
+               plays int, waits int, wait_people int, size_kb int, play_people int)
 language sql
 stable
 security definer
@@ -24,7 +24,8 @@ as $$
          (coalesce(sum(case when r.value->>'pw' ~ '^[0-9]+$' then (r.value->>'pw')::int end), 0)::int + coalesce(sum(case when r.value->>'lw' ~ '^[0-9]+$' then (r.value->>'lw')::int end), 0)::int)::int,
          coalesce(sum(case when r.value->>'lw' ~ '^[0-9]+$' then (r.value->>'lw')::int end), 0)::int,
          (count(*) filter (where r.value->>'lw' ~ '^[1-9][0-9]*$'))::int,
-         (max(case when r.value->>'sz' ~ '^[0-9]+$' then (r.value->>'sz')::bigint end) / 1024)::int
+         (max(case when r.value->>'sz' ~ '^[0-9]+$' then (r.value->>'sz')::bigint end) / 1024)::int,
+         (count(*) filter (where r.value->>'pw' ~ '^[1-9][0-9]*$' or r.value->>'lw' ~ '^[1-9][0-9]*$'))::int
   from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
   cross join lateral jsonb_each(p.data->'recs') r
   where jsonb_typeof(p.data->'recs') = 'object' and jsonb_typeof(r.value) = 'object'
