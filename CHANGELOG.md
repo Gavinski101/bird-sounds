@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.0 (2026-11-25)
+- "What's new" popup once after an update, with only the changes you'll notice and enjoy. Existing users see the recent highlights once.
+
 ## 1.6.9 (2026-11-25)
 - Hint choices only offer birds that share a habitat with the bird you hear (mixed-up birds and its own family first); others fill in only when too few share one.
 

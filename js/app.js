@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.9';
+const VERSION = '1.7.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -2292,6 +2292,44 @@ $('pwForm').addEventListener('submit', async (e) => {
   $('pwSave').disabled = false;
 });
 
+// ---------- what's new ----------
+// Shown once when the app opens after an update, only for changes people will enjoy (not
+// fixes or behind-the-scenes work). Add an entry here for each appealing release; the full
+// list of changes is in CHANGELOG.md. prefs.seenNews = the last version whose news was seen
+// (synced). New users start at the current version, so they see nothing until the next one.
+const WHATS_NEW = [
+  { v: '1.5.0', items: ['🥉🥈🥇 Medals for every bird: bronze when you master it, then silver on its varied sounds and gold on any recording of it.'] },
+  { v: '1.5.1', items: ['🌳 Pick habitats to focus on (forest, coast, fynbos…) in Settings: their birds come first.'] },
+  { v: '1.5.5', items: ['⚡ Silver and gold now take less: 4 points each.'] },
+  { v: '1.6.4', items: ['🎨 Choose your background and shade of green in Settings → Colours.'] },
+  { v: '1.6.7', items: ['🤝 While a bird is still new to you, you pick it from 4 birds, so you are never stuck guessing.'] },
+  { v: '1.6.9', items: ['🌿 Each bird\'s usual habitats show on its cards, and the 4 choices are birds from the same habitats: the ones you\'d really mix it up with outside.'] },
+];
+const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);
+
+function maybeShowNews() {
+  if (S.prefs.seenNews == null) {
+    // First time with this feature: existing users get the recent highlights, new users none.
+    S.prefs.seenNews = S.learn.answered || S.prefs.surveyDone ? '1.4.9' : VERSION;
+    save();
+  }
+  if (overlayOpen() || !$('privacySheet').hidden || !$('newsSheet').hidden) return;
+  const seen = verNum(S.prefs.seenNews);
+  const items = WHATS_NEW.filter((n) => verNum(n.v) > seen && verNum(n.v) <= verNum(VERSION)).flatMap((n) => n.items);
+  if (!items.length) {
+    if (S.prefs.seenNews !== VERSION) { S.prefs.seenNews = VERSION; save(); }
+    return;
+  }
+  $('newsList').innerHTML = items.slice(-6).reverse().map((t) => `<li>${esc(t)}</li>`).join('');
+  $('newsSheet').hidden = false;
+}
+
+$('newsOk').addEventListener('click', () => {
+  $('newsSheet').hidden = true;
+  S.prefs.seenNews = VERSION;
+  save();
+});
+
 // ---------- your data: choices ----------
 // Signed-in users choose what happens with their data; prefs.privacy = { v, at, share } (synced).
 // Saving progress with the account is essential (always on). share = their answers, ratings
@@ -2320,6 +2358,7 @@ $('privacyAgree').addEventListener('click', () => {
   setPrivacy($('privacyShare').checked);
   $('privacySheet').hidden = true;
   if ($('view-settings').classList.contains('active')) renderAccount();
+  maybeShowNews();
 });
 $('privacyDecline').addEventListener('click', async () => {
   $('privacySheet').hidden = true;
@@ -2567,7 +2606,8 @@ async function start() {
     else if (needsSurvey()) openSurvey();
     else newCard();
     if (back === 'recovery') openPwSheet();
-    syncNow({ firstSignIn: !!back }).finally(checkPrivacy); // after the cloud copy, which may hold an agreement from another device
+    // After the cloud copy, which may hold an agreement (and seen news) from another device.
+    syncNow({ firstSignIn: !!back }).finally(() => { checkPrivacy(); maybeShowNews(); });
     loadScores();
     loadDifficulty();
     Sync.refreshProfile().then(renderAvatar).catch(() => {});

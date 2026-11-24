@@ -203,6 +203,15 @@
     </div>
   </div>
 
+  <!-- What's new: once after an update, appealing changes only (app.js WHATS_NEW) -->
+  <div class="sheet-bg" id="newsSheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+      <h2 id="newsTitle">What's new</h2>
+      <ul class="news" id="newsList"></ul>
+      <button class="btn block" id="newsOk">Nice, carry on</button>
+    </div>
+  </div>
+
   <!-- Privacy agreement: signed-in users who haven't agreed to the current version (app.js PRIVACY_VERSION) -->
   <div class="sheet-bg" id="privacySheet" hidden>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">

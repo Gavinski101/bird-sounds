@@ -96,6 +96,9 @@ a { color: var(--accent); }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar svg { width: 22px; height: 22px; fill: currentColor; }
 .avatar.signed-out { border-color: var(--line); background: var(--surface-2); color: var(--muted); }
+.news { padding-left: 0; list-style: none; margin: 8px 0 14px; }
+.news li { padding: 10px 0; border-bottom: 1px solid var(--line); line-height: 1.45; }
+.news li:last-child { border-bottom: 0; }
 .consent { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; text-align: left; }
 .consent input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
 .consent > span > span { display: block; margin-top: 2px; }
