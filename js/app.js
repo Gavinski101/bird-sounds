@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.1';
+const VERSION = '1.6.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -605,6 +605,7 @@ const TIPS = {
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
+  autoChoices: 'While a bird is new to you, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). After 2 right picks you name it from memory; a miss brings the choices back. Turn this off in Settings → Playback.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
@@ -887,6 +888,17 @@ function currentRec() {
   return recs[Math.min(cur.recIdx, recs.length - 1)];
 }
 
+// Choices shown by themselves while a bird is new or shaky (v1.6.2, user: beginners get
+// frustrated; a simple progression for everyone): until it has AUTO_CHOICES_BELOW points.
+// Two right picks (+1 each, like a hint) and it's named from memory; a miss (-2) brings the
+// choices back. Never on silver/gold cards. Settings -> Playback can turn it off.
+const AUTO_CHOICES_BELOW = 2;
+function autoChoices(id) {
+  if (S.prefs.autoChoices === false) return false;
+  const b = S.learn.birds[id];
+  return !b?.m && (b?.s || 0) < AUTO_CHOICES_BELOW;
+}
+
 async function newCard() {
   if (overlayOpen()) return; // welcome or survey showing: start when it closes
   stopAudio();
@@ -907,6 +919,10 @@ async function newCard() {
   if (c.test) { // "which of the two?" test: both names shown as the choices
     cur.hint = 1;
     cur.choices = shuffle([c.id, c.pair]);
+  } else if (card.stage === 'guess' && card.level === 1 && autoChoices(c.id)) {
+    cur.hint = 1;
+    cur.choices = makeChoices();
+    cur.autoHint = true;
   }
   renderCard();
   renderTop();
@@ -1032,8 +1048,11 @@ function renderCard() {
     : shown ? 'Answer'
     : cur.pair ? 'Which of the two is this?'
     : cur.level > 1 ? `Who's calling? ${MEDAL[cur.level]} ${LEVEL_NAME[cur.level]}`
+    : cur.autoHint ? "Who's calling? Pick one"
     : "Who's calling?";
-  if (cur.level > 1 && !shown) label.dataset.tip = TIPS.level[cur.level]; else delete label.dataset.tip;
+  if (cur.level > 1 && !shown) label.dataset.tip = TIPS.level[cur.level];
+  else if (cur.autoHint && !shown) label.dataset.tip = TIPS.autoChoices;
+  else delete label.dataset.tip;
   document.querySelector('.player').hidden = cur.stage === 'compare';
 
   $('recInfo').dataset.tip = TIPS.recInfo;
@@ -1775,6 +1794,7 @@ function renderSettings() {
     `<option value="${k}" ${k === S.prefs.nameSet ? 'selected' : ''}>${esc(v)}</option>`).join('');
   $('autoplay').checked = S.prefs.autoplay;
   $('intros').checked = S.prefs.intros;
+  $('autoChoices').checked = S.prefs.autoChoices !== false;
   $('levelSel').innerHTML = Object.entries(LEVELS).map(([k, v]) =>
     `<option value="${k}" ${k === (S.prefs.level || 'some') ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
   $('orderLabel').dataset.tip = TIPS.order;
@@ -2045,6 +2065,11 @@ $('themeOpts').addEventListener('click', (e) => {
 
 $('autoplay').addEventListener('change', (e) => {
   S.prefs.autoplay = e.target.checked;
+  save();
+});
+
+$('autoChoices').addEventListener('change', (e) => {
+  S.prefs.autoChoices = e.target.checked;
   save();
 });
 
