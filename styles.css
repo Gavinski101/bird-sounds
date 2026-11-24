@@ -33,6 +33,12 @@
   --shadow: 0 4px 18px rgba(40, 36, 110, 0.09);
 }
 
+:root[data-theme="kalahari"] { --accent: #a5701a; --accent-2: #d9a63a; --accent-soft: #f5e6c8; --gold: #c9611c; }
+:root[data-theme="baobab"] { --accent: #6b5a4a; --accent-2: #9c8670; --accent-soft: #ece3d8; --gold: #d4821f; }
+:root[data-theme="sunbird"] { --accent: #b0203a; --accent-2: #e2503d; --accent-soft: #f8dade; --gold: #d97a14; }
+:root[data-theme="sky"] { --bg: #eef3f7; --surface: #ffffff; --surface-2: #e1eaf1; --text: #182430; --muted: #566676; --line: #d2dde7; --shadow: 0 4px 18px rgba(20, 50, 80, 0.09); --accent: #2a6fc0; --accent-2: #4fa8e8; --accent-soft: #dde9f8; --gold: #e0841f; }
+:root[data-theme="granite"] { --bg: #f1f2f4; --surface: #ffffff; --surface-2: #e4e6ea; --text: #1d2026; --muted: #5d636e; --line: #d6d9df; --shadow: 0 4px 18px rgba(20, 25, 35, 0.09); --accent: #3d4451; --accent-2: #6b7686; --accent-soft: #e3e6eb; --gold: #d4821f; }
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #19130f;
@@ -63,6 +69,11 @@
     --bg: #12132b; --surface: #1c1e3d; --surface-2: #272a4e; --text: #ecebfb; --muted: #a4a7cc; --line: #34375f;
     --accent: #a99cff; --accent-2: #f07aae; --accent-text: #15123c; --accent-soft: #2e2b62; --gold: #ffb05c;
   }
+  :root[data-theme="kalahari"] { --accent: #f0c060; --accent-2: #ffd98a; --accent-soft: #3f3218; --gold: #ff9a5c; }
+  :root[data-theme="baobab"] { --accent: #d6c2ab; --accent-2: #efdcc4; --accent-soft: #3a3028; --gold: #ffb75e; }
+  :root[data-theme="sunbird"] { --accent: #ff7a8a; --accent-2: #ff9e6e; --accent-soft: #4a2028; --gold: #ffb75e; }
+  :root[data-theme="sky"] { --bg: #0f171f; --surface: #17222d; --surface-2: #213040; --text: #e8f0f6; --muted: #9fb1c2; --line: #2e3f50; --accent: #8cc4ff; --accent-2: #9fe0ff; --accent-text: #0b1a2b; --accent-soft: #1e3552; --gold: #ffb75e; }
+  :root[data-theme="granite"] { --bg: #131417; --surface: #1c1e22; --surface-2: #272a30; --text: #eceef1; --muted: #a5abb5; --line: #353941; --accent: #c3cad6; --accent-2: #e2e7ee; --accent-text: #15171b; --accent-soft: #2c323c; --gold: #ffb75e; }
 }
 
 * { box-sizing: border-box; }

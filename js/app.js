@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.3';
+const VERSION = '1.5.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1731,9 +1731,14 @@ $('progress').addEventListener('click', (e) => {
 // [light accent, light accent-2, dark accent, dark accent-2] for the swatches and the browser bar.
 const THEMES = {
   savanna: { label: 'Savanna', c: ['#8b5a2b', '#c9772e', '#e3a86f', '#f2c265'] },
+  kalahari: { label: 'Kalahari', c: ['#a5701a', '#d9a63a', '#f0c060', '#ffd98a'] },
+  baobab: { label: 'Baobab', c: ['#6b5a4a', '#9c8670', '#d6c2ab', '#efdcc4'] },
   sunset: { label: 'Sunset', c: ['#b8441c', '#e39a2d', '#ff8a5c', '#ffc15e'] },
+  sunbird: { label: 'Sunbird', c: ['#b0203a', '#e2503d', '#ff7a8a', '#ff9e6e'] },
   protea: { label: 'Protea', c: ['#a3325c', '#e0785c', '#f28bb0', '#ffad8a'] },
   ocean: { label: 'Ocean', c: ['#1d5f8c', '#1c9aa3', '#74c3ec', '#6fe0d6'] },
+  sky: { label: 'Sky', c: ['#2a6fc0', '#4fa8e8', '#8cc4ff', '#9fe0ff'] },
+  granite: { label: 'Granite', c: ['#3d4451', '#6b7686', '#c3cad6', '#e2e7ee'] },
   dusk: { label: 'Dusk', c: ['#4b3fc0', '#c2417f', '#a99cff', '#f07aae'] },
 };
 const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : 'savanna');
