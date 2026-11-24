@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.4 (2026-11-25)
+- Habitat focus: birds of your chosen habitats now all come before the others. Spreading out families could pass over the last few focus birds (e.g. forest raptors) in favour of birds from other habitats.
+
 ## 1.9.3 (2026-11-25)
 - The rating next to a recording's details updates within minutes (everyone's ratings are fetched every 15 minutes, was 6 hours), and shows your own rating ("★ 4 (yours)") until everyone's totals include it.
 

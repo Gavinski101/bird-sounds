@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.3';
+const VERSION = '1.9.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -2235,7 +2235,10 @@ function learnOrder(list) {
   const out = [];
   while (queue.length) {
     const last = out.slice(-SPREAD);
-    let i = queue.slice(0, 15).findIndex((b) => !last.some((o) => o.familySci === b.familySci || alike.has(`${o.id}|${b.id}`)));
+    // Spread out families and sound-alikes, but never past the end of the habitat focus
+    // (v1.9.4: the last forest raptors kept being passed over for non-forest birds).
+    const f0 = focus(queue[0]);
+    let i = queue.slice(0, 15).findIndex((b) => focus(b) === f0 && !last.some((o) => o.familySci === b.familySci || alike.has(`${o.id}|${b.id}`)));
     if (i < 0) i = 0;
     out.push(queue.splice(i, 1)[0]);
   }
