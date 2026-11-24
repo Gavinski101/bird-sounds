@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.0';
+const VERSION = '1.7.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -2309,8 +2309,9 @@ const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);
 
 function maybeShowNews() {
   if (S.prefs.seenNews == null) {
-    // First time with this feature: existing users get the recent highlights, new users none.
-    S.prefs.seenNews = S.learn.answered || S.prefs.surveyDone ? '1.4.9' : VERSION;
+    // First time with this feature: start from now, for everyone. (v1.7.0 started existing
+    // users at 1.4.9 and showed old news they had already used; user didn't want that.)
+    S.prefs.seenNews = VERSION;
     save();
   }
   if (overlayOpen() || !$('privacySheet').hidden || !$('newsSheet').hidden) return;
