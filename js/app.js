@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -233,6 +233,7 @@ function renderAccount() {
         <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
         <button type="submit" class="btn block" id="authSubmit">${signup ? 'Create account' : 'Sign in'}</button>
       </form>
+      <p class="small muted">By signing in you agree to the <a href="privacy.html">privacy policy</a>: your progress is saved with your account, and counted without your name in shared totals that help everyone.</p>
       ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}`;
   }
 }
@@ -583,7 +584,7 @@ const TIPS = {
   inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
   confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
-  mastered: "Birds you've got right enough times to count as known (3 clean answers, or 6 with hints): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
+  mastered: "Mastered birds by medal: 🥉 bronze, 🥈 silver, 🥇 gold. Mastered = birds you've got right enough times to count as known (3 clean answers, or 6 with hints): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
   medal: {
     1: 'Bronze: mastered on its 1-2 study recordings (its typical sound).',
     2: "Silver: also mastered on its varied sounds: random recordings from the bird's other good ones, other calls and songs included.",
@@ -630,16 +631,25 @@ tipEl.className = 'tip';
 tipEl.hidden = true;
 document.body.appendChild(tipEl);
 let tipTimer = null;
+let tipOutTimer = null;
 
+// Placed below the element, or above when there's more room there; a long tip gets the room
+// it has and scrolls (it used to run off the bottom of the box).
 function showTip(el) {
+  clearTimeout(tipOutTimer);
   tipEl.textContent = el.dataset.tip;
+  tipEl.style.maxHeight = '';
   tipEl.hidden = false;
+  tipEl.scrollTop = 0;
   const r = el.getBoundingClientRect();
+  const below = innerHeight - 76 - r.bottom - 8; // 76: the tab bar
+  const above = r.top - 16;
+  const down = tipEl.offsetHeight <= below || below >= above;
+  tipEl.style.maxHeight = `${Math.max(80, down ? below : above)}px`;
   const w = tipEl.offsetWidth;
   const h = tipEl.offsetHeight;
   const x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
-  let y = r.bottom + 8;
-  if (y + h > innerHeight - 76) y = r.top - h - 8;
+  const y = down ? r.bottom + 8 : r.top - h - 8;
   tipEl.style.left = `${x}px`;
   tipEl.style.top = `${Math.max(8, y)}px`;
 }
@@ -647,21 +657,33 @@ function showTip(el) {
 function hideTip() {
   tipEl.hidden = true;
   clearTimeout(tipTimer);
+  clearTimeout(tipOutTimer);
 }
 
+// Tapped tips stay up longer when they're long, and while being scrolled.
+const tipTime = () => Math.min(15000, 3000 + tipEl.textContent.length * 40);
 document.addEventListener('mouseover', (e) => {
   const el = e.target.closest('[data-tip]');
   if (el) showTip(el);
 });
+// Leaving the element hides it after a moment, so the mouse can move onto the tip to scroll it.
 document.addEventListener('mouseout', (e) => {
-  if (e.target.closest('[data-tip]')) hideTip();
+  if (e.target.closest('[data-tip]') && !tipEl.contains(e.relatedTarget)) tipOutTimer = setTimeout(hideTip, 250);
 });
+tipEl.addEventListener('mouseenter', () => clearTimeout(tipOutTimer));
+tipEl.addEventListener('mouseleave', hideTip);
+tipEl.addEventListener('scroll', () => {
+  if (!tipTimer) return;
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(hideTip, tipTime());
+}, { passive: true });
 document.addEventListener('click', (e) => {
+  if (tipEl.contains(e.target)) return;
   const el = e.target.closest('[data-tip]');
   if (el) {
     showTip(el);
     clearTimeout(tipTimer);
-    tipTimer = setTimeout(hideTip, 4000);
+    tipTimer = setTimeout(hideTip, tipTime());
   } else hideTip();
 }, true);
 window.addEventListener('scroll', hideTip, { passive: true });
@@ -757,6 +779,12 @@ async function playRec(r, button) {
   audioSecs = r.t ? r.t[1] - r.t[0] : r.secs || 0;
   $('recError').hidden = true;
   setPlaying(button, 'loading');
+  loadingFile = r.file;
+  showLoad(r.file);
+  // Whole file first (ring shows how far), so it plays straight through; if the download
+  // fails it streams from xeno-canto as before.
+  await cacheRec(r);
+  if (seq !== playSeq) return;
   const src = await srcFor(r);
   if (seq !== playSeq) return; // a newer card or sound started while this one was loading
   audio.src = src;
@@ -778,12 +806,14 @@ function stopAudio() {
 let playingBtn = null;
 function setPlaying(btn, mode) {
   if (playingBtn && playingBtn !== btn) {
-    playingBtn.classList.remove('playing', 'loading');
+    playingBtn.classList.remove('playing', 'loading', 'spin');
     if (playingBtn.classList.contains('mini-play')) playingBtn.innerHTML = PLAY_SVG;
   }
   playingBtn = btn;
   if (!btn) return;
   btn.classList.toggle('loading', mode === 'loading');
+  if (mode !== 'loading') btn.classList.remove('spin');
+  btn.setAttribute('aria-busy', String(mode === 'loading'));
   btn.classList.toggle('playing', mode === 'playing');
   if (btn.classList.contains('mini-play')) btn.innerHTML = mode === 'playing' ? PAUSE_SVG : PLAY_SVG;
 }
@@ -861,10 +891,15 @@ async function newCard() {
   const card = { ...c, level: c.level || 1, recs: null, recIdx: 0, stage: c.intro ? 'intro' : c.compare ? 'compare' : 'guess', hint: 0, choices: null, chose: null, thought: '' };
   cur = card;
   if (card.level > 1) { // silver / gold: a random recording from the bird's wider set
-    await loadAllRecs(c.id);
-    if (cur !== card) return;
-    card.recs = levelRecs(c.id, card.level);
+    const plan = planned.get(c.id); // picked (and downloaded) ahead by prefetchSoon
+    if (plan?.level === card.level && plan.recs.length) card.recs = plan.recs.filter((x) => !isOff(x));
+    else {
+      await loadAllRecs(c.id);
+      if (cur !== card) return;
+      card.recs = levelRecs(c.id, card.level);
+    }
   }
+  planned.delete(c.id);
   if (c.test) { // "which of the two?" test: both names shown as the choices
     cur.hint = 1;
     cur.choices = shuffle([c.id, c.pair]);
@@ -873,10 +908,7 @@ async function newCard() {
   renderTop();
   const photo = byId[cur.id]?.photo?.url;
   if (photo) new Image().src = photo; // fetch the answer photo while the sound plays
-  setTimeout(prefetchSoon, 1500);
-  // Compare card: download the SECOND bird's recording while the first one plays, so its
-  // play button starts straight away (it used to take a few taps).
-  if (cur.stage === 'compare') cacheRec(activeRecs(cur.pair)[0]);
+  prefetchSoon();
   if (!S.prefs.autoplay) return;
   if (cur.stage === 'compare') {
     const first = $('hintArea').querySelector('[data-cplay]');
@@ -884,44 +916,103 @@ async function newCard() {
   } else playRec(currentRec(), $('playBtn'));
 }
 
-// Save one recording on the device (Cache API) so it plays at once; best effort.
-const caching = new Set();
-async function cacheRec(r) {
-  if (!r || caching.has(r.file) || !navigator.onLine) return;
-  caching.add(r.file);
-  try {
-    const cache = await caches.open(MEDIA_CACHE);
-    if (!(await cache.match(r.file))) {
+// Save one recording on the device (Cache API) so it plays at once. Resolves true once it is
+// saved (false: plays from the network instead). Download progress is kept in `loads`, for
+// the ring around the play button. One download per file, however many callers.
+const loads = new Map(); // file -> { got, total, done }
+function cacheRec(r) {
+  if (!r) return Promise.resolve(false);
+  if (loads.has(r.file)) return loads.get(r.file).done;
+  const st = { got: 0, total: 0 };
+  st.done = (async () => {
+    try {
+      const cache = await caches.open(MEDIA_CACHE);
+      if (await cache.match(r.file)) return true;
+      if (!navigator.onLine) return false;
       const res = await fetch(r.file, { mode: 'cors' });
-      if (res.ok) await cache.put(r.file, res);
-    }
-  } catch { /* plays from the network instead */ }
-  caching.delete(r.file);
+      if (!res.ok) return false;
+      st.total = +res.headers.get('content-length') || 0;
+      let blob;
+      if (res.body?.getReader) {
+        const reader = res.body.getReader();
+        const parts = [];
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          parts.push(value);
+          st.got += value.length;
+          showLoad(r.file);
+        }
+        blob = new Blob(parts, { type: res.headers.get('content-type') || 'audio/mpeg' });
+      } else blob = await res.blob();
+      await cache.put(r.file, new Response(blob, { headers: { 'content-type': blob.type, 'content-length': String(blob.size) } }));
+      return true;
+    } catch { return false; } finally { loads.delete(r.file); }
+  })();
+  loads.set(r.file, st);
+  return st.done;
 }
 
-// Quietly save the recordings of the birds most likely to come up next, so the next card
-// starts playing straight away. One small file at a time; skipped on data-saver connections.
-let prefetching = false;
-async function prefetchSoon() {
-  if (prefetching || !navigator.onLine || navigator.connection?.saveData) return;
-  prefetching = true;
-  try {
-    const ids = new Set(species.map((b) => b.id));
-    const soon = S.learn.pool
-      .filter((id) => ids.has(id) && id !== cur?.id)
-      .map((id) => [id, S.learn.birds[id] || {}])
-      .sort((a, b) => (a[1].intro === b[1].intro ? (a[1].due || 0) - (b[1].due || 0) : a[1].intro ? -1 : 1))
-      .slice(0, 4);
-    for (const [id] of soon) if (L.cardLevel(S.learn, id) > 1) loadAllRecs(id);
-    const cache = await caches.open(MEDIA_CACHE);
-    for (const [id] of soon) {
-      const r = activeRecs(id)[0];
-      if (!r || (await cache.match(r.file))) continue;
-      const res = await fetch(r.file, { mode: 'cors' });
-      if (res.ok) await cache.put(r.file, res);
+// Ring around the play button while its recording downloads: how far it is (spins when the
+// size isn't known).
+let loadingFile = null;
+function showLoad(file) {
+  const btn = playingBtn;
+  if (file !== loadingFile || !btn?.classList.contains('loading')) return;
+  const st = loads.get(file);
+  const pct = st?.total ? Math.min(100, Math.round((st.got / st.total) * 100)) : null;
+  btn.classList.toggle('spin', pct == null);
+  btn.style.setProperty('--p', pct ?? 0);
+}
+
+// The cards most likely to come next (bird id -> card level): the learning rules are run
+// ahead on copies of the progress, after a right and after a wrong answer.
+function likelyNext() {
+  const out = new Map();
+  if (!cur) return out;
+  const c = cur;
+  const acts = c.stage === 'intro' ? [(s) => L.introduced(s, c.id)]
+    : c.stage === 'compare' ? [(s) => L.compared(s, c.id, c.pair)]
+    : [true, false].map((ok) => (s) => L.answer(s, species, c.id, { correct: ok, pair: c.pair || null, level: c.level }));
+  for (const act of acts) {
+    const base = structuredClone(S.learn);
+    act(base);
+    for (let i = 0; i < 4; i++) {
+      const n = L.nextCard(structuredClone(base), species, Math.random, { intros: S.prefs.intros });
+      if (!out.has(n.id)) out.set(n.id, n.level || 1);
+      if (n.pair && !out.has(n.pair)) out.set(n.pair, 1);
     }
+  }
+  out.delete(c.id);
+  return out;
+}
+
+// Download this card's sound first, then the sounds of the cards most likely to come next
+// (silver/gold cards get their random recording picked now, in `planned`), then this card's
+// next recording. One file at a time, so nothing waits when the card comes up.
+const planned = new Map(); // bird id -> { level, recs }
+let prefetchRun = 0;
+async function prefetchSoon() {
+  const run = ++prefetchRun;
+  const card = cur;
+  if (!card) return;
+  const now = card.stage === 'compare' ? [activeRecs(card.id)[0], activeRecs(card.pair)[0]] : [currentRec()];
+  for (const r of now) await cacheRec(r);
+  if (run !== prefetchRun || !navigator.onLine || navigator.connection?.saveData) return;
+  try {
+    for (const [id, level] of likelyNext()) {
+      if (run !== prefetchRun) return;
+      let r = activeRecs(id)[0];
+      if (level > 1) {
+        await loadAllRecs(id);
+        let plan = planned.get(id);
+        if (plan?.level !== level) { plan = { level, recs: levelRecs(id, level) }; planned.set(id, plan); }
+        r = plan.recs[0];
+      }
+      await cacheRec(r);
+    }
+    if (run === prefetchRun && cur === card && card.stage !== 'compare') await cacheRec(cardRecs()[card.recIdx + 1]);
   } catch { /* best effort */ }
-  prefetching = false;
 }
 
 function renderCard() {
@@ -1013,7 +1104,7 @@ function renderCard() {
   // Buttons
   const a = $('actions');
   if (cur.stage === 'intro') {
-    a.innerHTML = '<button class="btn wide" data-act="introDone">Got it, next bird</button>';
+    a.innerHTML = '<button class="btn ghost" data-act="skip">Skip for later</button><button class="btn" data-act="introDone">Got it, next bird</button>';
   } else if (cur.stage === 'compare') {
     a.innerHTML = '<button class="btn wide" data-act="compared">Got it, test me later</button>';
   } else if (cur.stage === 'guess' && cur.pair) {
@@ -1028,7 +1119,7 @@ function renderCard() {
   } else {
     a.innerHTML = '<button class="btn wide" data-act="next">Next bird</button>';
   }
-  $('skipBtn').hidden = cur.stage !== 'guess' && cur.stage !== 'intro';
+  $('skipBtn').hidden = cur.stage !== 'guess'; // intro cards have it beside "Got it"
 }
 
 function renderThought() {
@@ -1103,6 +1194,8 @@ async function onAction(act) {
     newCard();
   } else if (act === 'next') {
     newCard();
+  } else if (act === 'skip') {
+    skipCard();
   }
 }
 
@@ -1169,11 +1262,14 @@ async function stepRec(step) {
 $('otherRecBtn').addEventListener('click', () => stepRec(1));
 $('prevRecBtn').addEventListener('click', () => stepRec(-1));
 
-$('skipBtn').addEventListener('click', () => {
-  L.skip(S.learn, cur.id);
+function skipCard() {
+  // Name it only on an intro card: on a test card the name would give the answer away.
+  toast(cur.stage === 'intro' ? `${nm(byId[cur.id])} skipped: it comes back later` : 'Skipped: this bird comes back later');
+  L.skip(S.learn, cur.id, species);
   save();
   newCard();
-});
+}
+$('skipBtn').addEventListener('click', skipCard);
 
 // ---------- rate / flag ----------
 
@@ -1263,6 +1359,7 @@ $('rateBtn').addEventListener('click', () => {
     if (cur.recs) cur.recs = cur.recs.filter((x) => !isOff(x));
     cur.recIdx = Math.min(cur.recIdx, cardRecs().length - 1);
     renderCard();
+    if (S.prefs.autoplay && currentRec()) playRec(currentRec(), $('playBtn'));
   });
 });
 
@@ -1361,10 +1458,11 @@ function renderTop() {
   renderAvatar();
   const s = L.summary(S.learn, species);
   const st = currentStreak();
+  const mc = L.medalCounts(S.learn, species);
   $('topSub').innerHTML = `<span data-tip="${esc(TIPS.area)}">${esc(area)}</span> · `
     + `<span data-tip="${esc(birdListTip('inPlay'))}">${s.inPlay} birds in play</span> · `
     + `<span data-tip="${esc(birdListTip('met'))}">${s.met} met</span> · `
-    + `<span data-tip="${esc(birdListTip('mastered'))}">${s.mastered} mastered</span>`
+    + `<span data-tip="${esc(birdListTip('mastered'))}">${[1, 2, 3].map((m) => `${MEDAL[m]}${mc[m]}`).join(' ')}</span>`
     + (streakState().best ? ` · <span data-tip="${esc(TIPS.streak)}">🔥 ${st}/${streakState().best}</span>` : '');
 }
 
@@ -1763,7 +1861,9 @@ const areaPath = (a) => {
 async function locateNear() {
   if (!navigator.geolocation) throw new Error('Location is not available on this device');
   const pos = await new Promise((ok, fail) => navigator.geolocation.getCurrentPosition(ok, fail, { timeout: 20000, maximumAge: 6e5 }));
-  const { latitude: lat, longitude: lng } = pos.coords;
+  // Rounded to about 10 km before it goes to iNaturalist: enough for a 50 km search.
+  const lat = +pos.coords.latitude.toFixed(1);
+  const lng = +pos.coords.longitude.toFixed(1);
   const byInat = Object.fromEntries(allSpecies.map((b) => [b.inat, b.id]));
   const ranks = {};
   let total = 0;

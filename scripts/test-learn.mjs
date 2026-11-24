@@ -222,6 +222,25 @@ function play(state, knows, cards) {
   assert.equal(s.birds[next.id].due, s.n + L.SKIP_LATER, 'met bird waits');
 }
 
+// Skipping the ONLY new bird waiting doesn't bring it straight back: the next new bird joins.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  for (const id of s.pool.slice(0, -1)) { L.introduced(s, id); s.birds[id].due = s.n + 100; }
+  const last = s.pool[s.pool.length - 1];
+  const c = L.nextCard(s, species, rand, { intros: true });
+  assert.equal(c.id, last, 'the one new bird is introduced');
+  L.skip(s, last, species);
+  const seen = [];
+  for (let i = 0; i < 30; i++) {
+    const n = L.nextCard(s, species, rand, { intros: true });
+    seen.push(n.id);
+    if (n.intro) L.introduced(s, n.id); else L.answer(s, species, n.id, { correct: true });
+  }
+  assert.ok(!seen.includes(last), 'skipped new bird stays away for a while');
+  assert.ok(s.pool.length > 20, 'another new bird joined');
+}
+
 // Compare cards only pair birds of the current area.
 {
   const s = L.newState();

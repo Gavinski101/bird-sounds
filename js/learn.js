@@ -189,7 +189,7 @@ function drawCard(state, species, rand, { intros = false } = {}) {
   const due = notLast.filter(([, b]) => b.intro && b.due <= state.n);
   const learningDue = due.filter(([, b]) => !b.m).sort((a, b) => a[1].due - b[1].due);
   const masteredDue = due.filter(([, b]) => b.m);
-  const fresh = pool.filter(([, b]) => !b.intro);
+  const fresh = pool.filter(([, b]) => !b.intro && !(b.skipTo > state.n)); // skipped new birds wait
 
   // Struggling = met, not mastered, and missed at least as often as got right.
   const struggling = pool.filter(([, b]) => isStruggling(b)).length;
@@ -259,13 +259,23 @@ export function compared(state, id, pair, rand = Math.random) {
 }
 
 // "Skip for later": a met bird comes back SKIP_LATER cards later (a pending pair test with it
-// too); a new bird goes to the back of the queue of new birds.
-export const SKIP_LATER = 8;
-export function skip(state, id) {
+// too); a new bird goes to the back of the queue of new birds and isn't introduced for
+// SKIP_NEW cards. It used to come straight back when it was the only new bird waiting, so
+// (given species) the next new bird joins in that case.
+export const SKIP_LATER = 20;
+export const SKIP_NEW = 40;
+export function skip(state, id, species = null) {
   const b = bird(state, id);
   tick(state, id);
-  if (!b.intro) state.pool = [...state.pool.filter((x) => x !== id), id];
-  else b.due = state.n + SKIP_LATER;
+  if (!b.intro) {
+    state.pool = [...state.pool.filter((x) => x !== id), id];
+    b.skipTo = state.n + SKIP_NEW;
+    if (species) {
+      const ids = new Set(species.map((sp) => sp.id));
+      const waiting = state.pool.some((x) => x !== id && ids.has(x) && !bird(state, x).intro && !(bird(state, x).skipTo > state.n));
+      if (!waiting) addBirds(state, species, 1);
+    }
+  } else b.due = Math.max(b.due || 0, state.n + SKIP_LATER);
   if (state.pairTest?.id === id) state.pairTest.due = state.n + SKIP_LATER;
 }
 

@@ -1,39 +1,41 @@
 :root {
-  --bg: #f4f1ea;
+  --bg: #f1f2fa;
   --surface: #ffffff;
-  --surface-2: #ece7dc;
-  --text: #1e2a24;
-  --muted: #5f6b64;
-  --line: #d9d3c6;
-  --accent: #1f6b4a;
+  --surface-2: #e7e8f6;
+  --text: #1c1e3a;
+  --muted: #5c6084;
+  --line: #d5d8ec;
+  --accent: #4b3fc0;
+  --accent-2: #c2417f;
   --accent-text: #ffffff;
-  --accent-soft: #dcefe4;
-  --good: #1f7a45;
-  --good-soft: #dff3e6;
-  --bad: #b3372b;
-  --bad-soft: #f8e1de;
-  --gold: #c98a12;
-  --shadow: 0 2px 10px rgba(30, 42, 36, 0.08);
-  --radius: 18px;
+  --accent-soft: #e6e3fc;
+  --good: #16845a;
+  --good-soft: #dbf3e8;
+  --bad: #c0392b;
+  --bad-soft: #fbe1de;
+  --gold: #e07a1f;
+  --shadow: 0 4px 18px rgba(40, 36, 110, 0.09);
+  --radius: 22px;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111814;
-    --surface: #1a231e;
-    --surface-2: #232e28;
-    --text: #e8eee9;
-    --muted: #9aa8a0;
-    --line: #2f3b34;
-    --accent: #5cc08d;
-    --accent-text: #0d1a13;
-    --accent-soft: #1f3a2c;
-    --good: #5cc08d;
-    --good-soft: #1d3829;
-    --bad: #ef7a6c;
-    --bad-soft: #3f2320;
-    --gold: #f0b84a;
+    --bg: #12132b;
+    --surface: #1c1e3d;
+    --surface-2: #272a4e;
+    --text: #ecebfb;
+    --muted: #a4a7cc;
+    --line: #34375f;
+    --accent: #a99cff;
+    --accent-2: #f07aae;
+    --accent-text: #15123c;
+    --accent-soft: #2e2b62;
+    --good: #5fd3a0;
+    --good-soft: #1b3b36;
+    --bad: #ff8b7b;
+    --bad-soft: #45252c;
+    --gold: #ffb05c;
     --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
@@ -47,7 +49,7 @@ html, body { margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.45 "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   min-height: 100dvh;
   padding-bottom: calc(68px + env(safe-area-inset-bottom));
   -webkit-tap-highlight-color: transparent;
@@ -81,7 +83,7 @@ a { color: var(--accent); }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar svg { width: 22px; height: 22px; fill: currentColor; }
 .avatar.signed-out { border-color: var(--line); background: var(--surface-2); color: var(--muted); }
-.top-title { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+.top-title { font-weight: 800; font-size: 21px; letter-spacing: -0.01em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .top-sub { color: var(--muted); font-size: 14px; }
 
 main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
@@ -111,10 +113,10 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
   width: 112px; height: 112px;
   border-radius: 50%;
   border: 0;
-  background: var(--accent);
-  color: var(--accent-text);
+  background: linear-gradient(145deg, var(--accent), var(--accent-2));
+  color: #fff;
   display: grid; place-items: center;
-  box-shadow: 0 6px 20px rgba(31, 107, 74, 0.35);
+  box-shadow: 0 8px 24px rgba(75, 63, 192, 0.35);
   position: relative;
   transition: transform 0.1s;
 }
@@ -131,7 +133,24 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
   opacity: 0.5;
   animation: pulse 1.4s ease-out infinite;
 }
-.play.loading { opacity: 0.7; }
+/* Downloading: the icon dims and a ring fills as the file comes in (spins when its size is
+   unknown); taps wait until it can play. */
+.play.loading, .mini-play.loading { cursor: progress; }
+.play.loading svg, .mini-play.loading svg { opacity: 0.4; }
+.play.loading::before, .mini-play.loading::before {
+  content: "";
+  position: absolute; inset: -7px;
+  border-radius: 50%;
+  background: conic-gradient(var(--gold) calc(var(--p, 0) * 1%), var(--line) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+.mini-play.loading::before { inset: -4px; }
+.play.loading.spin::before, .mini-play.loading.spin::before {
+  background: conic-gradient(var(--gold) 0 25%, var(--line) 0);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { from { transform: scale(0.95); opacity: 0.6; } to { transform: scale(1.18); opacity: 0; } }
 
 .bar { width: 100%; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
@@ -192,8 +211,8 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 .chip + .chip.medal { margin-left: 4px; }
 .chip.medal { background: var(--surface-2); color: var(--text); }
 .big-stats.medals { margin-top: 10px; }
-.chip.new { background: #fbefd6; color: #8a5a00; }
-@media (prefers-color-scheme: dark) { .chip.new { background: #3a2f17; color: var(--gold); } }
+.chip.new { background: #fdebd8; color: #9a4a06; }
+@media (prefers-color-scheme: dark) { .chip.new { background: #3d2a1a; color: var(--gold); } }
 .credit { color: var(--muted); font-size: 12px; margin-top: 10px; }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
@@ -264,6 +283,7 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
   flex: none; width: 40px; height: 40px; border-radius: 50%;
   border: 0; background: var(--accent-soft); color: var(--accent);
   display: grid; place-items: center;
+  position: relative;
 }
 .mini-play svg { width: 18px; height: 18px; fill: currentColor; }
 
@@ -402,13 +422,12 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .tip {
   position: fixed; z-index: 50;
   max-width: min(340px, calc(100vw - 16px));
-  max-height: 70dvh; overflow: hidden;
+  max-height: 70dvh; overflow-y: auto; overscroll-behavior: contain;
   white-space: pre-line;
   background: var(--text); color: var(--bg);
   padding: 8px 12px; border-radius: 10px;
   font-size: 13px; line-height: 1.4;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
 }
 .tip[hidden] { display: none; }
 .streak-line { text-align: center; margin: -4px 0 12px; font-weight: 600; }

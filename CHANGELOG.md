@@ -2,6 +2,16 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.2 (2026-11-24)
+- New look: dusk theme (indigo and sunrise colours, rounded Nunito font, new icon), so it no longer resembles the photo flashcard app.
+- "Skip for later" is now on new-bird cards too. A skipped new bird stays away for 40 cards (it could come straight back when it was the only new bird waiting: the next new bird now joins instead); a skipped met bird waits 20 cards.
+- Sounds download ahead: this card's sound first, then the sounds of the cards most likely to come next (including the random recordings of silver/gold checks), then this card's next recording.
+- The play button shows a ring filling up while its recording downloads, and plays once it's ready.
+- Top line shows medal counts (🥉 🥈 🥇) instead of "n mastered".
+- Long tooltips fit the screen and scroll.
+- After flagging or low-rating a recording, the replacement plays straight away (with autoplay on).
+- Privacy: sign-in form links the privacy policy; the policy now covers shared totals, Near me and POPIA rights. Near me sends a location rounded to about 10 km.
+
 ## 1.5.1 (2026-11-22)
 - Habitats to focus on (Forest, Woodland & bushveld, Fynbos/karoo & scrub, Grassland, Dry/desert & rocky, Wetlands & rivers, Coast & sea, Gardens & towns): birds of the habitats you pick come first, the rest follow. In the first-start survey and in Settings; the bird page shows each bird's habitats. Data from AVONET (CC BY 4.0) plus hand-added habitats for well-known birds.
 - The survey also asks which bird names to use.

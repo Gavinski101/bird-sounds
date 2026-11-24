@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bird Sounds privacy policy</title>
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
   <link rel="stylesheet" href="styles.css">
   <style>
     body { padding-bottom: 32px; }
@@ -17,7 +20,7 @@
 <body>
   <div class="doc">
     <h1>Privacy policy</h1>
-    <p class="muted">Bird Sounds · last updated 12 November 2026</p>
+    <p class="muted">Bird Sounds · last updated 24 November 2026</p>
 
     <p>Bird Sounds is a free, non-commercial app for learning Southern African birds by their calls.
       It has no ads, and nothing about you is sold or shared for marketing.</p>
@@ -34,8 +37,12 @@
     </ul>
     <p>This is stored with <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a>,
       the service that runs the app's accounts and database. Each person can only read and change their own data.
-      The one exception is shared totals per recording (how many people flagged it, and its average star rating),
-      which help choose recordings for everyone. These never show who voted.
+      The exception is shared totals, which never show who anyone is:
+      per recording (how many people flagged it, its average star rating, and how often people answered it right),
+      which help choose recordings for everyone; and per bird (how many people find it hard, and which birds people mix up),
+      which set how soon a bird comes up and which birds are offered as hints.
+      The app's owner can also look at totals across all accounts (for example how many birds people master per day)
+      to see how well the app teaches and to improve it.
       Passwords are handled by Supabase and are never visible to the app's owner.
       With Google sign-in, the app only receives your name and email address from Google, nothing else from your Google account.</p>
 
@@ -43,8 +50,19 @@
     <ul>
       <li>Bird recordings play from <a href="https://xeno-canto.org" target="_blank" rel="noopener">xeno-canto.org</a> and photos load from
         <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a>. Like any website, these services can see your device's IP address when they send a file.</li>
+      <li>"Near me" asks your browser for your location (your browser asks your permission first). It is rounded to about 10 km
+        and sent to <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> to find the birds recorded near you;
+        the rounded location is then kept only on your device. Other regions never use your location.</li>
+      <li>The page font is loaded from Google Fonts, which can see your device's IP address.</li>
       <li>The app itself is hosted on <a href="https://docs.github.com/en/pages" target="_blank" rel="noopener">GitHub Pages</a>, which may keep standard server logs.</li>
     </ul>
+
+    <h2>Your rights</h2>
+    <p>You can see your own data in the app at any time (Settings → Account, and the transfer code), change it, or delete it as described below.
+      Under South Africa's Protection of Personal Information Act (POPIA) you can also ask what personal information is held about you,
+      or ask for it to be corrected or deleted, by opening an issue at
+      <a href="https://github.com/Gavinski101/bird-sounds/issues" target="_blank" rel="noopener">github.com/Gavinski101/bird-sounds/issues</a>.
+      The app sets no advertising or tracking cookies; it only uses your browser's storage for your own progress and settings.</p>
 
     <h2>Deleting your data</h2>
     <p>Without an account, clear the app's site data in your browser, or use Settings → Start again → Reset all progress.
