@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.2';
+const VERSION = '1.7.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -612,7 +612,7 @@ const TIPS = {
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
-  share: 'Optional. When on, your answers, recording ratings and flags, and the birds you mix up are added (with no name or email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
+  share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name or email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
@@ -786,6 +786,7 @@ async function playRec(r, button) {
     return audio.play().catch(() => {});
   }
   const seq = ++playSeq;
+  if (button === $('playBtn') && cur && !cur.timed) { cur.timed = true; playTimed = { seq, key, file: r.file, t0: performance.now() }; }
   audioKey = key;
   audioOwner = button;
   audioSecs = r.t ? r.t[1] - r.t[0] : r.secs || 0;
@@ -830,7 +831,24 @@ function setPlaying(btn, mode) {
   if (btn.classList.contains('mini-play')) btn.innerHTML = mode === 'playing' ? PAUSE_SVG : PLAY_SVG;
 }
 
-audio.addEventListener('playing', () => setPlaying(playingBtn, 'playing'));
+audio.addEventListener('playing', () => {
+  setPlaying(playingBtn, 'playing');
+  if (playTimed?.seq === playSeq) logLoad(playTimed, performance.now() - playTimed.t0);
+  playTimed = null;
+});
+
+// Load times (v1.7.3): for each card's first play, did its sound start straight away (pw) or
+// did the person wait (lw, total ms in lt)? Plus the file size (sz). Kept with the recording
+// in S.recs like the right/wrong counts, so it only reaches the shared totals for people who
+// share. Reports: supabase/11 (slowest recordings), 12 (how often sounds were ready).
+const WAITED_MS = 600; // starting within this counts as straight away
+let playTimed = null;
+function logLoad({ key, file }, ms) {
+  const p = (S.recs[key] ||= {});
+  if (ms > WAITED_MS) { p.lw = (p.lw || 0) + 1; p.lt = (p.lt || 0) + Math.round(ms); } else p.pw = (p.pw || 0) + 1;
+  if (fileSizes.has(file)) p.sz = fileSizes.get(file);
+  save();
+}
 audio.addEventListener('pause', () => setPlaying(playingBtn, 'paused'));
 audio.addEventListener('ended', () => setPlaying(playingBtn, 'paused'));
 audio.addEventListener('timeupdate', () => {
@@ -947,6 +965,7 @@ async function newCard() {
 // saved (false: plays from the network instead). Download progress is kept in `loads`, for
 // the ring around the play button. One download per file, however many callers.
 const loads = new Map(); // file -> { got, total, done }
+const fileSizes = new Map(); // file -> bytes, for the load-time totals
 function cacheRec(r) {
   if (!r) return Promise.resolve(false);
   if (loads.has(r.file)) return loads.get(r.file).done;
@@ -973,6 +992,7 @@ function cacheRec(r) {
         blob = new Blob(parts, { type: res.headers.get('content-type') || 'audio/mpeg' });
       } else blob = await res.blob();
       await cache.put(r.file, new Response(blob, { headers: { 'content-type': blob.type, 'content-length': String(blob.size) } }));
+      fileSizes.set(r.file, blob.size);
       return true;
     } catch { return false; } finally { loads.delete(r.file); }
   })();
@@ -2333,13 +2353,14 @@ $('newsOk').addEventListener('click', () => {
 // ---------- your data: choices ----------
 // Signed-in users choose what happens with their data; prefs.privacy = { v, at, share } (synced).
 // Saving progress with the account is essential (always on). share = their answers, ratings
-// and mix-ups count, anonymously, in the shared totals; OFF until they tick it (POPIA: optional
-// consent must be given actively). The SQL totals only read accounts with share = true
+// and mix-ups (and, from v3, recording load times) count, anonymously, in the shared totals.
+// Ticked by default (user's choice, v1.7.3), they can untick it before saving; a choice made
+// before is kept. The SQL totals only read accounts with share = true
 // (supabase/10-only-count-people-who-share.sql). Location isn't asked here: "Near me" asks when
 // it's picked (prefs.nearOk). When the policy changes in a way that affects accounts, bump
 // PRIVACY_VERSION and say what changed in PRIVACY_CHANGES: everyone signed in is asked again.
-const PRIVACY_VERSION = 2; // v2 (v1.6.5): choices instead of one "I agree"
-const PRIVACY_CHANGES = 'Choose what happens with your data. You can change this any time in Settings → Account.';
+const PRIVACY_VERSION = 3; // v2 (v1.6.5): choices instead of one "I agree"; v3 (v1.7.3): load times shared too
+const PRIVACY_CHANGES = 'Choose what happens with your data. New: the shared totals now also count how long recordings take to start, to find and replace slow ones. You can change this any time in Settings → Account.';
 
 function setPrivacy(share) {
   S.prefs.privacy = { v: PRIVACY_VERSION, at: new Date().toISOString(), share: !!share };
@@ -2350,7 +2371,7 @@ function checkPrivacy() {
   if (!Sync.signedIn() || (S.prefs.privacy?.v || 0) >= PRIVACY_VERSION || !$('privacySheet').hidden) return;
   $('privacyTitle').textContent = 'Your data';
   $('privacyText').textContent = PRIVACY_CHANGES;
-  $('privacyShare').checked = !!S.prefs.privacy?.share;
+  $('privacyShare').checked = S.prefs.privacy?.share ?? true; // ticked unless they said no before
   $('privacySheet').hidden = false;
 }
 

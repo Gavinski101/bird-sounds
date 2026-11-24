@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.3 (2026-11-25)
+- Records, per recording, whether its sound started straight away or you had to wait (and how long), plus its file size, for the shared totals (Supabase reports 11 and 12). Only counted for people who share.
+- The "shared totals" choice is ticked by default (you can untick it before saving; an earlier choice is kept). Everyone signed in is asked once more, since load times are new.
+
 ## 1.7.2 (2026-11-25)
 - What's new list trimmed to real new features (no rule tweaks).
 
