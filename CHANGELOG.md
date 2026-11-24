@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.1 (2026-11-25)
+- Big recordings (over 3 MB, known from anyone's download, or over 2 minutes long before that) move behind smaller ones when the bird has another recording.
+
 ## 1.8.0 (2026-11-25)
 - Load-time totals also get the file size of recordings that were already saved on the device.
 

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.0';
+const VERSION = '1.8.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -387,6 +387,14 @@ const slowShared = (r) => {
   const c = shared(r);
   return !!c && c.waitPeople >= SLOW_PEOPLE && c.plays >= 3 && c.waits / c.plays >= 0.5;
 };
+// Big file (v1.8.1, user): over BIG_KB, by the size anyone who shares has seen (shared
+// totals) or this device has, so it needs only one download by anyone; before that, very long
+// recordings count as big. Moves down like a slow one, never dropped for it.
+const BIG_KB = 3072;
+const bigRec = (r) => {
+  const kb = shared(r)?.kb || (fileSizes.get(r.file) || 0) / 1024;
+  return kb ? kb > BIG_KB : (r.secs || 0) > 120;
+};
 
 async function loadScores(force = false) {
   if (!Sync.configured || !navigator.onLine) return;
@@ -542,7 +550,7 @@ function levelRecs(id, level) {
   const picked = new Set(pick.map(recKey));
   // Random, but quick ones first: slow-to-start (shared load times) and long (> 90 s, big
   // files) recordings go after the others (v1.7.9).
-  const heavy = (r) => (slowShared(r) ? 2 : 0) + ((r.secs || 0) > 90 ? 1 : 0);
+  const heavy = (r) => (slowShared(r) ? 2 : 0) + (bigRec(r) ? 2 : 0) + ((r.secs || 0) > 90 ? 1 : 0);
   return [...shuffle(pick).sort((a, b) => heavy(a) - heavy(b)), ...all.filter((r) => !picked.has(recKey(r)))];
 }
 
@@ -561,7 +569,8 @@ const recStars = (r) => {
   if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
   const rate = rightRate(r);
   return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0) // 100% right = +1, 20% = -1
-    - (slowShared(r) ? 1 : 0); // slow to start for several people
+    - (slowShared(r) ? 1 : 0) // slow to start for several people
+    - (bigRec(r) ? 1 : 0); // big file: slow to download
 };
 function activeRecs(id) {
   const all = [...(calls[id] || []), ...pickedExtras(id)];
