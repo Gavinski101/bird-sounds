@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="forest">
+<html lang="en" data-theme="moss">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Bird Sounds</title>
   <meta name="description" content="Learn Southern African birds by their calls.">
-  <meta name="theme-color" content="#2f5d45">
+  <meta name="theme-color" content="#55703a">
   <script>try { const t = JSON.parse(localStorage.getItem('bird-sounds-v1'))?.prefs?.theme; if (t) document.documentElement.dataset.theme = t; } catch (e) { /* default colours */ }</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Bird Sounds">
@@ -196,6 +196,17 @@
         The commonest birds there come first.</p>
       <div class="opts" id="areaOpts"></div>
       <button class="btn block" id="surveyDone">Start learning</button>
+    </div>
+  </div>
+
+  <!-- Privacy agreement: signed-in users who haven't agreed to the current version (app.js PRIVACY_VERSION) -->
+  <div class="sheet-bg" id="privacySheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+      <h2 id="privacyTitle">Before you carry on</h2>
+      <p id="privacyText"></p>
+      <p class="muted small">Please read the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a>. You can delete your account and its data any time in Settings → Account.</p>
+      <button class="btn block" id="privacyAgree">I agree</button>
+      <button class="btn block ghost" id="privacyDecline">Sign out instead (keep my progress on this device)</button>
     </div>
   </div>
 

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.9';
+const VERSION = '1.6.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -84,10 +84,11 @@ async function pushNow() {
 
 function adopt(data, keepLocalRecs) {
   const local = S;
+  const privacy = [local.prefs?.privacy, data.prefs?.privacy].filter(Boolean).sort((a, b) => b.v - a.v)[0];
   S = {
     ...defaultStore(),
     ...data,
-    prefs: { ...defaultStore().prefs, ...data.prefs },
+    prefs: { ...defaultStore().prefs, ...data.prefs, ...(privacy ? { privacy } : {}) },
     recs: keepLocalRecs ? { ...(data.recs || {}), ...(local.recs || {}) } : data.recs || {},
     sync: local.sync,
   };
@@ -281,8 +282,10 @@ $('account').addEventListener('submit', async (e) => {
       return toast('Account created, but it needs email confirmation first');
     }
     toast(authMode === 'signin' ? 'Signed in' : 'Account created');
+    agreePrivacy(); // the form shows the privacy notice
     renderAccount();
     await syncNow({ firstSignIn: true });
+    checkPrivacy();
     if (welcomeOpen()) closeWelcome();
   } catch (err) {
     toast(friendly(err));
@@ -1750,7 +1753,7 @@ const THEMES = {
   dusk: { label: 'Dusk', c: ['#5e5a8a', '#b7b2e0'] },
   black: { label: 'Black', c: ['#161616', '#e8e8e8'], bar: ['#161616', '#000000'] },
 };
-const DEFAULT_THEME = 'forest'; // for everyone who hasn't picked one (index.html sets it before paint too)
+const DEFAULT_THEME = 'moss'; // for everyone who hasn't picked one (index.html sets it before paint too)
 const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : DEFAULT_THEME);
 function applyTheme() {
   const t = themeOf();
@@ -2216,6 +2219,41 @@ $('pwForm').addEventListener('submit', async (e) => {
   $('pwSave').disabled = false;
 });
 
+// ---------- privacy agreement ----------
+// Signed-in users agree to the privacy policy; prefs.privacy = { v, at } (synced). When the
+// policy changes in a way that affects accounts, bump PRIVACY_VERSION and say what changed in
+// PRIVACY_CHANGES: everyone signed in who hasn't agreed to that version is asked once.
+// (v1 = the first agreement, so accounts made before it are asked too.)
+const PRIVACY_VERSION = 1;
+const PRIVACY_CHANGES = 'Your progress is saved with your account. It is also counted, without your name, in shared totals (which recordings and birds people find hard, and which birds they mix up) that help everyone. "Near me" sends a location rounded to about 10 km to iNaturalist.';
+
+function agreePrivacy() {
+  S.prefs.privacy = { v: PRIVACY_VERSION, at: new Date().toISOString() };
+  save();
+}
+
+function checkPrivacy() {
+  if (!Sync.signedIn() || (S.prefs.privacy?.v || 0) >= PRIVACY_VERSION || !$('privacySheet').hidden) return;
+  $('privacyTitle').textContent = S.prefs.privacy ? 'Privacy policy updated' : 'Before you carry on';
+  $('privacyText').textContent = PRIVACY_CHANGES;
+  $('privacySheet').hidden = false;
+}
+
+$('privacyAgree').addEventListener('click', () => {
+  agreePrivacy();
+  $('privacySheet').hidden = true;
+  toast('Thanks');
+});
+$('privacyDecline').addEventListener('click', async () => {
+  $('privacySheet').hidden = true;
+  await Sync.signOut().catch(() => {});
+  S.sync = {};
+  saveLocal();
+  showView('study');
+  openWelcome();
+  toast('Signed out: your progress stays on this device. To delete your account, sign in and use Settings → Account.');
+});
+
 // ---------- welcome (first open) ----------
 
 const welcomeOpen = () => !$('welcome').hidden;
@@ -2447,12 +2485,12 @@ async function start() {
         : "Sign-in didn't finish. Try again.");
     }
     if (back) S.prefs.welcomeDone = true;
-    if (back === 'google') toast('Signed in with Google');
+    if (back === 'google') { toast('Signed in with Google'); agreePrivacy(); } // Google button sits on the same form as the notice
     if (needsWelcome()) openWelcome();
     else if (needsSurvey()) openSurvey();
     else newCard();
     if (back === 'recovery') openPwSheet();
-    syncNow({ firstSignIn: !!back });
+    syncNow({ firstSignIn: !!back }).finally(checkPrivacy); // after the cloud copy, which may hold an agreement from another device
     loadScores();
     loadDifficulty();
     Sync.refreshProfile().then(renderAvatar).catch(() => {});
