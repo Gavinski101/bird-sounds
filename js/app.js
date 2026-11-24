@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.8';
+const VERSION = '1.8.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -656,7 +656,7 @@ const TIPS = {
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
-  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
+  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
   share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
@@ -1189,7 +1189,8 @@ function renderCard() {
   const km = r ? recKm(r) : null;
   const total = allRecs[cur.id] ? recs.length : `${recs.length}+`;
   $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${total} · ${r ? r.type : ''}`
-    + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '');
+    + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '')
+    + (r && avgRating(r) ? ` · ${avgRating(r)}` : '');
   $('otherRecBtn').disabled = false;
   $('prevRecBtn').disabled = cur.recIdx === 0 && !allRecs[cur.id]; // nothing behind the first until the list is loaded
   $('recError').hidden = true;
@@ -1458,6 +1459,13 @@ function openRate(rec, after) {
   renderStars($('stars'), rec, true);
   $('rateSheet').hidden = false;
 }
+
+// Everyone's average rating of a recording and how many ratings it rests on ('' when none):
+// "★ 3.8 (5)". Shown with the recording's details on the study card (the bird page already lists it).
+const avgRating = (r) => {
+  const c = shared(r);
+  return c?.raters && c.avg != null ? `★ ${c.avg.toFixed(1)} (${c.raters})` : '';
+};
 
 // Stars: your own rating; in the rate sheet (big) before you've rated it, everyone's average
 // is shown in lighter stars, with the number of ratings it rests on (v1.8.8).

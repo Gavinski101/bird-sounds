@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.9 (2026-11-25)
+- Everyone's average rating of a recording (★ 3.8 (5)) also shows with the recording's details on the study card (the bird page already showed it).
+
 ## 1.8.8 (2026-11-25)
 - Rate / flag: before you rate a recording, the stars show everyone's average rating (lighter), with how many ratings it rests on in brackets.
 
