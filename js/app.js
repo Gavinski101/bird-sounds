@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.5';
+const VERSION = '1.7.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -830,6 +830,13 @@ function setPlaying(btn, mode) {
   btn.classList.toggle('playing', mode === 'playing');
   if (btn.classList.contains('mini-play')) btn.innerHTML = mode === 'playing' ? PAUSE_SVG : PLAY_SVG;
 }
+
+// Screen off, app switched away or closed: stop the sound (user v1.7.6: it kept playing in the
+// background on the phone). It doesn't start again by itself when you come back.
+const stopInBackground = () => { if (!audio.paused) audio.pause(); playTimed = null; };
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopInBackground(); });
+window.addEventListener('pagehide', stopInBackground);
+window.addEventListener('blur', () => { if (document.hidden) stopInBackground(); });
 
 audio.addEventListener('playing', () => {
   setPlaying(playingBtn, 'playing');

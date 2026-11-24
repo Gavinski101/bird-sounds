@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.6 (2026-11-25)
+- The sound stops when you turn the screen off, switch to another app or close the app.
+
 ## 1.7.5 (2026-11-25)
 - Hint choices always include up to 2 birds it is often mixed up with: your own mix-ups first, then the ones other people often mix up, then known sound-alikes, even from another habitat.
 
