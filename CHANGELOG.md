@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.9 (2026-11-25)
+- Recordings that several people had to wait for move down the play order when the bird has a quicker one; silver and gold cards play quick, short recordings first (Supabase snippet 13).
+- On a slow connection (this device waited on more than 15% of recent cards) the app downloads two at a time and more of the likely next birds.
+
 ## 1.7.8 (2026-11-25)
 - Hint choices: all 4 are from the same habitats, mixed-up birds included (they come first when they share a habitat). Compare cards for two birds you mix up can still pair birds from different habitats.
 

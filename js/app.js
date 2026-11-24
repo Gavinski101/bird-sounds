@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.8';
+const VERSION = '1.7.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -379,6 +379,14 @@ const sharedOff = (r) => {
   return c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2) || (rate != null && rate < REC_CONFUSING);
 };
 const sharedStars = (r) => { const c = shared(r); return c && c.raters >= SHARED_MIN ? c.avg : null; };
+// Slow to start for several people (v1.7.9, shared load times, supabase/13): at least
+// SLOW_PEOPLE people waited and at least half the plays had to wait. Such a recording moves
+// down the order when the bird has others; it is never dropped for it.
+const SLOW_PEOPLE = 2;
+const slowShared = (r) => {
+  const c = shared(r);
+  return !!c && c.waitPeople >= SLOW_PEOPLE && c.plays >= 3 && c.waits / c.plays >= 0.5;
+};
 
 async function loadScores(force = false) {
   if (!Sync.configured || !navigator.onLine) return;
@@ -388,7 +396,8 @@ async function loadScores(force = false) {
   } catch { /* fetch */ }
   try {
     const rows = await Sync.recScores();
-    scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0 }]));
+    scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0,
+      plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0 }]));
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
   } catch (e) { console.warn('recording scores', e); }
 }
@@ -531,7 +540,10 @@ function levelRecs(id, level) {
   let pick = level >= 3 ? others.slice() : others.filter((r) => !r.q || r.q === 'A' || r.q === 'B').slice(0, SILVER_SET);
   if (pick.length < 2) pick = others.length ? others.slice() : all.slice(); // too few: whatever there is
   const picked = new Set(pick.map(recKey));
-  return [...shuffle(pick), ...all.filter((r) => !picked.has(recKey(r)))];
+  // Random, but quick ones first: slow-to-start (shared load times) and long (> 90 s, big
+  // files) recordings go after the others (v1.7.9).
+  const heavy = (r) => (slowShared(r) ? 2 : 0) + ((r.secs || 0) > 90 ? 1 : 0);
+  return [...shuffle(pick).sort((a, b) => heavy(a) - heavy(b)), ...all.filter((r) => !picked.has(recKey(r)))];
 }
 
 // What this card plays: its own shuffled list on a silver/gold card, else the usual list.
@@ -548,7 +560,8 @@ function medalChip(id) {
 const recStars = (r) => {
   if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
   const rate = rightRate(r);
-  return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0); // 100% right = +1, 20% = -1
+  return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0) // 100% right = +1, 20% = -1
+    - (slowShared(r) ? 1 : 0); // slow to start for several people
 };
 function activeRecs(id) {
   const all = [...(calls[id] || []), ...pickedExtras(id)];
@@ -850,7 +863,16 @@ audio.addEventListener('playing', () => {
 // share. Reports: supabase/11 (slowest recordings), 12 (how often sounds were ready).
 const WAITED_MS = 600; // starting within this counts as straight away
 let playTimed = null;
+// This device's last 30 first-plays (1 = had to wait), kept on the device only (v1.7.9): when
+// more than 15% of 10+ had to wait, the connection is slow, so downloads go two at a time and
+// further ahead (prefetchSoon).
+const NET_KEY = 'bird-sounds-net';
+let netLog = [];
+try { netLog = JSON.parse(localStorage.getItem(NET_KEY)) || []; } catch { /* none yet */ }
+const slowNet = () => netLog.length >= 10 && netLog.filter(Boolean).length / netLog.length > 0.15;
 function logLoad({ key, file }, ms) {
+  netLog = [...netLog.slice(-29), ms > WAITED_MS ? 1 : 0];
+  try { localStorage.setItem(NET_KEY, JSON.stringify(netLog)); } catch { /* storage full */ }
   const p = (S.recs[key] ||= {});
   if (ms > WAITED_MS) { p.lw = (p.lw || 0) + 1; p.lt = (p.lt || 0) + Math.round(ms); } else p.pw = (p.pw || 0) + 1;
   if (fileSizes.has(file)) p.sz = fileSizes.get(file);
@@ -1021,7 +1043,7 @@ function showLoad(file) {
 
 // The cards most likely to come next (bird id -> card level): the learning rules are run
 // ahead on copies of the progress, after a right and after a wrong answer.
-function likelyNext() {
+function likelyNext(tries = 4) {
   const out = new Map();
   if (!cur) return out;
   const c = cur;
@@ -1031,7 +1053,7 @@ function likelyNext() {
   for (const act of acts) {
     const base = structuredClone(S.learn);
     act(base);
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < tries; i++) {
       const n = L.nextCard(structuredClone(base), species, Math.random, { intros: S.prefs.intros });
       if (!out.has(n.id)) out.set(n.id, n.level || 1);
       if (n.pair && !out.has(n.pair)) out.set(n.pair, 1);
@@ -1051,11 +1073,12 @@ async function prefetchSoon() {
   const card = cur;
   if (!card) return;
   const now = card.stage === 'compare' ? [activeRecs(card.id)[0], activeRecs(card.pair)[0]] : [currentRec()];
-  for (const r of now) await cacheRec(r);
+  const slow = slowNet(); // this device often waits: two at a time, and more of the likely next birds
+  if (!slow || navigator.connection?.saveData) for (const r of now) await cacheRec(r);
   if (run !== prefetchRun || !navigator.onLine || navigator.connection?.saveData) return;
-  try {
-    for (const [id, level] of likelyNext()) {
-      if (run !== prefetchRun) return;
+  const tasks = slow ? now.map((r) => () => cacheRec(r)) : [];
+  for (const [id, level] of likelyNext(slow ? 8 : 4)) {
+    tasks.push(async () => {
       let r = activeRecs(id)[0];
       if (level > 1) {
         await loadAllRecs(id);
@@ -1064,9 +1087,16 @@ async function prefetchSoon() {
         r = plan.recs[0];
       }
       await cacheRec(r);
+    });
+  }
+  tasks.push(() => (cur === card && card.stage !== 'compare' ? cacheRec(cardRecs()[card.recIdx + 1]) : null));
+  let i = 0;
+  const worker = async () => {
+    while (i < tasks.length && run === prefetchRun) {
+      try { await tasks[i++](); } catch { /* best effort */ }
     }
-    if (run === prefetchRun && cur === card && card.stage !== 'compare') await cacheRec(cardRecs()[card.recIdx + 1]);
-  } catch { /* best effort */ }
+  };
+  await Promise.all(Array.from({ length: slow ? 2 : 1 }, worker));
 }
 
 function renderCard() {

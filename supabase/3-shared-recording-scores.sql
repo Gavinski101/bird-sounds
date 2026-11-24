@@ -7,9 +7,11 @@
 -- v1.4.6: also how often each recording led to a right or wrong answer (recs[xc].ok / .no:
 -- the recording playing when the person answered). The result columns changed, so the old
 -- function is dropped first.
+-- v1.7.9: also load times (plays, waits, people who waited, file size; snippet 13).
 drop function if exists public.rec_scores();
 create function public.rec_scores()
-returns table (rec text, flags int, raters int, avg_stars numeric, right_answers int, wrong_answers int)
+returns table (rec text, flags int, raters int, avg_stars numeric, right_answers int, wrong_answers int,
+               plays int, waits int, wait_people int, size_kb int)
 language sql
 stable
 security definer
@@ -20,13 +22,18 @@ as $$
          (count(*) filter (where r.value->>'stars' ~ '^[1-5]$'))::int,
          round(avg(case when r.value->>'stars' ~ '^[1-5]$' then (r.value->>'stars')::numeric end), 2),
          coalesce(sum(case when r.value->>'ok' ~ '^[0-9]+$' then (r.value->>'ok')::int end), 0)::int,
-         coalesce(sum(case when r.value->>'no' ~ '^[0-9]+$' then (r.value->>'no')::int end), 0)::int
+         coalesce(sum(case when r.value->>'no' ~ '^[0-9]+$' then (r.value->>'no')::int end), 0)::int,
+         (coalesce(sum(case when r.value->>'pw' ~ '^[0-9]+$' then (r.value->>'pw')::int end), 0)::int + coalesce(sum(case when r.value->>'lw' ~ '^[0-9]+$' then (r.value->>'lw')::int end), 0)::int)::int,
+         coalesce(sum(case when r.value->>'lw' ~ '^[0-9]+$' then (r.value->>'lw')::int end), 0)::int,
+         (count(*) filter (where r.value->>'lw' ~ '^[1-9][0-9]*$'))::int,
+         (max(case when r.value->>'sz' ~ '^[0-9]+$' then (r.value->>'sz')::bigint end) / 1024)::int
   from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
   cross join lateral jsonb_each(p.data->'recs') r
   where jsonb_typeof(p.data->'recs') = 'object' and jsonb_typeof(r.value) = 'object'
   group by r.key
   having count(*) filter (where coalesce(r.value->>'flag', '') <> '' or r.value->>'stars' ~ '^[1-5]$'
-                                or r.value->>'ok' ~ '^[0-9]+$' or r.value->>'no' ~ '^[0-9]+$') > 0;
+                                or r.value->>'ok' ~ '^[0-9]+$' or r.value->>'no' ~ '^[0-9]+$'
+                                or r.value->>'pw' ~ '^[0-9]+$' or r.value->>'lw' ~ '^[0-9]+$') > 0;
 $$;
 
 revoke all on function public.rec_scores() from public;
