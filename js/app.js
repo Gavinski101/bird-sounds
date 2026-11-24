@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.1';
+const VERSION = '1.9.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1461,6 +1461,18 @@ function openRate(rec, after) {
   rateTarget = { rec, after };
   renderStars($('stars'), rec, true);
   $('rateSheet').hidden = false;
+  // Everyone's totals are kept for 6 h; here they're fetched again when 10+ minutes old, so a
+  // rating given since (yours too) shows up (v1.9.2).
+  let at = 0;
+  try { at = JSON.parse(localStorage.getItem(SCORES_KEY))?.at || 0; } catch { /* none */ }
+  if (Date.now() - at > 10 * 60e3) refreshRateInfo(0);
+}
+
+// Fetch everyone's totals again (after `wait` ms) and redraw the open rate sheet.
+function refreshRateInfo(wait) {
+  setTimeout(() => loadScores(true).then(() => {
+    if (rateTarget && !$('rateSheet').hidden) renderStars($('stars'), rateTarget.rec, true);
+  }), wait);
 }
 
 // Everyone's average rating of a recording and how many ratings it rests on ('' when none):
@@ -1518,6 +1530,7 @@ $('stars').addEventListener('click', (e) => {
   setStars(recKey(rateTarget.rec), stars);
   keepMeta(rateTarget.rec);
   renderStars($('stars'), rateTarget.rec, true);
+  if (S.prefs.privacy?.share) refreshRateInfo(8000); // after your rating is saved (3 s) and totalled
   if (stars <= 2 && recPref(rateTarget.rec).stars) {
     toast('Rated low: swapped for another recording');
     closeRate(true);

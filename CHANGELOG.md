@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.2 (2026-11-25)
+- Rate / flag fetches everyone's ratings again when they are over 10 minutes old, and a few seconds after you rate, so "Everyone" includes recent ratings (yours too).
+
 ## 1.9.1 (2026-11-25)
 - Tooltips no longer block buttons underneath them (Rate / flag didn't respond on a computer when a tooltip covered it); only a tooltip long enough to scroll catches the mouse, and clicking it closes it.
 
