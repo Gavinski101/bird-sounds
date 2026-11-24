@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.7 (2026-11-25)
+- Hint choices: only birds other people often mix it up with may come from another habitat; your own mix-ups and sound-alikes must share a habitat, like the other choices.
+
 ## 1.7.6 (2026-11-25)
 - The sound stops when you turn the screen off, switch to another app or close the app.
 
