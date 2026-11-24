@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.2';
+const VERSION = '1.9.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -421,13 +421,15 @@ async function loadScores(force = false) {
   if (!Sync.configured || !navigator.onLine) return;
   try {
     const c = JSON.parse(localStorage.getItem(SCORES_KEY));
-    if (!force && c && Date.now() - c.at < 6 * 3600e3) return;
+    // Kept 15 minutes (was 6 h, v1.9.3: new ratings took hours to show).
+    if (!force && c && Date.now() - c.at < 15 * 60e3) return;
   } catch { /* fetch */ }
   try {
     const rows = await Sync.recScores();
     scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0,
       plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0, playPeople: x.play_people || 0 }]));
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
+    if (cur) renderRecInfo();
   } catch (e) { console.warn('recording scores', e); }
 }
 
@@ -1189,11 +1191,7 @@ function renderCard() {
   $('cardHab').hidden = !hab;
 
   $('recInfo').dataset.tip = TIPS.recInfo;
-  const km = r ? recKm(r) : null;
-  const total = allRecs[cur.id] ? recs.length : `${recs.length}+`;
-  $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${total} · ${r ? r.type : ''}`
-    + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '')
-    + (r && avgRating(r) ? ` · ${avgRating(r)}` : '');
+  renderRecInfo();
   $('otherRecBtn').disabled = false;
   $('prevRecBtn').disabled = cur.recIdx === 0 && !allRecs[cur.id]; // nothing behind the first until the list is loaded
   $('recError').hidden = true;
@@ -1482,6 +1480,20 @@ const avgRating = (r) => {
   return c?.raters && c.avg != null ? `★ ${c.avg.toFixed(1)} (${c.raters})` : '';
 };
 
+// "Recording 1 of 64 · call · 290 km away · ★ 3.8 (5)" under the play button. The rating is
+// everyone's (with how many rated it); before anyone's totals include it, your own ("yours").
+function renderRecInfo() {
+  const recs = cardRecs();
+  const r = currentRec();
+  const km = r ? recKm(r) : null;
+  const total = allRecs[cur.id] ? recs.length : `${recs.length}+`;
+  const mine = r && recPref(r).stars;
+  const rating = r && (avgRating(r) || (mine ? `★ ${mine} (yours)` : ''));
+  $('recInfo').textContent = `Recording ${Math.min(cur.recIdx, recs.length - 1) + 1} of ${total} · ${r ? r.type : ''}`
+    + (km != null ? ` · ${km < 10 ? 'under 10' : Math.round(km / 10) * 10} km away` : '')
+    + (rating ? ` · ${rating}` : '');
+}
+
 // Stars: your own rating; in the rate sheet (big) before you've rated it, everyone's average
 // is shown in lighter stars, with the number of ratings it rests on (v1.8.8).
 function renderStars(el, rec, big) {
@@ -1530,6 +1542,7 @@ $('stars').addEventListener('click', (e) => {
   setStars(recKey(rateTarget.rec), stars);
   keepMeta(rateTarget.rec);
   renderStars($('stars'), rateTarget.rec, true);
+  if (cur) renderRecInfo();
   if (S.prefs.privacy?.share) refreshRateInfo(8000); // after your rating is saved (3 s) and totalled
   if (stars <= 2 && recPref(rateTarget.rec).stars) {
     toast('Rated low: swapped for another recording');

@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.3 (2026-11-25)
+- The rating next to a recording's details updates within minutes (everyone's ratings are fetched every 15 minutes, was 6 hours), and shows your own rating ("★ 4 (yours)") until everyone's totals include it.
+
 ## 1.9.2 (2026-11-25)
 - Rate / flag fetches everyone's ratings again when they are over 10 minutes old, and a few seconds after you rate, so "Everyone" includes recent ratings (yours too).
 
