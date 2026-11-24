@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.0';
+const VERSION = '1.9.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -709,6 +709,9 @@ function showTip(el) {
   const h = tipEl.offsetHeight;
   const x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
   const y = down ? r.bottom + 8 : r.top - h - 8;
+  // Only a tip that needs scrolling catches the mouse (v1.9.1): otherwise clicks go through it
+  // to the buttons underneath (a tip over "Rate / flag" swallowed the click).
+  tipEl.classList.toggle('scrolls', tipEl.scrollHeight > tipEl.clientHeight + 2);
   tipEl.style.left = `${x}px`;
   tipEl.style.top = `${Math.max(8, y)}px`;
 }
@@ -737,7 +740,7 @@ tipEl.addEventListener('scroll', () => {
   tipTimer = setTimeout(hideTip, tipTime());
 }, { passive: true });
 document.addEventListener('click', (e) => {
-  if (tipEl.contains(e.target)) return;
+  if (tipEl.contains(e.target)) { hideTip(); return; } // a click on a scrolling tip closes it
   const el = e.target.closest('[data-tip]');
   if (el) {
     showTip(el);
