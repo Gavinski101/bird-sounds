@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.7';
+const VERSION = '1.6.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1061,6 +1061,11 @@ function renderCard() {
   else if (cur.autoHint && !shown) label.dataset.tip = TIPS.autoChoices;
   else delete label.dataset.tip;
   document.querySelector('.player').hidden = cur.stage === 'compare';
+  // Where it's usually found (user v1.6.8: on the guess card too, as a gentle clue). Not on
+  // "which of the two?" tests, where it could give the answer away.
+  const hab = cur.stage === 'guess' && !cur.pair ? habitatChips(cur.id) : '';
+  $('cardHab').innerHTML = hab;
+  $('cardHab').hidden = !hab;
 
   $('recInfo').dataset.tip = TIPS.recInfo;
   const km = r ? recKm(r) : null;
@@ -1125,7 +1130,7 @@ function renderCard() {
     } else img.hidden = true;
     $('revealName').textContent = nm(sp);
     $('revealSci').textContent = sp.sci;
-    $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)}`;
+    $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)}${habitatChips(sp.id)}`;
     $('revealTip').innerHTML = soundTipHtml(sp.id);
     $('revealTip').hidden = !$('revealTip').innerHTML;
     $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? `Photo: ${esc(sp.photo.attr)}` : '');

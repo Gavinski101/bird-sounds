@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.8 (2026-11-25)
+- The bird's usual habitats show on new-bird cards, on the answer, and on the guess card as a gentle clue (not on "which of the two?" tests).
+
 ## 1.6.7 (2026-11-25)
 - The 4 choices now show by themselves until a bird is nearly mastered (4 of 6 points, was 2), and always on the card after you missed it. The last step to mastered is named from memory.
 
