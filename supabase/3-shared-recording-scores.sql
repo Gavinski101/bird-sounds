@@ -21,7 +21,7 @@ as $$
          round(avg(case when r.value->>'stars' ~ '^[1-5]$' then (r.value->>'stars')::numeric end), 2),
          coalesce(sum(case when r.value->>'ok' ~ '^[0-9]+$' then (r.value->>'ok')::int end), 0)::int,
          coalesce(sum(case when r.value->>'no' ~ '^[0-9]+$' then (r.value->>'no')::int end), 0)::int
-  from public.progress p
+  from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
   cross join lateral jsonb_each(p.data->'recs') r
   where jsonb_typeof(p.data->'recs') = 'object' and jsonb_typeof(r.value) = 'object'
   group by r.key

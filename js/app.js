@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.6.4';
+const VERSION = '1.6.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -84,7 +84,8 @@ async function pushNow() {
 
 function adopt(data, keepLocalRecs) {
   const local = S;
-  const privacy = [local.prefs?.privacy, data.prefs?.privacy].filter(Boolean).sort((a, b) => b.v - a.v)[0];
+  const privacy = [local.prefs?.privacy, data.prefs?.privacy].filter(Boolean)
+    .sort((a, b) => (b.v || 0) - (a.v || 0) || String(b.at || '').localeCompare(String(a.at || '')))[0];
   S = {
     ...defaultStore(),
     ...data,
@@ -196,6 +197,8 @@ function renderAccount() {
         <button class="btn" id="syncNowBtn">Sync now</button>
         <button class="btn ghost" id="signOutBtn">Sign out</button>
       </div>
+      <label class="row small" style="margin:10px 0 4px"><input type="checkbox" id="shareChk" ${S.prefs.privacy?.share ? 'checked' : ''}>
+        <span data-tip="${esc(TIPS.share)}">Add my answers to the shared totals (anonymous)</span></label>
       <button class="link danger-link" id="deleteAccountBtn">Delete my account</button>`;
   } else {
     const typed = $('emailInput')?.value || '';
@@ -234,7 +237,7 @@ function renderAccount() {
         <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
         <button type="submit" class="btn block" id="authSubmit">${signup ? 'Create account' : 'Sign in'}</button>
       </form>
-      <p class="small muted">By signing in you agree to the <a href="privacy.html">privacy policy</a>: your progress is saved with your account, and counted without your name in shared totals that help everyone.</p>
+      <p class="small muted">Signing in saves your progress with your account (see the <a href="privacy.html">privacy policy</a>). You then choose whether your answers also count, anonymously, in shared totals.</p>
       ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}`;
   }
 }
@@ -282,7 +285,6 @@ $('account').addEventListener('submit', async (e) => {
       return toast('Account created, but it needs email confirmation first');
     }
     toast(authMode === 'signin' ? 'Signed in' : 'Account created');
-    agreePrivacy(); // the form shows the privacy notice
     renderAccount();
     await syncNow({ firstSignIn: true });
     checkPrivacy();
@@ -295,6 +297,10 @@ $('account').addEventListener('submit', async (e) => {
 
 $('account').addEventListener('change', (e) => {
   if (e.target.id === 'showPw') $('passwordInput').type = e.target.checked ? 'text' : 'password';
+  if (e.target.id === 'shareChk') {
+    setPrivacy(e.target.checked);
+    toast(e.target.checked ? 'Your answers now count in the shared totals, without your name' : 'Your answers are no longer counted in the shared totals');
+  }
 });
 
 $('account').addEventListener('click', async (e) => {
@@ -606,6 +612,7 @@ const TIPS = {
   recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). After 2 right picks you name it from memory; a miss brings the choices back. Turn this off in Settings → Playback.',
+  share: 'Optional. When on, your answers, recording ratings and flags, and the birds you mix up are added (with no name or email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
@@ -1945,6 +1952,11 @@ async function locateNear() {
 // Switch to an area. "Near me" fetches (or refreshes after a week) the local list first.
 async function chooseArea(id) {
   if (id === 'near') {
+    if (!S.prefs.nearOk) {
+      if (!confirm('Near me uses your location to find the birds recorded within 50 km of you.\n\nIt is rounded to about 10 km and sent to iNaturalist for that search, then kept only on this device. Nothing about it is saved with your account.\n\nUse your location?')) return false;
+      S.prefs.nearOk = true;
+      save();
+    }
     const n = nearArea();
     if (!birdCount(n) || Date.now() - (n.at || 0) > 7 * 864e5) {
       toast('Finding birds recorded near you…');
@@ -2243,30 +2255,34 @@ $('pwForm').addEventListener('submit', async (e) => {
   $('pwSave').disabled = false;
 });
 
-// ---------- privacy agreement ----------
-// Signed-in users agree to the privacy policy; prefs.privacy = { v, at } (synced). When the
-// policy changes in a way that affects accounts, bump PRIVACY_VERSION and say what changed in
-// PRIVACY_CHANGES: everyone signed in who hasn't agreed to that version is asked once.
-// (v1 = the first agreement, so accounts made before it are asked too.)
-const PRIVACY_VERSION = 1;
-const PRIVACY_CHANGES = 'Your progress is saved with your account. It is also counted, without your name, in shared totals (which recordings and birds people find hard, and which birds they mix up) that help everyone. "Near me" sends a location rounded to about 10 km to iNaturalist.';
+// ---------- your data: choices ----------
+// Signed-in users choose what happens with their data; prefs.privacy = { v, at, share } (synced).
+// Saving progress with the account is essential (always on). share = their answers, ratings
+// and mix-ups count, anonymously, in the shared totals; OFF until they tick it (POPIA: optional
+// consent must be given actively). The SQL totals only read accounts with share = true
+// (supabase/10-only-count-people-who-share.sql). Location isn't asked here: "Near me" asks when
+// it's picked (prefs.nearOk). When the policy changes in a way that affects accounts, bump
+// PRIVACY_VERSION and say what changed in PRIVACY_CHANGES: everyone signed in is asked again.
+const PRIVACY_VERSION = 2; // v2 (v1.6.5): choices instead of one "I agree"
+const PRIVACY_CHANGES = 'Choose what happens with your data. You can change this any time in Settings → Account.';
 
-function agreePrivacy() {
-  S.prefs.privacy = { v: PRIVACY_VERSION, at: new Date().toISOString() };
+function setPrivacy(share) {
+  S.prefs.privacy = { v: PRIVACY_VERSION, at: new Date().toISOString(), share: !!share };
   save();
 }
 
 function checkPrivacy() {
   if (!Sync.signedIn() || (S.prefs.privacy?.v || 0) >= PRIVACY_VERSION || !$('privacySheet').hidden) return;
-  $('privacyTitle').textContent = S.prefs.privacy ? 'Privacy policy updated' : 'Before you carry on';
+  $('privacyTitle').textContent = 'Your data';
   $('privacyText').textContent = PRIVACY_CHANGES;
+  $('privacyShare').checked = !!S.prefs.privacy?.share;
   $('privacySheet').hidden = false;
 }
 
 $('privacyAgree').addEventListener('click', () => {
-  agreePrivacy();
+  setPrivacy($('privacyShare').checked);
   $('privacySheet').hidden = true;
-  toast('Thanks');
+  if ($('view-settings').classList.contains('active')) renderAccount();
 });
 $('privacyDecline').addEventListener('click', async () => {
   $('privacySheet').hidden = true;
@@ -2509,7 +2525,7 @@ async function start() {
         : "Sign-in didn't finish. Try again.");
     }
     if (back) S.prefs.welcomeDone = true;
-    if (back === 'google') { toast('Signed in with Google'); agreePrivacy(); } // Google button sits on the same form as the notice
+    if (back === 'google') toast('Signed in with Google');
     if (needsWelcome()) openWelcome();
     else if (needsSurvey()) openSurvey();
     else newCard();

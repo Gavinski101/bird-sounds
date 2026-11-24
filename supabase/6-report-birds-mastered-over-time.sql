@@ -8,7 +8,7 @@ select week_starting,
        max(mastered) as most_mastered
 from (
   select p.user_id, date_trunc('week', d.key::date)::date as week_starting, max((d.value->>'m')::int) as mastered
-  from public.progress p
+  from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
   cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'days') = 'object' then p.data->'learn'->'days' else '{}'::jsonb end) d
   group by 1, 2
 ) w

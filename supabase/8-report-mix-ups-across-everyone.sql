@@ -5,7 +5,7 @@ select coalesce(h.name, m.key) as heard,
        coalesce(t.name, x.key) as thought_it_was,
        sum(x.value::int) as times,
        count(*) as users
-from public.progress p
+from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
 cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'mix') = 'object' then p.data->'learn'->'mix' else '{}'::jsonb end) m
 cross join lateral jsonb_each_text(case when jsonb_typeof(m.value) = 'object' then m.value else '{}'::jsonb end) x
 left join public.bird_names h on h.id = m.key

@@ -2,6 +2,12 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.5 (2026-11-25)
+- "Your data" choices instead of one "I agree": saving progress with your account (always on, needed for an account) and adding your answers anonymously to the shared totals (optional, off until you turn it on). Change it any time in Settings → Account. Everyone signed in is asked once.
+- Shared totals and the owner's reports only count accounts that chose to share (Supabase snippet 10).
+- "Near me" asks before using your location.
+- The "Thanks" message after agreeing is gone.
+
 ## 1.6.4 (2026-11-24)
 - Buttons, links and highlights are always the original green. Settings → Colours now picks only the background: Cream (the original, default), Stone, Sand, Mist, White or Black. Earlier colour picks move to the nearest background.
 

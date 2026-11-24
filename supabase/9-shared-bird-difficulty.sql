@@ -20,7 +20,7 @@ as $$
            case when b.value->>'right' ~ '^[0-9]+$' then (b.value->>'right')::int else 0 end as r,
            case when b.value->>'wrong' ~ '^[0-9]+$' then (b.value->>'wrong')::int else 0 end as w,
            case when b.value->>'oth' ~ '^[0-9]+$' then (b.value->>'oth')::int else 0 end as o
-    from public.progress p
+    from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
     cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'birds') = 'object' then p.data->'learn'->'birds' else '{}'::jsonb end) b
     where jsonb_typeof(b.value) = 'object'
   )
@@ -44,7 +44,7 @@ as $$
            least(h.key, t.key) as a,
            greatest(h.key, t.key) as b,
            sum(case when t.value ~ '^[0-9]+$' then t.value::int else 0 end) as n
-    from public.progress p
+    from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
     cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'mix') = 'object' then p.data->'learn'->'mix' else '{}'::jsonb end) h
     cross join lateral jsonb_each_text(case when jsonb_typeof(h.value) = 'object' then h.value else '{}'::jsonb end) t
     where h.key <> t.key

@@ -4,7 +4,7 @@
 select date_trunc('week', d.key::date)::date as week_starting,
        count(distinct p.user_id) as active_users,
        sum((d.value->>'a')::int) as answers
-from public.progress p
+from (select * from public.progress where data->'prefs'->'privacy'->>'share' = 'true') p -- only accounts that chose to share (app v1.6.5)
 cross join lateral jsonb_each(case when jsonb_typeof(p.data->'learn'->'days') = 'object' then p.data->'learn'->'days' else '{}'::jsonb end) d
 group by 1
 order by 1 desc;
