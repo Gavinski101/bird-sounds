@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.6 (2026-11-24)
+- Sunset is the default colour theme for everyone who hasn't picked one (the choice in Settings → Colours is still remembered). Sunset-coloured icon.
+
 ## 1.5.5 (2026-11-24)
 - Silver and gold need 4 points instead of 6 (clean right +2, with a hint +1, one shared total; a miss at silver/gold costs 1 instead of 2).
 - Bird page shows points so far: "3 of 6 so far" while learning, "3 of 4 points" towards the next medal. Tips explain the one-total points.

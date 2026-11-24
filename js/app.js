@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.5';
+const VERSION = '1.5.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1747,7 +1747,8 @@ const THEMES = {
   granite: { label: 'Granite', c: ['#3d4451', '#6b7686', '#c3cad6', '#e2e7ee'] },
   dusk: { label: 'Dusk', c: ['#4b3fc0', '#c2417f', '#a99cff', '#f07aae'] },
 };
-const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : 'savanna');
+const DEFAULT_THEME = 'sunset'; // for everyone who hasn't picked one (index.html sets it before paint too)
+const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : DEFAULT_THEME);
 function applyTheme() {
   const t = themeOf();
   if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;

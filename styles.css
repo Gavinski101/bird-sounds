@@ -1,4 +1,4 @@
-/* Colour themes (v1.5.3): Settings -> Colours sets <html data-theme>. Savanna is the default.
+/* Colour themes (v1.5.3): Settings -> Colours sets <html data-theme>. Sunset is the default (html data-theme="sunset"); with no data-theme, :root = Savanna.
    Warm themes share the warm neutrals in :root; Ocean and Dusk bring their own. */
 :root {
   --bg: #f6f0e7;
