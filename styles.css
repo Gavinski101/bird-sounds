@@ -370,6 +370,7 @@ textarea { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .stars { display: flex; gap: 6px; justify-content: center; margin: 4px 0 2px; }
 .star { background: none; border: 0; font-size: 36px; line-height: 1; color: var(--line); padding: 2px; }
 .star.on { color: var(--gold); }
+.star.on.avg { opacity: 0.45; } /* everyone's average, before you rate it */
 .stars.small .star { font-size: 22px; }
 .rec-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
 .rec-card.off { opacity: 0.55; }
