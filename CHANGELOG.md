@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.9 (2026-11-25)
+- Hint choices only offer birds that share a habitat with the bird you hear (mixed-up birds and its own family first); others fill in only when too few share one.
+
 ## 1.6.8 (2026-11-25)
 - The bird's usual habitats show on new-bird cards, on the answer, and on the guess card as a gentle clue (not on "which of the two?" tests).
 
