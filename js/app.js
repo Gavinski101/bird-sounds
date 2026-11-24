@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.1';
+const VERSION = '1.7.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -2294,15 +2294,14 @@ $('pwForm').addEventListener('submit', async (e) => {
 
 // ---------- what's new ----------
 // Shown once when the app opens after an update, only for changes people will enjoy (not
-// fixes or behind-the-scenes work). Add an entry here for each appealing release; the full
+// fixes or behind-the-scenes work; user: rule tuning such as points needed or when choices
+// show is NOT news). Add an entry here for each appealing release; the full
 // list of changes is in CHANGELOG.md. prefs.seenNews = the last version whose news was seen
 // (synced). New users start at the current version, so they see nothing until the next one.
 const WHATS_NEW = [
   { v: '1.5.0', items: ['🥉🥈🥇 Medals for every bird: bronze when you master it, then silver on its varied sounds and gold on any recording of it.'] },
   { v: '1.5.1', items: ['🌳 Pick habitats to focus on (forest, coast, fynbos…) in Settings: their birds come first.'] },
-  { v: '1.5.5', items: ['⚡ Silver and gold now take less: 4 points each.'] },
   { v: '1.6.4', items: ['🎨 Choose your background and shade of green in Settings → Colours.'] },
-  { v: '1.6.7', items: ['🤝 While a bird is still new to you, you pick it from 4 birds, so you are never stuck guessing.'] },
   { v: '1.6.9', items: ['🌿 Each bird\'s usual habitats show on its cards, and the 4 choices are birds from the same habitats: the ones you\'d really mix it up with outside.'] },
 ];
 const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);

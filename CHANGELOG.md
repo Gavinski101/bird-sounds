@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.2 (2026-11-25)
+- What's new list trimmed to real new features (no rule tweaks).
+
 ## 1.7.1 (2026-11-25)
 - "What's new" no longer shows a catch-up list of older features the first time: it starts from the current version for everyone.
 
