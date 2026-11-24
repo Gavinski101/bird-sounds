@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.9';
+const VERSION = '1.9.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1479,6 +1479,8 @@ function renderStars(el, rec, big) {
     `<button class="star ${i <= shown ? cls : ''}" data-star="${i}" data-xc="${esc(recKey(rec))}" role="radio" aria-checked="${i === v}" aria-label="${i} star${i > 1 ? 's' : ''}">★</button>`).join('');
   el.classList.toggle('small', !big);
   if (big) {
+    // A page saved before v1.8.8 has no #starsInfo: add it (the sheet stayed shut without it).
+    if (!$('starsInfo')) el.insertAdjacentHTML('afterend', '<p class="small" id="starsInfo" style="text-align:center;margin:2px 0 6px"></p>');
     const all = avg != null ? `Everyone: ${avg.toFixed(1)} ★ (${c.raters} rating${c.raters === 1 ? '' : 's'})` : 'Everyone: no ratings yet';
     $('starsInfo').textContent = v ? `Your rating: ${v} ★ · ${all}` : `${all}. Tap a star to add yours.`;
   }
@@ -1537,8 +1539,8 @@ function closeRate(changed) {
 }
 
 $('rateBtn').addEventListener('click', () => {
-  const r = currentRec();
-  if (!r) return;
+  const r = cur && currentRec();
+  if (!r) return toast('Wait for the recording to load, then try again');
   openRate(r, (changed) => {
     if (!changed) return;
     stopAudio();
