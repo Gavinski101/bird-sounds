@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.7.4';
+const VERSION = '1.7.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1193,8 +1193,11 @@ function renderThought() {
 function makeChoices() {
   const sp = byId[cur.id];
   const pool = new Set(S.learn.pool);
-  const confused = [...new Set([...L.confusedWith(S.learn, sp.id).map((c) => c.id), ...similarTo(sp.id)])]
-    .filter((id) => areaIds.has(id)).map((id) => byId[id]);
+  // Birds it gets mixed up with, first: your own mix-ups, then the ones many other people mix
+  // up (shared totals, v1.7.5: these come before the hand-made sound-alikes), then those.
+  const partners = (pairs) => pairs.flatMap(([a, b]) => (a === sp.id ? [b] : b === sp.id ? [a] : []));
+  const confused = [...new Set([...L.confusedWith(S.learn, sp.id).map((c) => c.id), ...partners(community.pairs), ...partners(guide.similar || [])])]
+    .filter((id) => areaIds.has(id) && byId[id]).map((id) => byId[id]);
   const confusedIds = new Set(confused.map((x) => x.id));
   const others = species.filter((x) => x.id !== sp.id && !confusedIds.has(x.id));
   const sameFam = shuffle(others.filter((x) => x.familySci === sp.familySci));
@@ -1205,8 +1208,9 @@ function makeChoices() {
   // when too few share one.
   const habs = habitats[sp.id] || [];
   const near = (x) => !habs.length || (habitats[x.id] || []).some((h) => habs.includes(h));
-  const order = [...confused.slice(0, 2), ...sameFam, ...inPlay, ...rest];
-  const pick = [...new Set([...order.filter(near), ...order])].slice(0, 3).map((x) => x.id);
+  // Up to 2 mixed-up birds always get a place (whatever their habitat: people DO confuse them).
+  const order = [...sameFam, ...inPlay, ...rest];
+  const pick = [...new Set([...confused.slice(0, 2), ...order.filter(near), ...order])].slice(0, 3).map((x) => x.id);
   return shuffle([sp.id, ...pick]);
 }
 

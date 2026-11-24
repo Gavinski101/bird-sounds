@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.7.5 (2026-11-25)
+- Hint choices always include up to 2 birds it is often mixed up with: your own mix-ups first, then the ones other people often mix up, then known sound-alikes, even from another habitat.
+
 ## 1.7.4 (2026-11-25)
 - "Your data" box wording: location is anonymous (rounded to about 10 km, never saved with your account); shared totals have no name and no email.
 
