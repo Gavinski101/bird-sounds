@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.3';
+const VERSION = '1.8.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -356,11 +356,14 @@ const recPref = (r) => S.recs[recKey(r)] || {};
 // Shared verdicts: every signed-in user's flags and ratings, totalled by the database.
 // Everything from other people counts as a SHARE of the people who encountered the
 // recording, never a fixed number of people (v1.8.3, user's rule: 1 of 1 counts fully,
-// 2 of 5 less, 2 of 10 less again). Flagged (or rated 1-2) by at least OFF_SHARE of them:
-// dropped for everyone; less than that: moved down by that much. Your own rating, flag or
-// "Use anyway" always wins.
+// 2 of 5 less, 2 of 10 less again). Flags and 1-2 star ratings move it down by that share.
+// Dropping it for everyone is a hard step, so it also weighs how many people that share rests
+// on (v1.8.4): dropped when flags / (people who encountered it + DROP_WEIGHT) >= DROP_SHARE.
+// 1 of 1 = 0.33: not dropped, only moved to the bottom; 2 of 2 = 0.5, 2 of 3 = 0.4, 5 of 10
+// = 0.42: dropped; 3 of 10 = 0.25: not. Your own rating, flag or "Use anyway" always wins.
 const SCORES_KEY = 'bird-sounds-scores';
-const OFF_SHARE = 0.5;
+const DROP_WEIGHT = 2;
+const DROP_SHARE = 0.4;
 let scores = {};
 try { scores = JSON.parse(localStorage.getItem(SCORES_KEY))?.map || {}; } catch { /* none yet */ }
 const shared = (r) => scores[recKey(r)];
@@ -380,7 +383,12 @@ const rightRate = (r) => {
   const n = answersOn(r);
   return n ? (shared(r).ok + RATE_PRIOR * RATE_WEIGHT) / (n + RATE_WEIGHT) : null;
 };
-const flaggedByOthers = (r) => flagShare(r) >= OFF_SHARE || lowShare(r) >= OFF_SHARE;
+const flaggedByOthers = (r) => {
+  const c = shared(r);
+  if (!c) return false;
+  const lows = c.avg != null && c.avg <= 2 ? c.raters || 0 : 0;
+  return Math.max(c.flags || 0, lows) / (encountered(c) + DROP_WEIGHT) >= DROP_SHARE;
+};
 const sharedOff = (r) => {
   if (!shared(r)) return false;
   const rate = rightRate(r);
@@ -585,7 +593,7 @@ const recStars = (r) => {
   if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
   const rate = rightRate(r);
   return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0) // 100% right = +1, 20% = -1
-    - flagShare(r) * 2 // flagged by some of the people who heard it (all of them: dropped)
+    - (flagShare(r) + lowShare(r)) * 2 // flagged or rated 1-2 by some of the people who heard it
     - slowShared(r) * 1.5 // slow to start for the people who played it (0-1.5)
     - (bigRec(r) ? 1 : 0); // big file: slow to download
 };
@@ -653,7 +661,7 @@ const TIPS = {
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
   share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
-  sharedOff: 'At least half of the people who heard this recording flagged it or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
+  sharedOff: 'Enough of the people who heard this recording flagged it or rated it low that it is no longer used (one person alone only moves it to the back). "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under about 30%, counting every answer and weighing more answers more) is no longer used.',
   sharedStars: 'Average star rating from everyone signed in who rated this recording. Your own rating counts first for you.',
   inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',

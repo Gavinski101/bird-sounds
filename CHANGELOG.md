@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.4 (2026-11-25)
+- Dropping a recording for everyone also weighs how many people the share rests on: one person flagging it (1 of 1) only moves it to the back; 2 of 2, 2 of 3 or 5 of 10 drop it.
+
 ## 1.8.3 (2026-11-25)
 - Every rule based on other people's data now counts a share of the people who encountered it, not a fixed number of people: recordings flagged or rated 1-2 by half of the people who heard them are dropped (less than half: moved down by that share); star averages weigh by the share who rated; right-answer rates count from the first answer; often-mixed-up pairs are judged against the people who know both birds.
 
