@@ -1,7 +1,7 @@
 // App shell and data: network first (so updates arrive), cache as the offline fallback.
 // Photos: served from the media cache filled by "Download for offline", else network.
 // Audio is not handled here; the app plays offline audio from blob URLs itself.
-const SHELL = 'bird-sounds-shell-v1.6.2';
+const SHELL = 'bird-sounds-shell-v1.6.3';
 const MEDIA = 'bird-sounds-media';
 const FILES = [
   './',
@@ -17,10 +17,10 @@ const FILES = [
   'data/guide.json',
   'data/habitats.json',
   'manifest.webmanifest',
-  'icons/icon.svg',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
-  'icons/icon-180.png',
+  'icons/icon.svg?v=orig',
+  'icons/icon-192.png?v=orig',
+  'icons/icon-512.png?v=orig',
+  'icons/icon-180.png?v=orig',
 ];
 
 self.addEventListener('install', (e) => {

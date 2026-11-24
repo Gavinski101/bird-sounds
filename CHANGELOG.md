@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.6.3 (2026-11-24)
+- Icon links get a new address (?v=orig) so browsers drop their cached copy of the temporary icons and show the original green logo.
+
 ## 1.6.2 (2026-11-24)
 - While a bird is new or shaky (under 2 points), its cards show the 4 choices straight away ("Pick one"). A right pick earns 1 point like a hint; after 2 right picks you name it from memory, and a miss brings the choices back. Not on silver/gold cards. Settings → Playback can turn it off.
 
