@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.4';
+const VERSION = '1.5.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -584,18 +584,19 @@ const TIPS = {
   inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
   confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
-  mastered: "Mastered birds by medal: 🥉 bronze, 🥈 silver, 🥇 gold. Mastered = birds you've got right enough times to count as known (3 clean answers, or 6 with hints): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
+  mastered: "Mastered birds by medal: 🥉 bronze, 🥈 silver, 🥇 gold. Mastered = birds you've got right enough times to count as known (6 points: each clean right answer +2, with a hint +1, a miss -2, all in one total): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
   medal: {
     1: 'Bronze: mastered on its 1-2 study recordings (its typical sound).',
     2: "Silver: also mastered on its varied sounds: random recordings from the bird's other good ones, other calls and songs included.",
     3: 'Gold: mastered from any recording of it at all, any quality, in random order.',
   },
   level: {
-    2: 'Silver test: a random recording from this bird\'s varied sounds. 3 right (6 with hints) earns silver. Medals are never taken away; a miss just brings it back sooner.',
-    3: 'Gold test: any recording of this bird, in random order. 3 right (6 with hints) earns gold. Medals are never taken away.',
+    2: 'Silver test: a random recording from this bird\'s varied sounds. 4 points earns silver: clean right +2, with a hint +1, a miss -1, all in one total. Medals are never taken away; a miss just brings it back sooner.',
+    3: 'Gold test: any recording of this bird, in random order. 4 points earns gold: clean right +2, with a hint +1, a miss -1, all in one total. Medals are never taken away.',
   },
   habitat: "Where this bird is usually found. From AVONET (Tobias et al. 2022, CC BY 4.0), plus extra habitats for birds often heard elsewhere too.",
   habitats: 'Birds of the habitats you pick join your study set first, in the usual order among themselves; the other birds follow after them. Pick none to mix all habitats. Progress on every bird is kept.',
+  points: 'One total for each bird: a clean right answer adds 2 points, one with a hint adds 1, a miss takes 2 off. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
@@ -1382,7 +1383,7 @@ function celebrate(kind, sp) {
         : medalNextText(sp.id) || 'Still know it by ear. It will come back later.';
     const inner = box.querySelector('.celebrate-box');
     inner.querySelectorAll('.confetti').forEach((c) => c.remove());
-    const colours = ['#1f6b4a', '#5cc08d', '#f0b84a', '#c98a12', '#ef7a6c', '#7fb6e0'];
+    const colours = ['#8b5a2b', '#d9a63a', '#f0b84a', '#b8441c', '#ef7a6c', '#7fb6e0'];
     for (let i = 0; i < 26; i++) {
       const c = document.createElement('i');
       c.className = 'confetti';
@@ -1660,17 +1661,22 @@ function medalsHtml() {
   return `<div class="big-stats medals">${cell(1)}${cell(2)}${cell(3)}</div>`;
 }
 
-// How far a mastered bird is towards its next medal ('' at gold or while learning).
+// How far a bird is towards mastered or its next medal, in points ('' at gold or not met yet).
+// One total: clean right +2, with a hint +1.
 function medalNextText(id) {
   const b = S.learn.birds[id];
   const m = medalOf(id);
-  if (!b?.m || m >= 3) return '';
-  const steps = Math.ceil((L.MASTER_SCORE - (b.up || 0)) / 2);
-  return `Next: ${MEDAL[m + 1]} ${MEDAL_NAME[m + 1]} (${LEVEL_NAME[m + 1]}), ${steps} more right`;
+  if (!b?.intro || m >= 3) return '';
+  if (!b.m) {
+    const lvl = Math.min(S.learn.startLevel || 1, 3);
+    return `${MEDAL[lvl]} Mastered at ${L.MASTER_SCORE} points: ${Math.max(0, b.s)} of ${L.MASTER_SCORE} so far`;
+  }
+  return `Next: ${MEDAL[m + 1]} ${MEDAL_NAME[m + 1]} (${LEVEL_NAME[m + 1]}): ${b.up || 0} of ${L.MEDAL_SCORE} points`;
 }
 function medalNextHtml(id) {
   const t = medalNextText(id);
-  return t ? `<p class="small muted" style="text-align:center" data-tip="${esc(TIPS.level[medalOf(id) + 1])}">${esc(t)}</p>` : '';
+  const b = S.learn.birds[id];
+  return t ? `<p class="small muted" style="text-align:center" data-tip="${esc(b?.m ? TIPS.level[medalOf(id) + 1] : TIPS.points)}">${esc(t)}</p>` : '';
 }
 
 function renderProgress() {
@@ -1701,7 +1707,7 @@ function renderProgress() {
     <p class="muted small">${distinct
     ? `You start with common birds around ${esc(area)} that have distinctive calls. Birds that sound alike (one family, or pairs people often mix up) are spread out and come later.`
     : `You start with the most common birds around ${esc(area)}.`}
-    Each right answer moves a bird toward mastered (3 clean answers, or 6 with hints).
+    Each right answer adds points toward mastered: +2 clean, +1 with a hint, all in one total; 6 points = mastered (a miss takes 2 off). Silver and gold then need 4 points each.
     When fewer than 8 birds are still being learned, the next 5 are added, and a new bird joins at least every 15 cards. While 3 or more birds you've met are still a struggle (score at zero or below), that slows to one every 30 cards, so you can catch up on them first.
     Missed birds come back after a few cards (a bird missed twice in a row rests a bit longer); mastered birds come back less and less often. Change the order in Settings.</p>
     ${s.inPlay < species.length ? '<button class="btn block ghost" id="unlockAll">Add all birds now</button>' : ''}

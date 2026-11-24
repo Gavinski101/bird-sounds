@@ -2,6 +2,11 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.5 (2026-11-24)
+- Silver and gold need 4 points instead of 6 (clean right +2, with a hint +1, one shared total; a miss at silver/gold costs 1 instead of 2).
+- Bird page shows points so far: "3 of 6 so far" while learning, "3 of 4 points" towards the next medal. Tips explain the one-total points.
+- Celebration confetti in the new colours (no green).
+
 ## 1.5.4 (2026-11-24)
 - Five more colour themes: Kalahari (golden sand), Baobab (bark brown-grey), Sunbird (crimson), Sky (bright blue) and Granite (charcoal).
 

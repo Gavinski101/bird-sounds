@@ -103,17 +103,22 @@ function play(state, knows, cards) {
   assert.equal(L.cardLevel(s, 'b0'), 2);
   const right = b.right;
   const evs = [];
-  for (let i = 0; i < 3; i++) evs.push(L.answer(s, species, 'b0', { correct: true, level: 2 }, rand));
-  assert.deepEqual(evs, ['remembered', 'remembered', 'medal']);
+  for (let i = 0; i < 2; i++) evs.push(L.answer(s, species, 'b0', { correct: true, level: 2 }, rand));
+  assert.deepEqual(evs, ['remembered', 'medal']);
   assert.equal(L.medalOf(b), 2);
   assert.equal(L.cardLevel(s, 'b0'), 3);
   assert.equal(b.right, right);
-  assert.equal(b.ur, 3);
+  assert.equal(b.ur, 2);
   assert.ok(b.iv <= L.CLIMB_MAX);
   L.answer(s, species, 'b0', { correct: false, level: 3 }, rand);
   assert.equal(L.medalOf(b), 2); // never taken away
   assert.equal(b.uw, 1);
-  for (let i = 0; i < 3; i++) L.answer(s, species, 'b0', { correct: true, level: 3 }, rand);
+  // One shared total: 1 clean (+2) and 2 with hints (+1 each) = 4 points = gold.
+  L.answer(s, species, 'b0', { correct: true, level: 3 }, rand);
+  assert.equal(L.medalOf(b), 2);
+  L.answer(s, species, 'b0', { correct: true, hinted: true, level: 3 }, rand);
+  assert.equal(L.medalOf(b), 2);
+  assert.equal(L.answer(s, species, 'b0', { correct: true, hinted: true, level: 3 }, rand), 'medal');
   assert.equal(L.medalOf(b), 3);
   assert.equal(L.cardLevel(s, 'b0'), 3);
   assert.deepEqual(L.medalCounts(s, species), { 1: 0, 2: 0, 3: 1 });

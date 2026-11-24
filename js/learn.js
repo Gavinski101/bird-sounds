@@ -30,6 +30,9 @@ export const PAIR_MIN = 2;     // mix-ups (either direction) before a pair gets 
 export const PAIR_REST = 25;   // cards before the same pair comes up again
 export const MEDALS = 3;        // bronze, silver, gold
 export const CLIMB_MAX = 60;    // while working towards the next medal, checks come at least this often
+// Points for silver and gold (v1.5.5, user: took too long). Like mastering, every right answer
+// adds to ONE total: clean +2, with a hint +1 (so 2 clean, 1 clean + 2 hinted, or 4 hinted).
+export const MEDAL_SCORE = 4;
 
 export function newState() {
   return { v: 1, n: 0, pool: [], birds: {}, lastId: null, sinceIntro: 99, history: [], mix: {}, pairShown: {}, sincePair: 0 };
@@ -308,7 +311,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
       event = 'remembered';
       if (climbing) {
         b.up = (b.up || 0) + (hinted ? 1 : 2);
-        if (b.up >= MASTER_SCORE) {
+        if (b.up >= MEDAL_SCORE) {
           b.medal = level;
           b.up = 0;
           b.iv = FIRST_INTERVAL;
@@ -317,7 +320,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
       } else b.iv = Math.min(b.iv * 2, b.medal >= MEDALS ? MAX_INTERVAL : CLIMB_MAX);
       b.due = state.n + b.iv;
     } else {
-      if (climbing) b.up = Math.max((b.up || 0) - 2, 0);
+      if (climbing) b.up = Math.max((b.up || 0) - 1, 0); // harder recordings: a miss costs 1
       b.iv = FIRST_INTERVAL;
       b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);
       event = 'slipped';
