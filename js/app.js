@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.2';
+const VERSION = '1.8.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -354,31 +354,43 @@ const recKey = (r) => (r.xc != null ? String(r.xc) : r.key);
 const recPref = (r) => S.recs[recKey(r)] || {};
 
 // Shared verdicts: every signed-in user's flags and ratings, totalled by the database.
-// A recording 2+ people flagged (or 2+ rated 1-2 on average) is dropped for everyone, and
-// the average rating orders the rest. Your own rating, flag or "Use anyway" always wins.
+// Everything from other people counts as a SHARE of the people who encountered the
+// recording, never a fixed number of people (v1.8.3, user's rule: 1 of 1 counts fully,
+// 2 of 5 less, 2 of 10 less again). Flagged (or rated 1-2) by at least OFF_SHARE of them:
+// dropped for everyone; less than that: moved down by that much. Your own rating, flag or
+// "Use anyway" always wins.
 const SCORES_KEY = 'bird-sounds-scores';
-const SHARED_MIN = 2;
+const OFF_SHARE = 0.5;
 let scores = {};
 try { scores = JSON.parse(localStorage.getItem(SCORES_KEY))?.map || {}; } catch { /* none yet */ }
 const shared = (r) => scores[recKey(r)];
-// How often a recording led to a right answer, across everyone (v1.4.6): only once it has
-// been answered on REC_ANSWERS_MIN times. A recording people mostly get wrong (below
-// REC_CONFUSING) is dropped like a flagged one; otherwise the rate nudges the order.
-const REC_ANSWERS_MIN = 5;
-const REC_CONFUSING_MIN = 8;
+// People who encountered it: played it (load times, v1.7.3+), rated it or flagged it.
+const encountered = (c) => Math.max(c.playPeople || 0, c.waitPeople || 0, c.raters || 0, c.flags || 0, 1);
+const flagShare = (r) => { const c = shared(r); return c ? Math.min(1, (c.flags || 0) / encountered(c)) : 0; };
+const lowShare = (r) => { const c = shared(r); return c && c.avg != null && c.avg <= 2 ? Math.min(1, (c.raters || 0) / encountered(c)) : 0; };
+// How often a recording led to a right answer, across everyone (v1.4.6). Each answer counts
+// from the first (v1.8.3, was 5+ answers): the rate starts at a neutral RATE_PRIOR and moves
+// towards the real rate as answers come in (RATE_WEIGHT = how many answers that prior is
+// worth). Below REC_CONFUSING it is dropped like a flagged one; otherwise it nudges the order.
+const RATE_PRIOR = 0.6;
+const RATE_WEIGHT = 5;
 const REC_CONFUSING = 0.3;
-const rightRate = (r, min = REC_ANSWERS_MIN) => {
-  const c = shared(r);
-  const n = c ? (c.ok || 0) + (c.no || 0) : 0;
-  return n >= min ? c.ok / n : null;
+const answersOn = (r) => { const c = shared(r); return c ? (c.ok || 0) + (c.no || 0) : 0; };
+const rightRate = (r) => {
+  const n = answersOn(r);
+  return n ? (shared(r).ok + RATE_PRIOR * RATE_WEIGHT) / (n + RATE_WEIGHT) : null;
 };
+const flaggedByOthers = (r) => flagShare(r) >= OFF_SHARE || lowShare(r) >= OFF_SHARE;
 const sharedOff = (r) => {
-  const c = shared(r);
-  if (!c) return false;
-  const rate = rightRate(r, REC_CONFUSING_MIN);
-  return c.flags >= SHARED_MIN || (c.raters >= SHARED_MIN && c.avg <= 2) || (rate != null && rate < REC_CONFUSING);
+  if (!shared(r)) return false;
+  const rate = rightRate(r);
+  return flaggedByOthers(r) || (rate != null && rate < REC_CONFUSING);
 };
-const sharedStars = (r) => { const c = shared(r); return c && c.raters >= SHARED_MIN ? c.avg : null; };
+// Everyone's average stars, weighted by the share of people who rated it.
+const sharedStars = (r) => {
+  const c = shared(r);
+  return c && c.raters && c.avg != null ? 3 + (c.avg - 3) * Math.min(1, c.raters / encountered(c)) : null;
+};
 // How slow a recording is to start, 0-1 (v1.8.2, shared load times, supabase/14): the share
 // of the people who played it who had to wait. Scales with how many encountered it, not a
 // fixed number of people (user's rule): 1 of 1 = 1, 2 of 5 = 0.4, 2 of 10 = 0.2. Moves it
@@ -418,7 +430,7 @@ async function loadScores(force = false) {
 const DIFF_KEY = 'bird-sounds-difficulty';
 // Votes scale with the user base (user 2026-11-17): with one user, they are the whole base.
 const SHARED_HARD_SHARE = 0.5;  // share of people (who answered it 3+ times) missing it more than not
-const SHARED_PAIR_SHARE = 0.25; // share of people who mixed the pair up 2+ times (min 1 person)
+const SHARED_PAIR_SHARE = 0.25; // share of the people who answered both birds who mixed them up 2+ times
 let community = { hard: [], pairs: [] };
 try { community = JSON.parse(localStorage.getItem(DIFF_KEY))?.data || community; } catch { /* none yet */ }
 let communityHard = new Set(community.hard);
@@ -431,10 +443,13 @@ async function loadDifficulty() {
   } catch { /* fetch */ }
   try {
     const [birds, mixes] = await Promise.all([Sync.birdStats(), Sync.mixStats()]);
-    const base = Math.max(1, ...(birds || []).map((x) => x.users)); // people answering, roughly
+    // Pairs (v1.8.3, user's rule): a share of the people who encountered BOTH birds (answered
+    // each 3+ times), not of the whole user base: 1 of 1 counts.
+    const met = Object.fromEntries((birds || []).map((x) => [x.bird, x.users]));
+    const both = (x) => Math.max(x.users, Math.min(met[x.a] || 0, met[x.b] || 0), 1);
     const data = {
       hard: (birds || []).filter((x) => x.strugglers >= 1 && x.strugglers / x.users >= SHARED_HARD_SHARE).map((x) => x.bird).sort(),
-      pairs: (mixes || []).filter((x) => x.users >= Math.max(1, Math.ceil(base * SHARED_PAIR_SHARE))).map((x) => [x.a, x.b]).sort(),
+      pairs: (mixes || []).filter((x) => x.users / both(x) >= SHARED_PAIR_SHARE).map((x) => [x.a, x.b]).sort(),
     };
     localStorage.setItem(DIFF_KEY, JSON.stringify({ at: Date.now(), data }));
     if (JSON.stringify(data) !== JSON.stringify(community)) {
@@ -570,6 +585,7 @@ const recStars = (r) => {
   if (recPref(r).stars) return recPref(r).stars; // your own rating always wins
   const rate = rightRate(r);
   return (sharedStars(r) ?? 3) + (rate != null ? (rate - 0.6) * 2.5 : 0) // 100% right = +1, 20% = -1
+    - flagShare(r) * 2 // flagged by some of the people who heard it (all of them: dropped)
     - slowShared(r) * 1.5 // slow to start for the people who played it (0-1.5)
     - (bigRec(r) ? 1 : 0); // big file: slow to download
 };
@@ -637,8 +653,8 @@ const TIPS = {
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
   share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
-  sharedOff: 'Two or more people flagged this recording or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
-  rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under 30% after 8 answers) is no longer used.',
+  sharedOff: 'At least half of the people who heard this recording flagged it or rated it low, so it is no longer used. "Use anyway" brings it back for you.',
+  rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under about 30%, counting every answer and weighing more answers more) is no longer used.',
   sharedStars: 'Average star rating from everyone signed in who rated this recording. Your own rating counts first for you.',
   inUse: 'One of the 2 recordings you study for this bird. Rate or flag recordings to change which ones are used.',
   status: {
@@ -1676,11 +1692,11 @@ function openBird(id) {
         <button class="mini-play" id="dp-${esc(recKey(r))}" data-dplay="${esc(recKey(r))}" aria-label="Play">${PLAY_SVG}</button>
         <div class="nm">${esc(r.type)} · ${r.secs ? `${r.secs}s ` : ''}${active.has(recKey(r)) ? `<span class="chip learning" data-tip="${esc(TIPS.inUse)}">In use</span>` : ''}
           ${pref.flag ? `<span class="chip">Flagged: ${esc(FLAGS[pref.flag] || 'yes')}</span> <button class="link" data-unflag="${esc(recKey(r))}">Restore</button>` : ''}
-          ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `${shared(r).flags >= SHARED_MIN || (shared(r).raters >= SHARED_MIN && shared(r).avg <= 2) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span>` : `<span class="chip" data-tip="${esc(TIPS.rightRate)}">Often answered wrong</span>`} <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
+          ${!pref.flag && !pref.stars && !pref.keep && sharedOff(r) ? `${flaggedByOthers(r) ? `<span class="chip" data-tip="${esc(TIPS.sharedOff)}">Flagged by others</span>` : `<span class="chip" data-tip="${esc(TIPS.rightRate)}">Often answered wrong</span>`} <button class="link" data-unflag="${esc(recKey(r))}">Use anyway</button>` : ''}</div>
       </div>
       <div class="stars small" data-rate="${esc(recKey(r))}"></div>
       ${shared(r)?.raters ? `<div class="small muted" data-tip="${esc(TIPS.sharedStars)}">Everyone: ${shared(r).avg.toFixed(1)}★ from ${shared(r).raters} ${shared(r).raters === 1 ? 'person' : 'people'}</div>` : ''}
-      ${rightRate(r, 3) != null ? `<div class="small muted" data-tip="${esc(TIPS.rightRate)}">Everyone: right ${Math.round(rightRate(r, 3) * 100)}% of ${shared(r).ok + shared(r).no} answers</div>` : ''}
+      ${answersOn(r) ? `<div class="small muted" data-tip="${esc(TIPS.rightRate)}">Everyone: right ${Math.round((shared(r).ok / answersOn(r)) * 100)}% of ${answersOn(r)} answers</div>` : ''}
       <div class="credit">${credit(r)}${r.loc ? '<br>' + esc(r.loc) : ''}</div>
       ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Rate / flag</button>`}
     </div>`;
