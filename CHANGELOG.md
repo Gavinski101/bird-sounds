@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.8.6 (2026-11-25)
+- Load times only count until the sound is ready and starts by itself; if the phone blocked the sound or it was paused, the time until you tapped play is no longer counted as waiting.
+
 ## 1.8.5 (2026-11-25)
 - "Next recording": the play button shows it is loading straight away, and the next recording is downloaded earlier (right after the current one) and in the right order, so it usually plays at once.
 

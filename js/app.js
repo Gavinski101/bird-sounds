@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.8.5';
+const VERSION = '1.8.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -830,7 +830,7 @@ async function playRec(r, button) {
   // which was still in the player, so the button seemed to need several taps.)
   if (audioKey === key && audioOwner === button && button.classList.contains('loading')) return;
   if (audioKey === key && audioOwner === button) {
-    if (!audio.paused) return audio.pause();
+    if (!audio.paused) { playTimed = null; return audio.pause(); }
     if (audio.ended) audio.currentTime = 0;
     return audio.play().catch(() => {});
   }
@@ -850,7 +850,14 @@ async function playRec(r, button) {
   const src = await srcFor(r);
   if (seq !== playSeq) return; // a newer card or sound started while this one was loading
   audio.src = src;
-  audio.play().catch((e) => {
+  audio.play().then(() => {
+    // Load time = from the card asking for its sound until it actually starts (v1.8.6). Only
+    // when it started by itself: if the phone blocked it or it was paused, the wait for the
+    // person's own tap would count too (a 35 s "wait" seen that way), so it isn't logged.
+    if (playTimed?.seq === seq) logLoad(playTimed, performance.now() - playTimed.t0);
+    if (playTimed?.seq === seq) playTimed = null;
+  }).catch((e) => {
+    if (playTimed?.seq === seq) playTimed = null;
     if (e.name !== 'NotAllowedError' && e.name !== 'AbortError' && button === $('playBtn')) $('recError').hidden = false;
     setPlaying(button, 'paused');
   });
@@ -889,8 +896,6 @@ window.addEventListener('blur', () => { if (document.hidden) stopInBackground();
 
 audio.addEventListener('playing', () => {
   setPlaying(playingBtn, 'playing');
-  if (playTimed?.seq === playSeq) logLoad(playTimed, performance.now() - playTimed.t0);
-  playTimed = null;
 });
 
 // Load times (v1.7.3): for each card's first play, did its sound start straight away (pw) or
