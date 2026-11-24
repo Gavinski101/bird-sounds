@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.5.2';
+const VERSION = '1.5.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1455,6 +1455,7 @@ ${names.length ? names.join(', ') : 'None yet.'}`;
 }
 
 function renderTop() {
+  applyTheme(); // also after a synced copy from another device is adopted
   renderAvatar();
   const s = L.summary(S.learn, species);
   const st = currentStreak();
@@ -1726,7 +1727,28 @@ $('progress').addEventListener('click', (e) => {
 
 // ---------- settings ----------
 
+// Colour themes (Settings -> Colours); colours are in styles.css under :root[data-theme].
+// [light accent, light accent-2, dark accent, dark accent-2] for the swatches and the browser bar.
+const THEMES = {
+  savanna: { label: 'Savanna', c: ['#8b5a2b', '#c9772e', '#e3a86f', '#f2c265'] },
+  sunset: { label: 'Sunset', c: ['#b8441c', '#e39a2d', '#ff8a5c', '#ffc15e'] },
+  protea: { label: 'Protea', c: ['#a3325c', '#e0785c', '#f28bb0', '#ffad8a'] },
+  ocean: { label: 'Ocean', c: ['#1d5f8c', '#1c9aa3', '#74c3ec', '#6fe0d6'] },
+  dusk: { label: 'Dusk', c: ['#4b3fc0', '#c2417f', '#a99cff', '#f07aae'] },
+};
+const themeOf = () => (THEMES[S.prefs.theme] ? S.prefs.theme : 'savanna');
+function applyTheme() {
+  const t = themeOf();
+  if (document.documentElement.dataset.theme !== t) document.documentElement.dataset.theme = t;
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', THEMES[t].c[dark ? 2 : 0]);
+}
+
 function renderSettings() {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  $('themeOpts').innerHTML = Object.entries(THEMES).map(([k, v]) =>
+    `<button type="button" class="theme-opt ${k === themeOf() ? 'on' : ''}" data-theme-pick="${k}" aria-pressed="${k === themeOf()}">
+      <i style="background:linear-gradient(145deg, ${v.c[dark ? 2 : 0]}, ${v.c[dark ? 3 : 1]})"></i>${esc(v.label)}</button>`).join('');
   $('nameSet').innerHTML = Object.entries(nameSets).map(([k, v]) =>
     `<option value="${k}" ${k === S.prefs.nameSet ? 'selected' : ''}>${esc(v)}</option>`).join('');
   $('autoplay').checked = S.prefs.autoplay;
@@ -1989,6 +2011,15 @@ function applyArea() {
   areaIds = new Set(species.map((b) => b.id));
   L.realign(S.learn, species, cur?.id); // birds in play follow the current order (learn.js)
 }
+
+$('themeOpts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-theme-pick]');
+  if (!b) return;
+  S.prefs.theme = b.dataset.themePick;
+  applyTheme();
+  save();
+  renderSettings();
+});
 
 $('autoplay').addEventListener('change', (e) => {
   S.prefs.autoplay = e.target.checked;

@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Bird Sounds</title>
   <meta name="description" content="Learn Southern African birds by their calls.">
-  <meta name="theme-color" content="#4b3fc0">
+  <meta name="theme-color" content="#8b5a2b">
+  <script>try { const t = JSON.parse(localStorage.getItem('bird-sounds-v1'))?.prefs?.theme; if (t) document.documentElement.dataset.theme = t; } catch (e) { /* default colours */ }</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Bird Sounds">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -109,6 +110,11 @@
         <h2>Bird names</h2>
         <p class="muted">Match the name set your Merlin app uses (Merlin → Settings → Language).</p>
         <select id="nameSet"></select>
+      </div>
+      <div class="panel">
+        <h2>Colours</h2>
+        <p class="muted">Try them out: the app changes straight away.</p>
+        <div class="theme-opts" id="themeOpts"></div>
       </div>
       <div class="panel">
         <h2>Playback</h2>

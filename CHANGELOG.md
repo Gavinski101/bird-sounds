@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.5.3 (2026-11-24)
+- Colour themes in Settings → Colours: Savanna (browns, the new default), Sunset, Protea, Ocean and Dusk (the purple one). Saved with your settings; brown icon.
+
 ## 1.5.2 (2026-11-24)
 - New look: dusk theme (indigo and sunrise colours, rounded Nunito font, new icon), so it no longer resembles the photo flashcard app.
 - "Skip for later" is now on new-bird cards too. A skipped new bird stays away for 40 cards (it could come straight back when it was the only new bird waiting: the next new bird now joins instead); a skipped met bird waits 20 cards.
