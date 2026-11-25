@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.9 (2026-11-25)
+- Fixes 1.9.8, which didn't load (a typo in a help text).
+
 ## 1.9.8 (2026-11-25)
 - Learning a bird moves on sooner: a wrong pick from the 4 choices costs 1 point instead of 2, and 3 right answers in a row make a bird nearly mastered (no more choices; one right answer from memory masters it). A bird answered right 20 times and wrong 8 times was still not mastered.
 

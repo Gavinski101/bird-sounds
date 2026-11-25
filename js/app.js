@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.8';
+const VERSION = '1.9.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -680,7 +680,7 @@ const TIPS = {
   },
   habitat: "Where this bird is usually found. From AVONET (Tobias et al. 2022, CC BY 4.0), plus extra habitats for birds often heard elsewhere too.",
   habitats: 'Birds of the habitats you pick join your study set first, in the usual order among themselves; the other birds follow after them. Pick none to mix all habitats. Progress on every bird is kept.',
-  points: 'One total for each bird: a clean right answer adds 2 points, one with a hint adds 1; a miss takes 2 off (1 when picking from the 4 choices). 3 right in a row and it's at least 4 points. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
+  points: 'One total for each bird: a clean right answer adds 2 points, one with a hint adds 1; a miss takes 2 off (1 when picking from the 4 choices). 3 right in a row and it has at least 4 points. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
