@@ -102,6 +102,7 @@ export function ensurePool(state, species, { all = false } = {}) {
 }
 
 export const NEARLY_SCORE = MASTER_SCORE - 2; // one clean answer from mastered
+export const RUN_TO_NEARLY = 3; // right answers in a row that make a bird nearly mastered
 
 // Re-line-up: when the order changes (iconic first, shared difficulty, another region) the
 // study set is made to match what the CURRENT order would give you now. Birds near the front
@@ -301,6 +302,7 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   let event = null;
   b.miss = !correct;
   b.missRun = correct ? 0 : (b.missRun || 0) + 1;
+  b.rightRun = correct ? (b.rightRun || 0) + 1 : 0;
   const climbing = b.m && level > medalOf(b);
   if (level > 1) { if (correct) b.ur = (b.ur || 0) + 1; else b.uw = (b.uw || 0) + 1; }
   else if (correct) b.right++;
@@ -327,6 +329,10 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
     }
   } else if (correct) {
     b.s += hinted ? 1 : 2;
+    // RUN_TO_NEARLY right in a row (picks or from memory) and it's nearly mastered: no more
+    // choices, one right answer from memory masters it (v1.9.8, user: a bird at 20 right / 8
+    // wrong was still not mastered).
+    if (b.rightRun >= RUN_TO_NEARLY && b.s < NEARLY_SCORE) b.s = NEARLY_SCORE;
     if (b.s >= MASTER_SCORE) {
       b.m = true;
       b.medal = Math.max(medalOf(b), level); // bronze (silver when learnt on varied sounds)
@@ -338,7 +344,9 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
       b.due = state.n + 2 + b.s * 2 + Math.floor(rand() * 3);
     }
   } else {
-    b.s = Math.max(b.s - 2, -4);
+    // A wrong pick from the 4 choices (hinted) costs 1: that's still the learning stage. A miss
+    // from memory costs 2 (v1.9.8; 2 for both made a mostly-right bird barely move).
+    b.s = Math.max(b.s - (hinted ? 1 : 2), -4);
     // Missed: back after 3-5 cards. Missed twice in a row: rest longer, so the same hard
     // birds don't take over the session.
     b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);

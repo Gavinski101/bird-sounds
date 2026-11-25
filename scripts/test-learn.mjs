@@ -150,14 +150,35 @@ function play(state, knows, cards) {
   assert.ok(seen.has(2) && seen.has(3), [...seen].join());
 }
 
-// Hints halve the gain: 6 hinted answers to master instead of 3.
+// Hints halve the gain (+1), but 3 right in a row make it nearly mastered (v1.9.8):
+// hinted only = 5 answers to master (1, 2, 3 -> 4, 5, 6).
 {
   const s = L.newState();
   L.ensurePool(s, species);
   L.introduced(s, 'b0');
   let ev = null, n = 0;
   while (!ev) { ev = L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); n++; }
-  assert.equal(n, 6);
+  assert.equal(n, 5);
+}
+
+// A wrong pick from the choices costs 1, a miss from memory 2; a miss breaks the run (v1.9.8).
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  L.introduced(s, 'b0');
+  const b = s.birds.b0;
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); // 1
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); // 2
+  L.answer(s, species, 'b0', { correct: false, hinted: true }, rand); // 1
+  assert.equal(b.s, 1);
+  L.answer(s, species, 'b0', { correct: false }, rand); // -1
+  assert.equal(b.s, -1);
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); // 0
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); // 1
+  assert.equal(b.s, 1, 'no jump before 3 in a row');
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, rand); // 3 in a row: 2 -> nearly (4)
+  assert.equal(b.s, L.NEARLY_SCORE);
+  assert.equal(L.answer(s, species, 'b0', { correct: true }, rand), 'mastered', 'one from memory masters it');
 }
 
 // Unlock all.
