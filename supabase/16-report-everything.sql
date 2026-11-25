@@ -33,7 +33,7 @@ select jsonb_build_object(
 
   'activity_per_week', (select coalesce(jsonb_agg(w order by w->>'week' desc), '[]') from (
       select jsonb_build_object('week', date_trunc('week', day)::date, 'active_people', count(distinct user_id),
-                                'answers', sum(answers), 'birds_mastered', sum(mastered)) as w
+                                'answers', sum(answers), 'mastered_by_week_end', max(mastered)) as w -- days.m = birds mastered so far that day
       from days where day > current_date - 63 group by date_trunc('week', day)) x),
 
   'progress_per_person', (select coalesce(jsonb_agg(x order by (x->>'answered')::int desc), '[]') from (

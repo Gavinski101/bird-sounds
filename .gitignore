@@ -9,3 +9,5 @@ CLAUDE.md
 GoogleAuth.txt
 *.secret.txt
 client_secret*.json
+# Report outputs and other logs (user ids etc.), local only
+_logs/
