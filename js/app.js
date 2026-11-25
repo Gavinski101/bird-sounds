@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.4';
+const VERSION = '1.9.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -776,7 +776,34 @@ const currentStreak = () => streakState().run;
 
 // ---------- audio ----------
 
-const audio = $('audio');
+let audio = $('audio');
+// Listeners on the player, kept so they move along when a pre-loaded player takes over (swapAudio).
+const audioHandlers = [];
+function onAudio(ev, fn) { audioHandlers.push([ev, fn]); audio.addEventListener(ev, fn); }
+// Streamed recordings keep their player (and what it has loaded) for this session, so going
+// back to one (Previous, the same card again) plays at once (v1.9.5, user). Files downloaded
+// whole are kept on the device anyway (Cache API), across sessions.
+let audioFile = null; // the recording the player holds, when streamed
+const sessionPlayers = new Map(); // file -> player that streamed it (at most SESSION_MAX)
+const SESSION_MAX = 6;
+function swapAudio(el, file) {
+  if (el === audio) return;
+  for (const [ev, fn] of audioHandlers) { audio.removeEventListener(ev, fn); el.addEventListener(ev, fn); }
+  audio.pause();
+  if (audioFile && /^https?:/.test(audio.currentSrc || audio.src)) {
+    sessionPlayers.delete(audioFile);
+    sessionPlayers.set(audioFile, audio);
+    while (sessionPlayers.size > SESSION_MAX) {
+      const [f, old] = sessionPlayers.entries().next().value;
+      sessionPlayers.delete(f);
+      old.removeAttribute('src');
+      old.load();
+    }
+  }
+  el.volume = audio.volume;
+  audio = el;
+  audioFile = file || null;
+}
 
 // Volume is per device (phone and laptop differ), so it is kept outside the synced store.
 // iOS ignores audio.volume (hardware buttons only) and newer versions still report the set
@@ -848,10 +875,28 @@ async function playRec(r, button) {
   setPlaying(button, 'loading');
   loadingFile = r.file;
   showLoad(r.file);
-  // Whole file first (ring shows how far), so it plays straight through; if the download
-  // fails it streams from xeno-canto as before. A slow download (v1.8.7: a 1.7 MB file took
-  // 35 s from xeno-canto) isn't waited for: after STREAM_AFTER_MS, unless it's nearly done, the
-  // download is stopped and the recording streams, starting as soon as the first part arrives.
+  // Saved on the device: play that. A hidden player already loading its start (v1.9.5): it
+  // takes over and plays at once. A big file: stream straight away. Otherwise download it whole
+  // first (ring shows how far), so it plays straight through; a slow download (v1.8.7: 1.7 MB
+  // took 35 s) isn't waited for: after STREAM_AFTER_MS, unless nearly done, it streams instead.
+  const saved = await caches.open(MEDIA_CACHE).then((c) => c.match(r.file)).catch(() => null);
+  if (seq !== playSeq) return;
+  const kept = !saved && (sessionPlayers.get(r.file) || preloads.get(r.file));
+  if (kept || (!saved && !wantWhole(r) && navigator.onLine)) {
+    if (kept) {
+      sessionPlayers.delete(r.file);
+      preloads.delete(r.file);
+      swapAudio(kept, r.file);
+      if (kept.ended) kept.currentTime = 0;
+    } else {
+      const el = new Audio();
+      el.preload = 'auto';
+      el.src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+      swapAudio(el, r.file);
+    }
+    button.classList.add('spin');
+    return startPlay(r, button, seq);
+  }
   const late = await Promise.race([cacheRec(r).then(() => false), new Promise((ok) => setTimeout(() => ok(true), STREAM_AFTER_MS))]);
   if (seq !== playSeq) return;
   let src;
@@ -866,7 +911,13 @@ async function playRec(r, button) {
     src = await srcFor(r);
   }
   if (seq !== playSeq) return; // a newer card or sound started while this one was loading
+  if (audioFile) swapAudio(new Audio(), null); // keep a streamed player for this session; use a fresh one
   audio.src = src;
+  if (/^https?:/.test(src)) audioFile = r.file;
+  startPlay(r, button, seq);
+}
+
+function startPlay(r, button, seq) {
   audio.play().then(() => {
     // Load time = from the card asking for its sound until it actually starts (v1.8.6). Only
     // when it started by itself: if the phone blocked it or it was paused, the wait for the
@@ -911,7 +962,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) stopI
 window.addEventListener('pagehide', stopInBackground);
 window.addEventListener('blur', () => { if (document.hidden) stopInBackground(); });
 
-audio.addEventListener('playing', () => {
+onAudio('playing', () => {
   setPlaying(playingBtn, 'playing');
 });
 
@@ -933,12 +984,16 @@ function logLoad({ key, file }, ms) {
   try { localStorage.setItem(NET_KEY, JSON.stringify(netLog)); } catch { /* storage full */ }
   const p = (S.recs[key] ||= {});
   if (ms > WAITED_MS) { p.lw = (p.lw || 0) + 1; p.lt = (p.lt || 0) + Math.round(ms); } else p.pw = (p.pw || 0) + 1;
+  // Per device type, from v1.9.5 on (report 12 compares phone and computer from here):
+  // m = phone/tablet (touch screen), d = computer. *w = waited, *t = ms waited, *p = straight away.
+  const dev = matchMedia('(pointer: coarse)').matches ? 'm' : 'd';
+  if (ms > WAITED_MS) { p[dev + 'w'] = (p[dev + 'w'] || 0) + 1; p[dev + 't'] = (p[dev + 't'] || 0) + Math.round(ms); } else p[dev + 'p'] = (p[dev + 'p'] || 0) + 1;
   if (fileSizes.has(file)) p.sz = fileSizes.get(file);
   save();
 }
-audio.addEventListener('pause', () => setPlaying(playingBtn, 'paused'));
-audio.addEventListener('ended', () => setPlaying(playingBtn, 'paused'));
-audio.addEventListener('timeupdate', () => {
+onAudio('pause', () => setPlaying(playingBtn, 'paused'));
+onAudio('ended', () => setPlaying(playingBtn, 'paused'));
+onAudio('timeupdate', () => {
   if (playingBtn !== $('playBtn')) return;
   // xeno-canto doesn't send the file length up front, so the browser often only learns the
   // duration at the end of the download.
@@ -967,7 +1022,7 @@ function seekTo(frac) {
   else pendingSeek = frac;
   if (audio.paused) audio.play().catch(() => {});
 }
-['loadedmetadata', 'playing'].forEach((ev) => audio.addEventListener(ev, () => {
+['loadedmetadata', 'playing'].forEach((ev) => onAudio(ev, () => {
   const d = audioLength();
   if (pendingSeek == null || !d || audioOwner !== $('playBtn')) return;
   audio.currentTime = pendingSeek * d;
@@ -987,7 +1042,7 @@ function seekTo(frac) {
   seek.addEventListener('pointercancel', end);
 }
 
-audio.addEventListener('error', () => {
+onAudio('error', () => {
   if (!audioKey) return;
   if (audioOwner === $('playBtn')) $('recError').hidden = false;
   setPlaying(playingBtn, 'paused');
@@ -1053,6 +1108,33 @@ async function newCard() {
 // the ring around the play button. One download per file, however many callers.
 const loads = new Map(); // file -> { got, total, done, ctrl }
 const STREAM_AFTER_MS = 3000; // a sound still downloading after this streams instead (playRec)
+// v1.9.5 (user: still lots of waiting on the phone): small files are downloaded whole ahead of
+// time (quick, and they work offline); bigger ones are not. For those a hidden player loads the
+// start (the browser's own "download the first part, stream the rest"); when the card comes,
+// that player plays at once. iPhones ignore it to save data, so there it streams as before.
+const WHOLE_KB = 1024;
+const sizeKb = (r) => shared(r)?.kb || (fileSizes.get(r.file) || 0) / 1024;
+const wantWhole = (r) => { const kb = sizeKb(r); return kb ? kb <= WHOLE_KB : (r.secs || 0) <= 30; };
+const preloads = new Map(); // file -> hidden <audio> loading its start (at most PRELOAD_MAX)
+const PRELOAD_MAX = 3;
+function warmRec(r) {
+  if (!r || preloads.has(r.file) || !navigator.onLine) return;
+  const el = new Audio();
+  el.preload = 'auto';
+  el.src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+  el.load();
+  preloads.set(r.file, el);
+  while (preloads.size > PRELOAD_MAX) {
+    const [f, old] = preloads.entries().next().value;
+    preloads.delete(f);
+    if (old !== audio) { old.removeAttribute('src'); old.load(); }
+  }
+}
+// Get a recording ready ahead of time: whole download when small, else a hidden player.
+const prepRec = (r) => (r ? (wantWhole(r) ? cacheRec(r) : (warmRec(r), Promise.resolve(true))) : Promise.resolve(false));
+// Downloads ahead wait while a sound is still loading, so they don't slow it down (v1.9.5).
+const soundLoading = () => !!playingBtn?.classList.contains('loading');
+const quietTurn = async () => { while (soundLoading()) await new Promise((ok) => setTimeout(ok, 300)); };
 const fileSizes = new Map(); // file -> bytes, for the load-time totals
 function cacheRec(r) {
   if (!r) return Promise.resolve(false);
@@ -1134,15 +1216,15 @@ async function prefetchSoon() {
   const now = card.stage === 'compare' ? [activeRecs(card.id)[0], activeRecs(card.pair)[0]] : [currentRec()];
   const slow = slowNet(); // this device often waits: two at a time, and more of the likely next birds
   if (card.stage !== 'compare') loadAllRecs(card.id); // full list now, so "Next recording" knows its order
-  if (!slow || navigator.connection?.saveData) for (const r of now) await cacheRec(r);
+  if (!slow || navigator.connection?.saveData) for (const r of now) await prepRec(r);
   if (run !== prefetchRun || !navigator.onLine || navigator.connection?.saveData) return;
-  const tasks = slow ? now.map((r) => () => cacheRec(r)) : [];
+  const tasks = slow ? now.map((r) => () => prepRec(r)) : [];
   // This card's next recording second (v1.8.5: people press "Next recording" when unsure),
   // in the order the full list gives it.
   tasks.push(async () => {
     if (card.stage === 'compare') return;
     await loadAllRecs(card.id);
-    if (cur === card) await cacheRec(cardRecs()[card.recIdx + 1]);
+    if (cur === card) await prepRec(cardRecs()[card.recIdx + 1]);
   });
   for (const [id, level] of likelyNext(slow ? 8 : 4)) {
     tasks.push(async () => {
@@ -1153,12 +1235,14 @@ async function prefetchSoon() {
         if (plan?.level !== level) { plan = { level, recs: levelRecs(id, level) }; planned.set(id, plan); }
         r = plan.recs[0];
       }
-      await cacheRec(r);
+      await prepRec(r);
     });
   }
   let i = 0;
   const worker = async () => {
     while (i < tasks.length && run === prefetchRun) {
+      await quietTurn(); // not while a sound is loading
+      if (run !== prefetchRun) return;
       try { await tasks[i++](); } catch { /* best effort */ }
     }
   };

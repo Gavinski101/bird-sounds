@@ -2,6 +2,12 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.5 (2026-11-25)
+- Less waiting for sounds: small recordings (up to 1 MB) are still downloaded ahead whole; bigger ones are no longer downloaded whole: a hidden player loads their start and plays at once when the card comes (Android; iPhones stream as before). Big files stream straight away instead of after 3 seconds.
+- Downloading ahead pauses while the current sound is still loading, so it doesn't slow it down.
+- Streamed recordings stay loaded for the session (the last 6), so going back to one plays at once. Downloaded ones stay on the device as before.
+- Load times are now counted separately for phones and computers (report 12, from this version on).
+
 ## 1.9.4 (2026-11-25)
 - Habitat focus: birds of your chosen habitats now all come before the others. Spreading out families could pass over the last few focus birds (e.g. forest raptors) in favour of birds from other habitats.
 
