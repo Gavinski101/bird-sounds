@@ -132,9 +132,22 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 }
 .card-label.new { color: var(--gold); }
 
-.player { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 0 6px; }
+.player { display: flex; flex-direction: column; align-items: center; gap: clamp(6px, 1.4dvh, 12px); padding: clamp(8px, 2dvh, 16px) 0 6px; }
+/* Choosing from birds (v1.9.6): a compact player so the choices fit, and the choices stand out. */
+#card.picking .player { padding-top: 6px; gap: 6px; }
+#card.picking .play { width: clamp(60px, 9dvh, 80px); height: clamp(60px, 9dvh, 80px); }
+#card.picking .hint-area { margin-top: 6px; padding: 10px; }
+#card.picking .hint-text { font-weight: 700; color: var(--accent); }
+#card.picking .choice { border: 2px solid var(--accent); padding: 10px 14px; font-weight: 650; }
+#card.picking .choice.out { border-color: var(--line); }
+#card.picking .choices { gap: 6px; margin-top: 6px; grid-template-columns: 1fr 1fr; }
+#card.picking .choice { font-size: 15px; line-height: 1.25; min-height: 48px; }
+#card.picking .sound-tip { margin: 0 0 4px; padding: 6px 8px; font-size: 14px; }
+/* The buttons don't stay pinned over the choices: the choices are the answer here. */
+#card.picking .actions { position: static; }
+@media (max-height: 700px) { .card { padding: 12px 12px 10px; } }
 .play {
-  width: 112px; height: 112px;
+  width: clamp(80px, 13dvh, 112px); height: clamp(80px, 13dvh, 112px); /* smaller on short screens */
   border-radius: 50%;
   border: 0;
   background: var(--accent);
@@ -145,7 +158,7 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
   transition: transform 0.1s;
 }
 .play:active { transform: scale(0.96); }
-.play svg { width: 48px; height: 48px; fill: currentColor; }
+.play svg { width: 42%; height: 42%; fill: currentColor; }
 .play .i-pause { display: none; }
 .play.playing .i-play { display: none; }
 .play.playing .i-pause { display: block; }

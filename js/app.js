@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.5';
+const VERSION = '1.9.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -1044,8 +1044,16 @@ function seekTo(frac) {
 
 onAudio('error', () => {
   if (!audioKey) return;
-  if (audioOwner === $('playBtn')) $('recError').hidden = false;
   setPlaying(playingBtn, 'paused');
+  // A recording that won't load (seen on a gold card on an iPhone): try the next one by itself,
+  // twice at most per card (v1.9.6). It doesn't count as pressing "Next recording".
+  if (audioOwner === $('playBtn') && cur && (cur.autoNext || 0) < 2 && cardRecs().length > 1 && navigator.onLine) {
+    cur.autoNext = (cur.autoNext || 0) + 1;
+    toast("Couldn't load that recording: trying the next one");
+    stepRec(1, true);
+    return;
+  }
+  if (audioOwner === $('playBtn')) $('recError').hidden = false;
 });
 
 // ---------- study ----------
@@ -1268,6 +1276,8 @@ function renderCard() {
   else if (cur.autoHint && !shown) label.dataset.tip = TIPS.autoChoices;
   else delete label.dataset.tip;
   document.querySelector('.player').hidden = cur.stage === 'compare';
+  // Choosing from birds: a smaller player, so the choices fit on the screen (v1.9.6).
+  $('card').classList.toggle('picking', cur.stage === 'guess' && cur.hint > 0 && !!cur.choices);
   // Where it's usually found (user v1.6.8: on the guess card too, as a gentle clue). Not on
   // "which of the two?" tests, where it could give the answer away.
   const hab = cur.stage === 'guess' && !cur.pair ? habitatChips(cur.id) : '';
@@ -1300,7 +1310,7 @@ function renderCard() {
     const out = new Set(cur.removed || []);
     const clue = hintClue(cur.id, cur.choices);
     ha.innerHTML = (clue ? `<div class="sound-tip" data-tip="${esc(TIPS.soundClue)}"><b>Sound clue:</b> ${esc(clue)}</div>` : '')
-      + `<div class="hint-text">${cur.pair ? 'Which of these two?' : 'Which one is it?'}</div>
+      + `<div class="hint-text">${cur.pair ? 'Which of these two?' : '👇 Tap the bird you hear'}</div>
       <div class="choices">${cur.choices.map((id) => out.has(id)
         ? `<button class="choice out" disabled>${esc(nm(byId[id]))}</button>`
         : `<button class="choice" data-choice="${id}">${esc(nm(byId[id]))}</button>`).join('')}</div>`;
@@ -1350,8 +1360,13 @@ function renderCard() {
     a.innerHTML = '<button class="btn ghost wide" data-act="reveal">Reveal</button>';
   } else if (cur.stage === 'thought') {
     a.innerHTML = renderThought();
+  } else if (cur.stage === 'guess' && cur.hint > 0) {
+    // Choices showing (v1.9.6, user feedback: the green "Reveal" looked like the listen-only card,
+    // so people pressed it without seeing the choices): no green button, the choices are the answer.
+    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>More hint</button>
+      <button class="btn ghost" data-act="reveal">Show answer</button>`;
   } else if (cur.stage === 'guess') {
-    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>${cur.hint ? 'More hint' : 'Hint'}</button>
+    a.innerHTML = `<button class="btn ghost" data-act="hint">Hint</button>
       <button class="btn" data-act="reveal">Reveal</button>`;
   } else if (cur.stage === 'revealed') {
     a.innerHTML = '<button class="btn bad" data-act="missed">Missed it</button><button class="btn good" data-act="got">Got it</button>';
@@ -1496,11 +1511,11 @@ $('playBtn').addEventListener('click', () => {
 });
 
 // Next / previous recording (wraps around both ways).
-async function stepRec(step) {
+async function stepRec(step, auto = false) {
   const id = cur.id;
   stopAudio();
   // Only before answering, and only on level-1 cards (silver/gold are meant to be harder).
-  if (cur.stage === 'guess' && cur.level === 1) { L.otherPressed(S.learn, id); save(); }
+  if (!auto && cur.stage === 'guess' && cur.level === 1) { L.otherPressed(S.learn, id); save(); }
   if (!allRecs[id]) { // the full list, the first time: show it's loading straight away (v1.8.5)
     setPlaying($('playBtn'), 'loading');
     $('playBtn').classList.add('spin');

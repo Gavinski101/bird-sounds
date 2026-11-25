@@ -2,6 +2,11 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.6 (2026-11-25)
+- Cards where you pick from birds look clearly different: a smaller player so the choices fit on the screen, "👇 Tap the bird you hear", green-edged choices in two columns, and no green Reveal button (it's a grey "Show answer"), so it can't be mistaken for the listen-and-reveal card (user feedback).
+- The player and spacing scale with the screen height, so short screens and larger text settings fit better.
+- A recording that won't load is skipped: the next one is tried by itself.
+
 ## 1.9.5 (2026-11-25)
 - Less waiting for sounds: small recordings (up to 1 MB) are still downloaded ahead whole; bigger ones are no longer downloaded whole: a hidden player loads their start and plays at once when the card comes (Android; iPhones stream as before). Big files stream straight away instead of after 3 seconds.
 - Downloading ahead pauses while the current sound is still loading, so it doesn't slow it down.
