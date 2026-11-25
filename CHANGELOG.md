@@ -2,6 +2,11 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 1.9.7 (2026-11-25)
+- Long recordings play only their first part: at least 15 seconds, longer for recordings people tend to listen to longer. Less has to load, so it starts sooner. Tap play again when it stops to hear the rest.
+- Records how long people listen to each recording before answering (Supabase snippet 15), which sets that part per recording.
+- A saved recording that won't play is removed from the device, so it downloads fresh next time.
+
 ## 1.9.6 (2026-11-25)
 - Cards where you pick from birds look clearly different: a smaller player so the choices fit on the screen, "👇 Tap the bird you hear", green-edged choices in two columns, and no green Reveal button (it's a grey "Show answer"), so it can't be mistaken for the listen-and-reveal card (user feedback).
 - The player and spacing scale with the screen height, so short screens and larger text settings fit better.

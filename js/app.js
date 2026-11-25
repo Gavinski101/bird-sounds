@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '1.9.6';
+const VERSION = '1.9.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -417,6 +417,27 @@ const bigRec = (r) => {
   return kb ? kb > BIG_KB : (r.secs || 0) > 120;
 };
 
+// How long people listen to a recording before answering (v1.9.7), and how much of it is
+// played: long recordings only play their first part (a media fragment: the file itself is
+// never changed, fine for no-derivatives licences), so less has to stream. The part is 1.5x the
+// average listening time for THAT recording, at least LIMIT_MIN s. A recording few people heard
+// leans on the average over all recordings (LISTEN_WEIGHT listens' worth), like the other shared
+// numbers. Tap play again after it stops to hear the rest.
+const LISTEN_PRIOR = 10;
+const LISTEN_WEIGHT = 3;
+const LIMIT_MIN = 15;
+const LIMIT_MARGIN = 1.5;
+let listenAll = LISTEN_PRIOR;
+try { const c = JSON.parse(localStorage.getItem('bird-sounds-listen-all')); if (c > 0) listenAll = c; } catch { /* default */ }
+const listenAvg = (r) => {
+  const c = shared(r);
+  return ((c?.listenSecs || 0) + listenAll * LISTEN_WEIGHT) / ((c?.listens || 0) + LISTEN_WEIGHT);
+};
+const playLimit = (r) => Math.max(LIMIT_MIN, Math.round(listenAvg(r) * LIMIT_MARGIN));
+// The part of a recording to play: its hand-set range, or the first playLimit seconds of a long one.
+const clipOf = (r) => (r.t ? r.t : (r.secs || 0) > playLimit(r) + 3 ? [0, playLimit(r)] : null);
+const fragFor = (r) => { const t = clipOf(r); return t ? `#t=${t[0]},${t[1]}` : ''; };
+
 async function loadScores(force = false) {
   if (!Sync.configured || !navigator.onLine) return;
   try {
@@ -427,8 +448,13 @@ async function loadScores(force = false) {
   try {
     const rows = await Sync.recScores();
     scores = Object.fromEntries((rows || []).map((x) => [x.rec, { flags: x.flags, raters: x.raters, avg: x.avg_stars == null ? null : +x.avg_stars, ok: x.right_answers || 0, no: x.wrong_answers || 0,
-      plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0, playPeople: x.play_people || 0 }]));
+      plays: x.plays || 0, waits: x.waits || 0, waitPeople: x.wait_people || 0, kb: x.size_kb || 0, playPeople: x.play_people || 0,
+      listenSecs: x.listen_secs || 0, listens: x.listens || 0 }]));
+    const ls = (rows || []).reduce((n, x) => n + (x.listen_secs || 0), 0);
+    const lc = (rows || []).reduce((n, x) => n + (x.listens || 0), 0);
+    listenAll = (ls + LISTEN_PRIOR * LISTEN_WEIGHT) / (lc + LISTEN_WEIGHT);
     localStorage.setItem(SCORES_KEY, JSON.stringify({ at: Date.now(), map: scores }));
+    try { localStorage.setItem('bird-sounds-listen-all', JSON.stringify(listenAll)); } catch { /* full */ }
     if (cur) renderRecInfo();
   } catch (e) { console.warn('recording scores', e); }
 }
@@ -658,7 +684,7 @@ const TIPS = {
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
   accuracy: 'How many of your last 20 answers were right.',
-  recInfo: "Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
+  recInfo: "Long recordings play only their first part (at least 15 s, longer when people tend to listen longer); tap play again when it stops to hear the rest. Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. Next recording and Previous then go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2). Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
   share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
@@ -837,6 +863,8 @@ document.addEventListener('click', (e) => {
 let audioKey = null;
 let playSeq = 0; // bumps on every new play/stop, so a slow load from an earlier card can't take over
 let audioSecs = 0; // stored length of the playing clip, used until the browser knows the duration
+let clipEnd = null; // a long recording plays its first clipEnd s (playLimit); null = all of it
+let playFile = null; // the file being played
 let audioOwner = null;
 let blobUrl = null;
 
@@ -850,10 +878,10 @@ async function srcFor(r) {
       const blob = await hit.blob();
       fileSizes.set(r.file, blob.size); // also for files saved in an earlier session (load-time totals)
       blobUrl = URL.createObjectURL(blob);
-      return blobUrl + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+      return blobUrl + fragFor(r);
     }
   } catch { /* Cache API unavailable */ }
-  return r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+  return r.file + fragFor(r);
 }
 
 async function playRec(r, button) {
@@ -864,13 +892,17 @@ async function playRec(r, button) {
   if (audioKey === key && audioOwner === button) {
     if (!audio.paused) { playTimed = null; return audio.pause(); }
     if (audio.ended) audio.currentTime = 0;
+    if (clipEnd && audio.currentTime >= clipEnd - 0.5) clipEnd = null; // after the first part: play on
     return audio.play().catch(() => {});
   }
   const seq = ++playSeq;
   if (button === $('playBtn') && cur && !cur.timed) { cur.timed = true; playTimed = { seq, key, file: r.file, t0: performance.now() }; }
   audioKey = key;
   audioOwner = button;
-  audioSecs = r.t ? r.t[1] - r.t[0] : r.secs || 0;
+  playFile = r.file;
+  const clip = clipOf(r);
+  clipEnd = clip && !r.t ? clip[1] : null;
+  audioSecs = clip ? clip[1] - clip[0] : r.secs || 0;
   $('recError').hidden = true;
   setPlaying(button, 'loading');
   loadingFile = r.file;
@@ -891,7 +923,7 @@ async function playRec(r, button) {
     } else {
       const el = new Audio();
       el.preload = 'auto';
-      el.src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+      el.src = r.file + fragFor(r);
       swapAudio(el, r.file);
     }
     button.classList.add('spin');
@@ -904,7 +936,7 @@ async function playRec(r, button) {
   if (st && !(st.total && st.got / st.total > 0.7)) {
     st.ctrl.abort();
     button.classList.add('spin');
-    src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+    src = r.file + fragFor(r);
   } else {
     if (late) await cacheRec(r);
     if (seq !== playSeq) return;
@@ -991,21 +1023,50 @@ function logLoad({ key, file }, ms) {
   if (fileSizes.has(file)) p.sz = fileSizes.get(file);
   save();
 }
-onAudio('pause', () => setPlaying(playingBtn, 'paused'));
+onAudio('pause', () => {
+  setPlaying(playingBtn, 'paused');
+  // Stopped at the end of the first part of a long recording: say how to hear the rest (3 times).
+  if (clipEnd && audio.currentTime >= clipEnd - 0.5 && (S.prefs.clipTips || 0) < 3) {
+    S.prefs.clipTips = (S.prefs.clipTips || 0) + 1;
+    save();
+    toast(`Played the first ${Math.round(clipEnd)} s: tap play again for the rest`);
+  }
+});
+onAudio('playing', () => { listenLast = audio.currentTime; });
+onAudio('seeking', () => { listenLast = null; });
+let listenLast = null;
+let listenAcc = {}; // recording key -> seconds listened on this card
+// Add this card's listening to each recording's totals (S.recs[key].ls seconds, .lc times).
+function flushListen() {
+  for (const [k, secs] of Object.entries(listenAcc)) {
+    if (secs < 0.5) continue;
+    const p = (S.recs[k] ||= {});
+    p.ls = (p.ls || 0) + Math.round(secs);
+    p.lc = (p.lc || 0) + 1;
+  }
+  listenAcc = {};
+  listenLast = null;
+}
 onAudio('ended', () => setPlaying(playingBtn, 'paused'));
 onAudio('timeupdate', () => {
   if (playingBtn !== $('playBtn')) return;
   // xeno-canto doesn't send the file length up front, so the browser often only learns the
   // duration at the end of the download.
-  const d = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs;
+  const d = clipEnd || (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs);
   const p = d ? Math.min(100, (audio.currentTime / d) * 100) : 0;
   $('barFill').style.width = `${p}%`;
+  // Listening time on a card before it's answered (or left), per recording.
+  if (audioOwner === $('playBtn') && cur?.stage === 'guess' && audioKey) {
+    const t = audio.currentTime;
+    if (listenLast != null && t > listenLast && t - listenLast < 1.5) listenAcc[audioKey] = (listenAcc[audioKey] || 0) + (t - listenLast);
+    listenLast = t;
+  }
 });
 // Tap or drag the progress bar to jump to another part of the recording. If this recording
 // isn't playing yet, it starts and then jumps once the browser knows where it can go.
 let pendingSeek = null;
 function audioLength() {
-  return Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs;
+  return clipEnd || (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : audioSecs);
 }
 function seekTo(frac) {
   frac = Math.max(0, Math.min(1, frac));
@@ -1045,6 +1106,8 @@ function seekTo(frac) {
 onAudio('error', () => {
   if (!audioKey) return;
   setPlaying(playingBtn, 'paused');
+  // A saved copy that won't play (damaged): forget it, so it downloads fresh next time.
+  if (playFile && /^blob:/.test(audio.currentSrc || audio.src)) caches.open(MEDIA_CACHE).then((c) => c.delete(playFile)).catch(() => {});
   // A recording that won't load (seen on a gold card on an iPhone): try the next one by itself,
   // twice at most per card (v1.9.6). It doesn't count as pressing "Next recording".
   if (audioOwner === $('playBtn') && cur && (cur.autoNext || 0) < 2 && cardRecs().length > 1 && navigator.onLine) {
@@ -1076,6 +1139,7 @@ function autoChoices(id) {
 
 async function newCard() {
   if (overlayOpen()) return; // welcome or survey showing: start when it closes
+  flushListen(); // a card left without answering still counts its listening
   stopAudio();
   const c = L.nextCard(S.learn, species, Math.random, { intros: S.prefs.intros });
   save();
@@ -1129,7 +1193,7 @@ function warmRec(r) {
   if (!r || preloads.has(r.file) || !navigator.onLine) return;
   const el = new Audio();
   el.preload = 'auto';
-  el.src = r.file + (r.t ? `#t=${r.t[0]},${r.t[1]}` : '');
+  el.src = r.file + fragFor(r);
   el.load();
   preloads.set(r.file, el);
   while (preloads.size > PRELOAD_MAX) {
@@ -1415,6 +1479,7 @@ function makeChoices() {
 }
 
 async function grade(correct) {
+  flushListen(); // how long they listened before answering
   const hinted = cur.hint > 0;
   const day = new Date().toLocaleDateString('en-CA'); // local YYYY-MM-DD
   const event = L.answer(S.learn, species, cur.id, { correct, hinted, pair: cur.pair || null, day, level: cur.level });
