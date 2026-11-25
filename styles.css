@@ -207,8 +207,12 @@ main { max-width: 560px; margin: 0 auto; padding: 0 16px 16px; }
 @media (hover: hover) { .vol:hover input, .vol:focus-within input { width: 90px; opacity: 1; margin-left: 4px; } }
 .bar-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.2s linear; }
 
-.rec-nav { display: inline-flex; gap: 14px; }
-.rec-line { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; color: var(--muted); font-size: 14px; }
+.rec-line { display: flex; gap: 6px; align-items: center; justify-content: center; width: 100%; color: var(--muted); font-size: 14px; }
+/* ‹ and › beside "Recording 1 of 48" (v2.0.0): always on the same line as the recording
+   details, so they clearly change the recording, not the bird. */
+.rec-line #recInfo { flex: 0 1 auto; min-width: 0; text-align: center; }
+.rec-line .rec-arrow { flex: none; font: 700 30px/1 system-ui, sans-serif; padding: 2px 12px 6px; border-radius: 10px; background: var(--surface-2); }
+.rec-line .rec-arrow:disabled { background: none; }
 .rec-error { color: var(--bad); font-size: 14px; text-align: center; }
 
 .link {
