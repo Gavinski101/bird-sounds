@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.1 (2026-11-26)
+- Recordings that had to stream are downloaded whole in the background afterwards (up to 3 MB), so next time they play at once, offline too. One recording had made you wait 3 times.
+
 ## 2.0.0 (2026-11-25)
 - ‹ and › arrows sit either side of "Recording 1 of 48", always on the same line, so they clearly switch recordings of this bird (the longer details had pushed "Previous / Next recording" onto a line of their own, where it looked like "next bird").
 

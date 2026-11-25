@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -927,6 +927,7 @@ async function playRec(r, button) {
       swapAudio(el, r.file);
     }
     button.classList.add('spin');
+    keepLater.set(r.file, r); // streamed: keep a whole copy once things are quiet (v2.0.1)
     return startPlay(r, button, seq);
   }
   const late = await Promise.race([cacheRec(r).then(() => false), new Promise((ok) => setTimeout(() => ok(true), STREAM_AFTER_MS))]);
@@ -936,6 +937,7 @@ async function playRec(r, button) {
   if (st && !(st.total && st.got / st.total > 0.7)) {
     st.ctrl.abort();
     button.classList.add('spin');
+    keepLater.set(r.file, r); // slow download, streamed now: keep a whole copy later
     src = r.file + fragFor(r);
   } else {
     if (late) await cacheRec(r);
@@ -1188,6 +1190,11 @@ const WHOLE_KB = 1024;
 const sizeKb = (r) => shared(r)?.kb || (fileSizes.get(r.file) || 0) / 1024;
 const wantWhole = (r) => { const kb = sizeKb(r); return kb ? kb <= WHOLE_KB : (r.secs || 0) <= 30; };
 const preloads = new Map(); // file -> hidden <audio> loading its start (at most PRELOAD_MAX)
+// Streamed recordings, to download whole in the background afterwards (v2.0.1: big files streamed
+// again every time, e.g. 3 waits on the same recording). Up to KEEP_MAX_BYTES; bigger ones keep
+// streaming. Then they play at once next time, offline too.
+const keepLater = new Map(); // file -> recording
+const KEEP_MAX_BYTES = 3 * 1048576;
 const PRELOAD_MAX = 3;
 function warmRec(r) {
   if (!r || preloads.has(r.file) || !navigator.onLine) return;
@@ -1208,7 +1215,7 @@ const prepRec = (r) => (r ? (wantWhole(r) ? cacheRec(r) : (warmRec(r), Promise.r
 const soundLoading = () => !!playingBtn?.classList.contains('loading');
 const quietTurn = async () => { while (soundLoading()) await new Promise((ok) => setTimeout(ok, 300)); };
 const fileSizes = new Map(); // file -> bytes, for the load-time totals
-function cacheRec(r) {
+function cacheRec(r, maxBytes = Infinity) {
   if (!r) return Promise.resolve(false);
   if (loads.has(r.file)) return loads.get(r.file).done;
   const st = { got: 0, total: 0, ctrl: new AbortController() };
@@ -1220,6 +1227,7 @@ function cacheRec(r) {
       const res = await fetch(r.file, { mode: 'cors', signal: st.ctrl.signal });
       if (!res.ok) return false;
       st.total = +res.headers.get('content-length') || 0;
+      if (st.total > maxBytes) { st.ctrl.abort(); fileSizes.set(r.file, st.total); return false; }
       let blob;
       if (res.body?.getReader) {
         const reader = res.body.getReader();
@@ -1229,6 +1237,7 @@ function cacheRec(r) {
           if (done) break;
           parts.push(value);
           st.got += value.length;
+          if (st.got > maxBytes) { st.ctrl.abort(); fileSizes.set(r.file, st.got); return false; } // too big to keep
           showLoad(r.file);
         }
         blob = new Blob(parts, { type: res.headers.get('content-type') || 'audio/mpeg' });
@@ -1309,6 +1318,11 @@ async function prefetchSoon() {
       }
       await prepRec(r);
     });
+  }
+  // Last: whole copies of recordings that were streamed (not the one playing now).
+  for (const [file, r] of keepLater) {
+    if (file === playFile && !audio.paused) continue;
+    tasks.push(async () => { keepLater.delete(file); await cacheRec(r, KEEP_MAX_BYTES); });
   }
   let i = 0;
   const worker = async () => {
