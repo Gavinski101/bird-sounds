@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.1';
+const VERSION = '2.0.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -865,6 +865,7 @@ let playSeq = 0; // bumps on every new play/stop, so a slow load from an earlier
 let audioSecs = 0; // stored length of the playing clip, used until the browser knows the duration
 let clipEnd = null; // a long recording plays its first clipEnd s (playLimit); null = all of it
 let playFile = null; // the file being played
+let playPart = false; // only its first part is saved: the rest streams (v2.0.2)
 let audioOwner = null;
 let blobUrl = null;
 
@@ -876,7 +877,8 @@ async function srcFor(r) {
       // Offline copy: play from a blob URL (works on iOS, which rejects cached media through a service worker).
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       const blob = await hit.blob();
-      fileSizes.set(r.file, blob.size); // also for files saved in an earlier session (load-time totals)
+      playPart = !!hit.headers.get('x-part');
+      if (!playPart) fileSizes.set(r.file, blob.size); // also for files saved in an earlier session (load-time totals)
       blobUrl = URL.createObjectURL(blob);
       return blobUrl + fragFor(r);
     }
@@ -892,7 +894,15 @@ async function playRec(r, button) {
   if (audioKey === key && audioOwner === button) {
     if (!audio.paused) { playTimed = null; return audio.pause(); }
     if (audio.ended) audio.currentTime = 0;
-    if (clipEnd && audio.currentTime >= clipEnd - 0.5) clipEnd = null; // after the first part: play on
+    if (clipEnd && audio.currentTime >= clipEnd - 0.5) { // after the first part: play on
+      clipEnd = null;
+      if (playPart && navigator.onLine) { // only that part is saved: stream the rest from here
+        const t = audio.currentTime;
+        playPart = false;
+        audio.src = r.file;
+        audio.addEventListener('loadedmetadata', () => { audio.currentTime = t; }, { once: true });
+      }
+    }
     return audio.play().catch(() => {});
   }
   const seq = ++playSeq;
@@ -900,6 +910,7 @@ async function playRec(r, button) {
   audioKey = key;
   audioOwner = button;
   playFile = r.file;
+  playPart = false;
   const clip = clipOf(r);
   clipEnd = clip && !r.t ? clip[1] : null;
   audioSecs = clip ? clip[1] - clip[0] : r.secs || 0;
@@ -1188,13 +1199,15 @@ const STREAM_AFTER_MS = 3000; // a sound still downloading after this streams in
 // that player plays at once. iPhones ignore it to save data, so there it streams as before.
 const WHOLE_KB = 1024;
 const sizeKb = (r) => shared(r)?.kb || (fileSizes.get(r.file) || 0) / 1024;
-const wantWhole = (r) => { const kb = sizeKb(r); return kb ? kb <= WHOLE_KB : (r.secs || 0) <= 30; };
+const wantWhole = (r) => {
+  if (partBytes(r, 0) < Infinity) return true; // long: only its playing part is downloaded
+  const kb = sizeKb(r);
+  return kb ? kb <= WHOLE_KB : (r.secs || 0) <= 30;
+};
 const preloads = new Map(); // file -> hidden <audio> loading its start (at most PRELOAD_MAX)
-// Streamed recordings, to download whole in the background afterwards (v2.0.1: big files streamed
-// again every time, e.g. 3 waits on the same recording). Up to KEEP_MAX_BYTES; bigger ones keep
-// streaming. Then they play at once next time, offline too.
+// Streamed recordings, saved in the background afterwards (v2.0.1: big files streamed again every
+// time, e.g. 3 waits on the same recording): the whole file, or its playing part when long (v2.0.2).
 const keepLater = new Map(); // file -> recording
-const KEEP_MAX_BYTES = 3 * 1048576;
 const PRELOAD_MAX = 3;
 function warmRec(r) {
   if (!r || preloads.has(r.file) || !navigator.onLine) return;
@@ -1211,11 +1224,22 @@ function warmRec(r) {
 }
 // Get a recording ready ahead of time: whole download when small, else a hidden player.
 const prepRec = (r) => (r ? (wantWhole(r) ? cacheRec(r) : (warmRec(r), Promise.resolve(true))) : Promise.resolve(false));
+// v2.0.2: long recordings only need their playing part, so they're downloaded too (that part),
+// on every phone; the hidden players are only left for recordings with a set range.
 // Downloads ahead wait while a sound is still loading, so they don't slow it down (v1.9.5).
 const soundLoading = () => !!playingBtn?.classList.contains('loading');
 const quietTurn = async () => { while (soundLoading()) await new Promise((ok) => setTimeout(ok, 300)); };
 const fileSizes = new Map(); // file -> bytes, for the load-time totals
-function cacheRec(r, maxBytes = Infinity) {
+// Bytes that cover a long recording's playing part (playLimit + 4 s): from the file size when
+// known, else at ~48 KB per second. Infinity = the whole file (short recordings, set ranges).
+function partBytes(r, total) {
+  const clip = clipOf(r);
+  if (!clip || r.t || !(r.secs > 0)) return Infinity;
+  const secs = clip[1] + 4;
+  return total ? Math.ceil(total * Math.min(1, secs / r.secs)) : secs * 48 * 1024;
+}
+
+function cacheRec(r, whole = false) {
   if (!r) return Promise.resolve(false);
   if (loads.has(r.file)) return loads.get(r.file).done;
   const st = { got: 0, total: 0, ctrl: new AbortController() };
@@ -1227,23 +1251,32 @@ function cacheRec(r, maxBytes = Infinity) {
       const res = await fetch(r.file, { mode: 'cors', signal: st.ctrl.signal });
       if (!res.ok) return false;
       st.total = +res.headers.get('content-length') || 0;
-      if (st.total > maxBytes) { st.ctrl.abort(); fileSizes.set(r.file, st.total); return false; }
+      if (st.total) fileSizes.set(r.file, st.total);
+      // Long recordings only play their first part (playLimit), so only that part is kept
+      // (v2.0.2, user: "16 s is enough"): far less to download. Tapping play for the rest
+      // streams it (playRec). whole = keep everything (offline download).
+      const part = whole ? Infinity : partBytes(r, st.total);
+      if (part < Infinity) st.total = st.total ? Math.min(st.total, part) : part; // ring shows the part
       let blob;
+      let cut = false;
       if (res.body?.getReader) {
         const reader = res.body.getReader();
         const parts = [];
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          parts.push(value);
-          st.got += value.length;
-          if (st.got > maxBytes) { st.ctrl.abort(); fileSizes.set(r.file, st.got); return false; } // too big to keep
+          const room = part - st.got; // keep exactly the part, even from a big chunk
+          parts.push(value.length > room ? value.subarray(0, room) : value);
+          st.got += Math.min(value.length, room);
           showLoad(r.file);
+          if (st.got >= part) { cut = value.length >= room; st.ctrl.abort(); break; }
         }
         blob = new Blob(parts, { type: res.headers.get('content-type') || 'audio/mpeg' });
       } else blob = await res.blob();
-      await cache.put(r.file, new Response(blob, { headers: { 'content-type': blob.type, 'content-length': String(blob.size) } }));
-      fileSizes.set(r.file, blob.size);
+      const headers = { 'content-type': blob.type, 'content-length': String(blob.size) };
+      if (cut) headers['x-part'] = '1';
+      await cache.put(r.file, new Response(blob, { headers }));
+      if (!cut) fileSizes.set(r.file, blob.size);
       return true;
     } catch { return false; } finally { loads.delete(r.file); }
   })();
@@ -1322,7 +1355,7 @@ async function prefetchSoon() {
   // Last: whole copies of recordings that were streamed (not the one playing now).
   for (const [file, r] of keepLater) {
     if (file === playFile && !audio.paused) continue;
-    tasks.push(async () => { keepLater.delete(file); await cacheRec(r, KEEP_MAX_BYTES); });
+    tasks.push(async () => { keepLater.delete(file); await cacheRec(r); });
   }
   let i = 0;
   const worker = async () => {
@@ -2572,7 +2605,8 @@ $('dlBtn').addEventListener('click', async () => {
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       $('dlFill').style.width = `${((i + 1) / items.length) * 100}%`;
-      if (await cache.match(it.url)) continue;
+      const have = await cache.match(it.url);
+      if (have && !have.headers.get('x-part')) continue; // saved whole already (a saved part gets the whole file)
       try {
         const res = await fetch(it.url, { mode: it.audio ? 'cors' : 'no-cors' });
         if (it.audio && !res.ok) throw new Error(res.status);

@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.2 (2026-11-26)
+- Long recordings: only the part that plays (the first 15 s or so, plus a few seconds) is downloaded ahead and kept, on every phone including iPhones, instead of the whole file or a hidden player. Much less data, and it's ready sooner. Tapping play again for the rest streams it from where it stopped. Settings → Download still saves whole files for offline use.
+
 ## 2.0.1 (2026-11-26)
 - Recordings that had to stream are downloaded whole in the background afterwards (up to 3 MB), so next time they play at once, offline too. One recording had made you wait 3 times.
 
