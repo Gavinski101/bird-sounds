@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.4 (2026-11-26)
+- New card layout: one big main button (Show the bird / Knew it / Next bird) with smaller choices under it: Clue and Later as links, and Didn't know as a softer button below Knew it.
+
 ## 2.1.3 (2026-11-26)
 - New button and level names: Clue, Another clue, Show the bird, Knew it / Didn't know, Later, Next bird, Test me later, No idea, next bird. Levels are now Common / Regular / Uncommon / Scarce (were Beginner / Easy / Medium / Hard).
 - The phone's top bar now matches the background colour you picked (was dark green).

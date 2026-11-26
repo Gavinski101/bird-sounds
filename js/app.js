@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.3';
+const VERSION = '2.1.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -1483,7 +1483,8 @@ function renderCard() {
   // Buttons
   const a = $('actions');
   if (cur.stage === 'intro') {
-    a.innerHTML = '<button class="btn ghost" data-act="skip">Later</button><button class="btn" data-act="introDone">Next bird</button>';
+    // v2.1.4 layout: one full-width main button, smaller choices as links under it.
+    a.innerHTML = '<button class="btn wide" data-act="introDone">Next bird</button><div class="link-row"><button class="link" data-act="skip">Later</button></div>';
   } else if (cur.stage === 'compare') {
     a.innerHTML = '<button class="btn wide" data-act="compared">Test me later</button>';
   } else if (cur.stage === 'guess' && cur.pair) {
@@ -1493,17 +1494,17 @@ function renderCard() {
   } else if (cur.stage === 'guess' && cur.hint > 0) {
     // Choices showing (v1.9.6, user feedback: the green "Reveal" looked like the listen-only card,
     // so people pressed it without seeing the choices): no green button, the choices are the answer.
-    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>Another clue</button>
-      <button class="btn ghost" data-act="reveal">Show the bird</button>`;
+    a.innerHTML = `<button class="btn ghost wide" data-act="reveal">Show the bird</button>
+      <div class="link-row"><button class="link" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>Another clue</button><button class="link" data-act="skip">Later</button></div>`;
   } else if (cur.stage === 'guess') {
-    a.innerHTML = `<button class="btn ghost" data-act="hint">Clue</button>
-      <button class="btn" data-act="reveal">Show the bird</button>`;
+    a.innerHTML = `<button class="btn wide" data-act="reveal">Show the bird</button>
+      <div class="link-row"><button class="link" data-act="hint">Clue</button><button class="link" data-act="skip">Later</button></div>`;
   } else if (cur.stage === 'revealed') {
-    a.innerHTML = '<button class="btn bad" data-act="missed">Didn&rsquo;t know</button><button class="btn good" data-act="got">Knew it</button>';
+    a.innerHTML = '<button class="btn good wide" data-act="got">Knew it</button><button class="btn danger wide" data-act="missed">Didn&rsquo;t know</button>';
   } else {
     a.innerHTML = '<button class="btn wide" data-act="next">Next bird</button>';
   }
-  $('skipBtn').hidden = cur.stage !== 'guess'; // intro cards have it beside "Next bird"
+  $('skipBtn').hidden = true; // v2.1.4: "Later" sits in the link row under the main button
 }
 
 function renderThought() {
