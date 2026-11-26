@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.4 (2026-11-26)
+- Signed-in users are asked about their data once more, with "help improve the app" ticked: the earlier sheet started with it unticked, so most people left it off without choosing to. They can untick it before saving.
+
 ## 2.0.3 (2026-11-26)
 - Old mix-ups fade: each right answer on a bird takes 1 off each of its mix-up counts, so a pair you've learnt to tell apart gets fewer compare cards and stops crowding the choices.
 - Missing a bird right after getting it right twice in a row costs 1 point instead of 2, so one slip doesn't send a bird you now mostly get right far back.

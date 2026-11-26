@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.3';
+const VERSION = '2.0.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -2730,8 +2730,10 @@ $('newsOk').addEventListener('click', () => {
 // (supabase/10-only-count-people-who-share.sql). Location isn't asked here: "Near me" asks when
 // it's picked (prefs.nearOk). When the policy changes in a way that affects accounts, bump
 // PRIVACY_VERSION and say what changed in PRIVACY_CHANGES: everyone signed in is asked again.
-const PRIVACY_VERSION = 3; // v2 (v1.6.5): choices instead of one "I agree"; v3 (v1.7.3): load times shared too
-const PRIVACY_CHANGES = 'Choose what happens with your data. New: the shared totals now also count how long recordings take to start, to find and replace slow ones. You can change this any time in Settings → Account.';
+const PRIVACY_VERSION = 4; // v2 (v1.6.5): choices instead of one "I agree"; v3 (v1.7.3): load times shared too;
+// v4 (v2.0.4): asked again, ticked, because the v2 box started unticked and most people just saved it.
+const PRIVACY_CHANGES = 'Please check your choice. When you were last asked, the box to help improve the app started unticked, so many people left it off without meaning to. Helping is anonymous: no name and no email. You can change this any time in Settings → Account.';
+const SHARE_KEPT_FROM = 4; // earlier choices made from this version on are shown as they were
 
 function setPrivacy(share) {
   S.prefs.privacy = { v: PRIVACY_VERSION, at: new Date().toISOString(), share: !!share };
@@ -2742,7 +2744,8 @@ function checkPrivacy() {
   if (!Sync.signedIn() || (S.prefs.privacy?.v || 0) >= PRIVACY_VERSION || !$('privacySheet').hidden) return;
   $('privacyTitle').textContent = 'Your data';
   $('privacyText').textContent = PRIVACY_CHANGES;
-  $('privacyShare').checked = S.prefs.privacy?.share ?? true; // ticked unless they said no before
+  const p = S.prefs.privacy;
+  $('privacyShare').checked = p && p.v >= SHARE_KEPT_FROM ? !!p.share : true; // ticked unless they said no since v4
   $('privacySheet').hidden = false;
 }
 
