@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.0 (2026-11-26)
+- Photo and sound credits now look the same: who · linked number (XC… for xeno-canto, iNat … for iNaturalist) · licence. Photo credits show the photographer's name instead of iNaturalist's long text, which sometimes came in another language.
+
 ## 2.0.9 (2026-11-26)
 - Bird photos: every photo now has an open licence. 162 photos that were "all rights reserved" (or no longer listed) were replaced by openly licensed ones from iNaturalist; Wing-snapping Cisticola has none, so it shows without a photo. Each photo records its licence and when it was checked (scripts/check_photos.py), and a monthly GitHub Action re-checks them.
 - Public-domain recordings show "CC0 1.0" instead of just "CC".

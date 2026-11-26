@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.9';
+const VERSION = '2.1.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -636,17 +636,21 @@ function activeRecs(id) {
     .map((x) => x.r);
 }
 
-// Photo credit with a link to the photo's page on iNaturalist (its id is in the image URL).
+// Credits share one layout: who · linked number at the source · licence (· country).
+const extLink = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${esc(text)}</a>`;
+const licLabel = (code) => (code === 'cc0' ? 'CC0' : String(code || '').replace(/^cc-/, 'CC ').toUpperCase());
+
 function photoCredit(sp) {
-  const id = /\/photos\/(\d+)\//.exec(sp.photo.url || '')?.[1];
-  const link = id ? ` · <a href="https://www.inaturalist.org/photos/${id}" target="_blank" rel="noopener">iNaturalist</a>` : '';
-  return `Photo: ${esc(sp.photo.attr)}${link}`;
+  const p = sp.photo;
+  const id = /\/photos\/(\d+)\//.exec(p.url || '')?.[1];
+  if (!p.by) return `Photo: ${esc(p.attr)}${id ? ' · ' + extLink(`https://www.inaturalist.org/photos/${id}`, `iNat ${id}`) : ''}`;
+  return `Photo: ${esc(p.by)}${id ? ' · ' + extLink(`https://www.inaturalist.org/photos/${id}`, `iNat ${id}`) : ''} · ${esc(licLabel(p.lic))}`;
 }
 
 function credit(r) {
   const link = r.src === 'inat'
-    ? `<a href="https://www.inaturalist.org/observations/${r.obs}" target="_blank" rel="noopener">iNaturalist</a>`
-    : `<a href="https://xeno-canto.org/${r.xc}" target="_blank" rel="noopener">XC${r.xc}</a>`;
+    ? extLink(`https://www.inaturalist.org/observations/${r.obs}`, `iNat ${r.obs}`)
+    : extLink(`https://xeno-canto.org/${r.xc}`, `XC${r.xc}`);
   return `${esc(r.rec)} · ${link} · ${esc(r.lic)}${r.cnt ? ' · ' + esc(r.cnt) : ''}`;
 }
 

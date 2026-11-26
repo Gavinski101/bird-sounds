@@ -15,6 +15,7 @@ Run every few months, or when iNaturalist photos may have changed:
 import datetime
 import html
 import json
+import re
 import sys
 import time
 import urllib.request
@@ -38,8 +39,21 @@ def get(url):
     raise RuntimeError(f"failed: {url}")
 
 
+def photographer(attr):
+    """Name from iNat's attribution, which comes in the uploader's language:
+    "(c) Name, some rights reserved (CC BY-NC), uploaded by ..." / "no rights reserved, uploaded by Name"."""
+    m = re.match(r"\(c\) (.+?)\s*,\s*[^,]*\(CC", attr, re.S)
+    name = m.group(1) if m else (re.search(r"uploaded by (.+)$", attr, re.S) or [None, attr])[1]
+    # Wikimedia-style "*derivative work: Editor . *File.jpg: Author"
+    d = re.match(r"\*derivative work: (.+?) \. \*[^:]+: (.+)$", name)
+    if d:
+        name = f"{d.group(2)}, edited by {d.group(1)}"
+    return " ".join(name.split())
+
+
 def photo_entry(p, taxon, today):
-    return {"url": p["medium_url"], "attr": html.unescape(p.get("attribution", "")), "inat_taxon": taxon,
+    attr = html.unescape(p.get("attribution", ""))
+    return {"url": p["medium_url"], "attr": attr, "by": photographer(attr), "inat_taxon": taxon,
             "lic": p["license_code"], "checked": today}
 
 
