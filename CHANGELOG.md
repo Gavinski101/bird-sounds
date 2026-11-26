@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.8 (2026-11-26)
+- Photo credits link to the photo on iNaturalist, like the sound credits link to xeno-canto.
+
 ## 2.0.7 (2026-11-26)
 - Recordings over 30 seconds are picked less often, as the main recordings and for silver checks: in the owner's 117 flags, long clips were flagged far more often (mostly "other sounds in the way"). 144 birds get a different main recording; ones you rated or flagged keep your choice.
 

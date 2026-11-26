@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.7';
+const VERSION = '2.0.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -634,6 +634,13 @@ function activeRecs(id) {
     .sort((a, b) => recStars(b.r) - recStars(a.r) || a.i - b.i)
     .slice(0, 2)
     .map((x) => x.r);
+}
+
+// Photo credit with a link to the photo's page on iNaturalist (its id is in the image URL).
+function photoCredit(sp) {
+  const id = /\/photos\/(\d+)\//.exec(sp.photo.url || '')?.[1];
+  const link = id ? ` · <a href="https://www.inaturalist.org/photos/${id}" target="_blank" rel="noopener">iNaturalist</a>` : '';
+  return `Photo: ${esc(sp.photo.attr)}${link}`;
 }
 
 function credit(r) {
@@ -1459,7 +1466,7 @@ function renderCard() {
     $('revealMeta').innerHTML = `<span class="chip" data-tip="${esc(TIPS.family)}">${esc(sp.family)}</span><span class="chip" data-tip="${esc(tierTip(sp))}">${esc(sp.tier)}</span>${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)}${habitatChips(sp.id)}`;
     $('revealTip').innerHTML = soundTipHtml(sp.id);
     $('revealTip').hidden = !$('revealTip').innerHTML;
-    $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? `Photo: ${esc(sp.photo.attr)}` : '');
+    $('revealCredit').innerHTML = (r ? `Sound: ${credit(r)}<br>` : '') + (sp.photo ? photoCredit(sp) : '');
   }
 
   // Buttons
@@ -1999,7 +2006,7 @@ function openBird(id) {
       ${pref.flag ? '' : `<button class="link" data-flagrec="${esc(recKey(r))}">⚑ Rate / flag</button>`}
     </div>`;
   }
-  if (sp.photo) html += `<p class="credit">Photo: ${esc(sp.photo.attr)}</p>`;
+  if (sp.photo) html += `<p class="credit">${photoCredit(sp)}</p>`;
   $('birdDetail').innerHTML = html;
   $('birdDetail').querySelectorAll('[data-rate]').forEach((el) => {
     renderStars(el, (calls[id] || []).find((r) => recKey(r) === el.dataset.rate), false);
