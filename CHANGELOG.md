@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.2.1 (2026-11-26)
+- Sign-in screen works like Slack: Continue with Google, or enter your email and Continue to get a sign-in code. "Use a password instead" opens the password sign-in / create account form.
+- The version number now shows at the bottom of the welcome / sign-in and first-open question screens too.
+
 ## 2.2.0 (2026-11-26)
 - No What's new popup for the sign-in code.
 

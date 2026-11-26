@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -170,7 +170,7 @@ window.addEventListener('online', () => syncNow());
 
 const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>';
 
-let authMode = 'signin';
+let authMode = 'code'; // Slack style: email code first, password behind a link
 let codeAddress = '';
 
 function renderAccount() {
@@ -204,13 +204,16 @@ function renderAccount() {
   } else {
     const typed = $('emailInput')?.value || codeAddress || '';
     if (authMode === 'code') {
-      el.innerHTML = `<p><b>Sign in with a code</b></p>
-        <p class="muted small">Enter your email and we'll send you a code. No password needed. New here? This creates your account.</p>
+      el.innerHTML = `<p class="muted">Sign in to save your progress online and keep it the same on all your devices.</p>
+        ${Sync.googleEnabled ? `<button type="button" class="btn block google" id="googleBtn">${GOOGLE_SVG} Continue with Google</button>
+        <div class="or"><span>or use email</span></div>` : ''}
         <form id="codeForm" method="post" action="#" novalidate>
           <input class="search" id="emailInput" name="email" type="email" autocomplete="username" placeholder="Email address" value="${esc(typed)}" required>
-          <button type="submit" class="btn block" id="codeSubmit">Email me a code</button>
+          <button type="submit" class="btn block" id="codeSubmit">Continue</button>
         </form>
-        <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+        <p class="small muted">We'll email you a code to sign in, no password needed. New here? This creates your account.
+          Signing in saves your progress with your account (see the <a href="privacy.html">privacy policy</a>). You then choose whether your answers also count, anonymously, in shared totals.</p>
+        <button type="button" class="link" data-mode="signin">Use a password instead</button>`;
       return;
     }
     if (authMode === 'codeSent') {
@@ -225,7 +228,7 @@ function renderAccount() {
           <button type="button" class="link" id="resendCodeBtn">Send a new code</button>
           <button type="button" class="link" data-mode="code">Use another email</button>
         </div>
-        <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+        <button type="button" class="link" data-mode="signin">Use a password instead</button>`;
       return;
     }
     if (authMode === 'reset' || authMode === 'resetSent') {
@@ -236,22 +239,20 @@ function renderAccount() {
             <input class="search" id="emailInput" name="email" type="email" autocomplete="username" placeholder="Email address" value="${esc(typed)}" required>
             <button type="submit" class="btn block" id="resetSubmit">Email me a reset link</button>
           </form>
-          <button type="button" class="link" data-mode="signin">← Back to sign in</button>`
+          <button type="button" class="link" data-mode="signin">← Back to password sign-in</button>`
         : `<p><b>Check your email</b></p>
           <p class="muted small">If <b>${esc(typed)}</b> has an account, a reset link is on its way. Open it on this device
           and the app will ask for your new password. It can take a minute to arrive; check spam too.
           Signed up with Google? Then there's no password to reset: just use Continue with Google.</p>
           <input type="hidden" id="emailInput" value="${esc(typed)}">
           <button type="button" class="btn block ghost" data-mode="code">Sign in with a code instead</button>
-          <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+          <button type="button" class="link" data-mode="signin">← Back to password sign-in</button>`;
       return;
     }
     const signup = authMode === 'signup';
     // A real <form> with the right autocomplete values lets the browser's password manager
     // fill saved passwords on Sign in and suggest a strong one on Create account.
-    el.innerHTML = `<p class="muted">Sign in to save your progress online and keep it the same on all your devices.</p>
-      ${Sync.googleEnabled ? `<button type="button" class="btn block google" id="googleBtn">${GOOGLE_SVG} Continue with Google</button>
-      <div class="or"><span>or use email</span></div>` : ''}
+    el.innerHTML = `<p><b>Sign in with a password</b></p>
       <div class="seg" role="tablist">
         <button type="button" role="tab" class="${signup ? '' : 'on'}" data-mode="signin" aria-selected="${!signup}">Sign in</button>
         <button type="button" role="tab" class="${signup ? 'on' : ''}" data-mode="signup" aria-selected="${signup}">Create account</button>
@@ -264,9 +265,11 @@ function renderAccount() {
         <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
         <button type="submit" class="btn block" id="authSubmit">${signup ? 'Create account' : 'Sign in'}</button>
       </form>
-      <button type="button" class="btn block ghost" data-mode="code">Email me a sign-in code instead</button>
       <p class="small muted">Signing in saves your progress with your account (see the <a href="privacy.html">privacy policy</a>). You then choose whether your answers also count, anonymously, in shared totals.</p>
-      ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}`;
+      <div class="link-row">
+        ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}
+        <button type="button" class="link" data-mode="code">← Use an email code instead</button>
+      </div>`;
   }
 }
 
@@ -309,7 +312,7 @@ $('account').addEventListener('submit', async (e) => {
     $('verifySubmit').disabled = true;
     try {
       await Sync.verifyCode(codeAddress, code);
-      authMode = 'signin';
+      authMode = 'code';
       toast('Signed in');
       renderAccount();
       await syncNow({ firstSignIn: true });
@@ -349,6 +352,7 @@ $('account').addEventListener('submit', async (e) => {
       return toast('Account created, but it needs email confirmation first');
     }
     toast(authMode === 'signin' ? 'Signed in' : 'Account created');
+    authMode = 'code';
     renderAccount();
     await syncNow({ firstSignIn: true });
     checkPrivacy();
@@ -3083,6 +3087,7 @@ $('replayWelcome').addEventListener('click', () => {
 
 async function start() {
   $('buildNo').textContent = `v${VERSION}`;
+  document.querySelectorAll('[data-ver]').forEach((el) => { el.textContent = `v${VERSION}`; });
   try {
     const [sp, cl, ar, gd, hb] = await Promise.all([
       fetch('data/species.json').then((r) => r.json()),

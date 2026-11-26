@@ -574,3 +574,4 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 #account .btn.ghost.block { margin-top: 8px; }
 #account .code-input { font-size: 22px; letter-spacing: 0.3em; text-align: center; }
 #account .link-row { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 4px 0; }
+.welcome-ver { margin: 18px 0 0; font-size: 11px; opacity: 0.45; color: var(--muted, inherit); }
