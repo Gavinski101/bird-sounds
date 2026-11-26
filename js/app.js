@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.6';
+const VERSION = '2.0.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -561,7 +561,8 @@ function kmBetween([la1, lo1], [la2, lo2]) {
 const recKm = (r) => (r.lat != null && r.lon != null ? kmBetween(userPoint(), [r.lat, r.lon]) : null);
 // Nearest first; lower quality and other birds in the background count as "further away".
 const Q_KM = { A: 0, B: 150, C: 400, D: 900 };
-const nearScore = (r) => (recKm(r) ?? 3000) + (Q_KM[r.q] ?? 600) + 40 * (r.bg || 0);
+// Clips over 30 s also count as further away: long ones were flagged far more often (v2.0.7).
+const nearScore = (r) => (recKm(r) ?? 3000) + (Q_KM[r.q] ?? 600) + 40 * (r.bg || 0) + ((r.secs || 0) > 30 ? 150 : 0);
 
 // Recordings from the full list that you rated 4-5 stars become study recordings too. Their
 // details are kept with the rating (synced), since the full list isn't always loaded.

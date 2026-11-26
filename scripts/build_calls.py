@@ -114,7 +114,9 @@ def score(r, common_kind):
         s += 4
     also = len(r.get("also") or [])
     s += 2 if also == 0 else -0.6 * also  # other birds in the clip make it ambiguous
-    s += 2 if 4 <= secs <= 35 else 0.5 if secs <= 60 else 0
+    # Over 30 s: the owner's flags (2026-11-26) were long clips far more often ("other sounds in
+    # the way": 61% over 30 s, against 19% of the default picks), so they score lower.
+    s += 2 if 4 <= secs <= 30 else 0.5 if secs <= 35 else -1 if secs <= 60 else -1.5
     s += 1 if (r.get("file-name") or "").lower().endswith(".mp3") else 0
     if kind(r.get("type")) == common_kind:
         s += 1.5  # most often recorded sound type = the bird's typical sound
