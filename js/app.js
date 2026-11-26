@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.2.1';
+const VERSION = '2.2.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -399,6 +399,7 @@ $('account').addEventListener('click', async (e) => {
       e.target.disabled = true;
       await Sync.deleteAccount();
       S.sync = {};
+      S.prefs.welcomeDone = false; // the welcome screen stays until they choose again, also after a reload
       saveLocal();
       showView('study');
       openWelcome();
@@ -407,6 +408,7 @@ $('account').addEventListener('click', async (e) => {
       if (!confirm('Sign out? Your progress stays on this device and in your account.')) return;
       await Sync.signOut();
       S.sync = {};
+      S.prefs.welcomeDone = false; // the welcome screen stays until they choose again, also after a reload
       saveLocal();
       // Back to the welcome screen (sign in again, or carry on without an account), like first open.
       showView('study');
