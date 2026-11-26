@@ -102,6 +102,17 @@ export async function requestReset(address) {
   await call(`/auth/v1/recover?redirect_to=${encodeURIComponent(back)}`, { method: 'POST', body: { email: address } });
 }
 
+// Sign-in code: Supabase emails a one-time code (the Magic Link template shows {{ .Token }}).
+// Creates the account if the address has none, so it works for new and existing people alike.
+export async function requestCode(address) {
+  await call('/auth/v1/otp', { method: 'POST', body: { email: address, create_user: true } });
+}
+
+export async function verifyCode(address, code) {
+  const d = await call('/auth/v1/verify', { method: 'POST', body: { type: 'email', email: address, token: code } });
+  keepSession(d);
+}
+
 export async function setPassword(password) {
   await call('/auth/v1/user', { method: 'PUT', token: await token(), body: { password } });
 }

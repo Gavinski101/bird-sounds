@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.8';
+const VERSION = '2.1.9';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -171,6 +171,7 @@ window.addEventListener('online', () => syncNow());
 const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.9 6.2C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.2 1.5-5 2.3-8.2 2.3-6.2 0-11.5-4.1-13.4-9.9l-7.9 6.2C6.6 42.6 14.6 48 24 48z"/></svg>';
 
 let authMode = 'signin';
+let codeAddress = '';
 
 function renderAccount() {
   const el = $('account');
@@ -201,7 +202,32 @@ function renderAccount() {
         <span data-tip="${esc(TIPS.share)}">Add my answers (anonymously) to the shared totals</span></label>
       <button class="link danger-link" id="deleteAccountBtn">Delete my account</button>`;
   } else {
-    const typed = $('emailInput')?.value || '';
+    const typed = $('emailInput')?.value || codeAddress || '';
+    if (authMode === 'code') {
+      el.innerHTML = `<p><b>Sign in with a code</b></p>
+        <p class="muted small">Enter your email and we'll send you a code. No password needed. New here? This creates your account.</p>
+        <form id="codeForm" method="post" action="#" novalidate>
+          <input class="search" id="emailInput" name="email" type="email" autocomplete="username" placeholder="Email address" value="${esc(typed)}" required>
+          <button type="submit" class="btn block" id="codeSubmit">Email me a code</button>
+        </form>
+        <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+      return;
+    }
+    if (authMode === 'codeSent') {
+      el.innerHTML = `<p><b>Enter your code</b></p>
+        <p class="muted small">We sent a code to <b>${esc(codeAddress)}</b>. It can take a minute to arrive; check spam too.</p>
+        <form id="verifyForm" method="post" action="#" novalidate>
+          <input class="search code-input" id="codeInput" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+            pattern="[0-9]*" maxlength="10" placeholder="Code" required>
+          <button type="submit" class="btn block" id="verifySubmit">Sign in</button>
+        </form>
+        <div class="link-row">
+          <button type="button" class="link" id="resendCodeBtn">Send a new code</button>
+          <button type="button" class="link" data-mode="code">Use another email</button>
+        </div>
+        <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
+      return;
+    }
     if (authMode === 'reset' || authMode === 'resetSent') {
       el.innerHTML = authMode === 'reset'
         ? `<p><b>Forgot your password?</b></p>
@@ -216,6 +242,7 @@ function renderAccount() {
           and the app will ask for your new password. It can take a minute to arrive; check spam too.
           Signed up with Google? Then there's no password to reset: just use Continue with Google.</p>
           <input type="hidden" id="emailInput" value="${esc(typed)}">
+          <button type="button" class="btn block ghost" data-mode="code">Sign in with a code instead</button>
           <button type="button" class="link" data-mode="signin">← Back to sign in</button>`;
       return;
     }
@@ -237,6 +264,7 @@ function renderAccount() {
         <label class="row small muted" style="margin:-4px 0 8px"><input type="checkbox" id="showPw"> Show password</label>
         <button type="submit" class="btn block" id="authSubmit">${signup ? 'Create account' : 'Sign in'}</button>
       </form>
+      <button type="button" class="btn block ghost" data-mode="code">Email me a sign-in code instead</button>
       <p class="small muted">Signing in saves your progress with your account (see the <a href="privacy.html">privacy policy</a>). You then choose whether your answers also count, anonymously, in shared totals.</p>
       ${signup ? '' : '<button type="button" class="link" data-mode="reset">Forgot password?</button>'}`;
   }
@@ -249,6 +277,7 @@ function friendly(err) {
   if (m.includes('password should be') || m.includes('weak')) return 'Choose a longer password (at least 6 characters)';
   if (m.includes('email not confirmed')) return 'This account still needs its email confirmed';
   if (m.includes('rate limit')) return 'Too many tries: wait a minute and try again';
+  if (m.includes('for security purposes')) return 'Wait a minute before asking for another email';
   if (m.includes('failed to fetch') || m.includes('network')) return "Couldn't reach the server. Check your connection.";
   if (m.includes('delete_my_account') || m.includes('could not find the function')) return "Account deletion isn't set up on the server yet";
   return err.message && err.message.length < 120 ? err.message : 'Something went wrong. Try again.';
@@ -258,6 +287,41 @@ function friendly(err) {
 // and password managers that submit the form all take the same path.
 $('account').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (e.target.id === 'codeForm') {
+    const address = $('emailInput').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return toast('Enter your email address');
+    $('codeSubmit').disabled = true;
+    try {
+      await Sync.requestCode(address);
+      codeAddress = address;
+      authMode = 'codeSent';
+      renderAccount();
+      $('codeInput')?.focus();
+    } catch (err) {
+      toast(friendly(err));
+      renderAccount();
+    }
+    return;
+  }
+  if (e.target.id === 'verifyForm') {
+    const code = $('codeInput').value.replace(/\D/g, '');
+    if (code.length < 6) return toast('Enter the code from the email');
+    $('verifySubmit').disabled = true;
+    try {
+      await Sync.verifyCode(codeAddress, code);
+      authMode = 'signin';
+      toast('Signed in');
+      renderAccount();
+      await syncNow({ firstSignIn: true });
+      checkPrivacy();
+      if (welcomeOpen()) closeWelcome();
+    } catch (err) {
+      const m = (err.message || '').toLowerCase();
+      toast(m.includes('expired') || m.includes('invalid') ? 'That code is wrong or has expired. Check it, or send a new one.' : friendly(err));
+      $('verifySubmit').disabled = false;
+    }
+    return;
+  }
   if (e.target.id === 'resetForm') {
     const address = $('emailInput').value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return toast('Enter your email address');
@@ -308,13 +372,18 @@ $('account').addEventListener('click', async (e) => {
   if (mode) {
     authMode = mode.dataset.mode;
     renderAccount();
-    $(authMode === 'signup' ? 'passwordInput' : 'emailInput').focus();
+    $(authMode === 'signup' ? 'passwordInput' : 'emailInput')?.focus();
     return;
   }
   const id = e.target.closest('button')?.id;
   if (!id) return;
   try {
-    if (id === 'googleBtn') {
+    if (id === 'resendCodeBtn') {
+      e.target.disabled = true;
+      await Sync.requestCode(codeAddress);
+      toast('New code sent');
+      e.target.disabled = false;
+    } else if (id === 'googleBtn') {
       location.href = Sync.googleSignInUrl();
     } else if (id === 'syncNowBtn') {
       e.target.disabled = true;
@@ -2747,6 +2816,7 @@ const WHATS_NEW = [
   { v: '1.6.4', items: ['🎨 Choose your background and shade of green in Settings → Colours.'] },
   { v: '1.6.9', items: ['🌿 Each bird\'s usual habitats show on its cards, and the 4 choices are birds from the same habitats: the ones you\'d really mix it up with outside.'] },
   { v: '2.1.7', items: ['🗣️ Bird names in Afrikaans, isiZulu, German, Dutch or French (Settings → Bird names). English names show the other common name in brackets, like Dark-capped (Common) Bulbul, so they match Merlin either way.'] },
+  { v: '2.1.9', items: ['🔑 Sign in with a code sent to your email, no password to remember.'] },
 ];
 const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);
 

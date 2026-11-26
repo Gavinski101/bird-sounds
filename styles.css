@@ -569,3 +569,8 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 .area-toggle:hover { background: var(--surface-2); }
 
 .photo.loading { visibility: hidden; min-height: 200px; }
+
+/* Sign in with a code */
+#account .btn.ghost.block { margin-top: 8px; }
+#account .code-input { font-size: 22px; letter-spacing: 0.3em; text-align: center; }
+#account .link-row { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 4px 0; }

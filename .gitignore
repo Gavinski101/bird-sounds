@@ -13,3 +13,5 @@ client_secret*.json
 _logs/
 # Build-script downloads (iNaturalist / GBIF), re-fetchable
 _cache/
+
+GoogleAppPw.txt
