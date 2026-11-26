@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.3 (2026-11-26)
+- Old mix-ups fade: each right answer on a bird takes 1 off each of its mix-up counts, so a pair you've learnt to tell apart gets fewer compare cards and stops crowding the choices.
+- Missing a bird right after getting it right twice in a row costs 1 point instead of 2, so one slip doesn't send a bird you now mostly get right far back.
+
 ## 2.0.2 (2026-11-26)
 - Long recordings: only the part that plays (the first 15 s or so, plus a few seconds) is downloaded ahead and kept, on every phone including iPhones, instead of the whole file or a hidden player. Much less data, and it's ready sooner. Tapping play again for the rest streams it from where it stopped. Settings → Download still saves whole files for offline use.
 

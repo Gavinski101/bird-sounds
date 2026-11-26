@@ -103,6 +103,7 @@ export function ensurePool(state, species, { all = false } = {}) {
 
 export const NEARLY_SCORE = MASTER_SCORE - 2; // one clean answer from mastered
 export const RUN_TO_NEARLY = 3; // right answers in a row that make a bird nearly mastered
+export const MISS_SOFT_RUN = 2; // a miss after this many right in a row costs 1, not 2
 
 // Re-line-up: when the order changes (iconic first, shared difficulty, another region) the
 // study set is made to match what the CURRENT order would give you now. Birds near the front
@@ -300,6 +301,8 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   state.answered = (state.answered || 0) + 1;
   state.history = [...state.history.slice(-49), { id, correct, hinted, n: state.n }];
   let event = null;
+  const runBefore = b.rightRun || 0;
+  if (correct) fadeMix(state, id);
   b.miss = !correct;
   b.missRun = correct ? 0 : (b.missRun || 0) + 1;
   b.rightRun = correct ? (b.rightRun || 0) + 1 : 0;
@@ -346,7 +349,9 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
   } else {
     // A wrong pick from the 4 choices (hinted) costs 1: that's still the learning stage. A miss
     // from memory costs 2 (v1.9.8; 2 for both made a mostly-right bird barely move).
-    b.s = Math.max(b.s - (hinted ? 1 : 2), -4);
+    // A miss right after a run of right answers (MISS_SOFT_RUN+) also costs only 1: old
+    // mix-ups shouldn't drag a bird you now mostly get right far back (v2.0.3).
+    b.s = Math.max(b.s - (hinted || runBefore >= MISS_SOFT_RUN ? 1 : 2), -4);
     // Missed: back after 3-5 cards. Missed twice in a row: rest longer, so the same hard
     // birds don't take over the session.
     b.due = state.n + (b.missRun >= 2 ? MISS_REST : 3) + Math.floor(rand() * 3);
@@ -376,6 +381,16 @@ export function recordMix(state, heard, thought) {
   const m = (state.mix ||= {});
   const row = (m[heard] ||= {});
   row[thought] = (row[thought] || 0) + 1;
+}
+
+// A right answer on a bird wears its old mix-ups down by 1 each (v2.0.3, user: past mix-ups
+// shouldn't keep a bird in a hole once it's mostly right): fewer compare cards and confused
+// choices for a pair you've learnt to tell apart. Counts heard -> thought (the bird answered).
+function fadeMix(state, id) {
+  const row = state.mix?.[id];
+  if (!row) return;
+  for (const k of Object.keys(row)) if (--row[k] <= 0) delete row[k];
+  if (!Object.keys(row).length) delete state.mix[id];
 }
 
 // Birds mixed up with id in either direction, most often first.

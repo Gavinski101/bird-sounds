@@ -201,7 +201,7 @@ function play(state, knows, cards) {
   for (let i = 0; i < 40 && !pairCard; i++) {
     const c = L.nextCard(s, species, rand);
     if (c.pair) pairCard = c;
-    else L.answer(s, species, c.id, { correct: true }, rand);
+    else L.answer(s, species, c.id, { correct: !['b1', 'b2'].includes(c.id) }, rand); // right answers fade mix-ups
   }
   assert.ok(pairCard && pairCard.compare, 'compare card shown');
   assert.deepEqual([pairCard.id, pairCard.pair].sort(), ['b1', 'b2']);
@@ -415,6 +415,25 @@ function play(state, knows, cards) {
   assert.equal(L.medalOf(s.birds.b0), 2);
   assert.equal(L.cardLevel(s, 'b0'), 3);
   assert.equal(s.birds.b0.firstM, 3);
+}
+
+// v2.0.3: right answers wear mix-ups down; a miss after a run of right answers costs 1.
+{
+  const s = L.newState();
+  L.ensurePool(s, species);
+  L.introduced(s, 'b0');
+  L.recordMix(s, 'b0', 'b1');
+  L.recordMix(s, 'b0', 'b1');
+  L.recordMix(s, 'b0', 'b2');
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, () => 0);
+  assert.deepEqual(s.mix.b0, { b1: 1 });
+  L.answer(s, species, 'b0', { correct: true, hinted: true }, () => 0);
+  assert.equal(s.mix.b0, undefined);
+  const before = s.birds.b0.s; // 2 right in a row
+  L.answer(s, species, 'b0', { correct: false }, () => 0);
+  assert.equal(s.birds.b0.s, before - 1);
+  L.answer(s, species, 'b0', { correct: false }, () => 0);
+  assert.equal(s.birds.b0.s, before - 3); // no run: 2 again
 }
 
 console.log('learn.js: all checks passed');
