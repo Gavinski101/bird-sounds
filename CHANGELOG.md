@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.2 (2026-11-26)
+- Small bird pictures (Birds list, compare cards, "mixed it up with") load a 240 px photo instead of the 500 px one: about a quarter of the data, same look at that size. Answer photos and bird pages stay 500 px. Offline download saves both sizes. Up to 600 seen photos are kept. Offline photos are saved in a way that takes far less of the phone's storage allowance.
+
 ## 2.1.1 (2026-11-26)
 - Bird photos you've seen are kept on the device (the newest 400), so they show at once next time, also in later sessions and offline. The likely next birds' photos load ahead too. "Delete downloads" also clears them.
 

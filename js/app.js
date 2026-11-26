@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.1';
+const VERSION = '2.1.2';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -635,6 +635,11 @@ function activeRecs(id) {
     .slice(0, 2)
     .map((x) => x.r);
 }
+
+// Photo sizes (v2.1.2): iNat serves square 75 / small 240 / medium 500 / large 1024 px, same name
+// pattern. Thumbnails (48-52 px, so ~150 px on a 3x phone screen) use small, a quarter of medium's
+// bytes; the answer photo and bird page (up to ~360 x 300 px) keep medium.
+const thumbUrl = (sp) => (sp.photo?.url || '').replace(/\/medium\.(\w+)$/, '/small.$1');
 
 // Credits share one layout: who · linked number at the source · licence (· country).
 const extLink = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${esc(text)}</a>`;
@@ -1424,7 +1429,7 @@ function renderCard() {
         const b = byId[id];
         return `<div class="compare-row">
           <button class="mini-play" id="cmp-${id}" data-cplay="${id}" aria-label="Play ${esc(nm(b))}">${PLAY_SVG}</button>
-          ${b.photo ? `<img src="${esc(b.photo.url)}" alt="">` : ''}
+          ${b.photo ? `<img src="${esc(thumbUrl(b))}" alt="">` : ''}
           <div class="nm">${esc(nm(b))}</div>
         </div>`;
       }).join('');
@@ -1921,7 +1926,7 @@ function renderBirds() {
     html += `<div class="tier-head">${tier}<span>${list.length} birds</span></div>`;
     for (const sp of list) {
       html += `<div class="bird-row" data-bird="${sp.id}" role="button" tabindex="0">
-        <img src="${esc(sp.photo?.url || '')}" alt="" loading="lazy">
+        <img src="${esc(thumbUrl(sp))}" alt="" loading="lazy">
         <div class="nm"><div>${esc(nm(sp))}</div><div class="small muted">${chip(L.status(S.learn, sp.id))}${medalChip(sp.id)} ${esc(sp.family)}</div></div>
         <button class="mini-play" data-play="${sp.id}" aria-label="Play ${esc(nm(sp))}">${PLAY_SVG}</button>
       </div>`;
@@ -1971,7 +1976,7 @@ function confusedHtml(id) {
   return `<h2 style="margin-top:14px"><span data-tip="${esc(TIPS.confused)}">You've mixed it up with</span></h2>`
     + list.map((c) => `<div class="compare-row">
         <button class="mini-play" id="cf-${c.id}" data-cfplay="${c.id}" aria-label="Play ${esc(nm(byId[c.id]))}">${PLAY_SVG}</button>
-        ${byId[c.id].photo ? `<img src="${esc(byId[c.id].photo.url)}" alt="">` : ''}
+        ${byId[c.id].photo ? `<img src="${esc(thumbUrl(byId[c.id]))}" alt="">` : ''}
         <button class="link nm" data-open="${c.id}">${esc(nm(byId[c.id]))}</button>
         <span class="small muted">${c.count}×</span>
       </div>`).join('');
@@ -2579,13 +2584,13 @@ function offlineItems() {
   const items = [];
   for (const sp of offlineBirds()) {
     for (const r of activeRecs(sp.id)) items.push({ url: r.file, audio: true, secs: r.secs });
-    if (sp.photo) items.push({ url: sp.photo.url, audio: false });
+    if (sp.photo) items.push({ url: sp.photo.url, audio: false }, { url: thumbUrl(sp), audio: false, thumb: true });
   }
   return items;
 }
 
 // Rough size: MP3s are ~25 KB per second of sound, photos ~60 KB.
-const offlineMB = (items) => Math.max(1, Math.round(items.reduce((t, i) => t + (i.audio ? (i.secs || 20) * 25 : 60), 0) / 1024));
+const offlineMB = (items) => Math.max(1, Math.round(items.reduce((t, i) => t + (i.audio ? (i.secs || 20) * 25 : i.thumb ? 15 : 60), 0) / 1024));
 
 async function updateOfflineInfo() {
   try {
@@ -2622,8 +2627,10 @@ $('dlBtn').addEventListener('click', async () => {
       const have = await cache.match(it.url);
       if (have && !have.headers.get('x-part')) continue; // saved whole already (a saved part gets the whole file)
       try {
-        const res = await fetch(it.url, { mode: it.audio ? 'cors' : 'no-cors' });
-        if (it.audio && !res.ok) throw new Error(res.status);
+        // CORS for photos too (iNat's bucket allows it): an opaque no-cors copy counts as ~7 MB
+        // of storage quota each in Chrome.
+        const res = await fetch(it.url, { mode: 'cors' });
+        if (!res.ok) throw new Error(res.status);
         await cache.put(it.url, res);
       } catch { failed++; }
       // One file at a time with a short pause, to go easy on xeno-canto's server.
