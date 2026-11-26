@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.4';
+const VERSION = '2.1.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -720,7 +720,7 @@ const TIPS = {
 };
 
 function tierTip(sp) {
-  return `${sp.tier} in ${area}: number ${sp.rank} of the ${areaTotal} birds recorded there, by how often they're recorded. Common = top 40, Regular = 41-100, Uncommon = 101-180, Scarce = the rest.`;
+  return `${sp.tier} in ${area}: number ${sp.rank} of the ${areaTotal} birds recorded there, by how often birders come across them (bird atlas lists, which include birds only heard, plus iNaturalist). Common = top 40, Regular = 41-100, Uncommon = 101-180, Scarce = the rest.`;
 }
 
 function chip(status) {
@@ -2317,13 +2317,14 @@ $('areaSheet').addEventListener('click', async (e) => {
 const DEFAULT_AREA = 'all';
 const NEAR_KEY = 'bird-sounds-near';
 const NEAR_KM = 50;
+const NEAR_V = 2; // v2.1.3: ranks scaled by the heard factor; older saved lists are fetched again
 let isOwner = false; // signed in with an account allowed to see private regions
 
 // "Near me" is built on the device from iNaturalist records around the person's location.
 function nearArea() {
   let n = null;
   try { n = JSON.parse(localStorage.getItem(NEAR_KEY)); } catch { /* none yet */ }
-  return { id: 'near', name: `Near me (${NEAR_KM} km)`, parent: null, near: true, ranks: n?.ranks || {}, totalSpecies: n?.total || 0, at: n?.at };
+  return { id: 'near', name: `Near me (${NEAR_KM} km)`, parent: null, near: true, ranks: n?.ranks || {}, totalSpecies: n?.total || 0, at: n?.at, v: n?.v };
 }
 
 const visibleAreas = () => [nearArea(), ...areas.filter((a) => !a.private || isOwner)];
@@ -2365,22 +2366,25 @@ async function locateNear() {
   // Rounded to about 10 km before it goes to iNaturalist: enough for a 50 km search.
   const lat = +pos.coords.latitude.toFixed(1);
   const lng = +pos.coords.longitude.toFixed(1);
-  const byInat = Object.fromEntries(allSpecies.map((b) => [b.inat, b.id]));
-  const ranks = {};
+  const byInat = Object.fromEntries(allSpecies.map((b) => [b.inat, b]));
+  const score = {};
   let total = 0;
   for (let page = 1; page <= 3; page++) {
     const q = new URLSearchParams({ iconic_taxa: 'Aves', quality_grade: 'research', rank: 'species', lat, lng, radius: NEAR_KM, per_page: 500, page });
     const res = await fetch(`https://api.inaturalist.org/v1/observations/species_counts?${q}`);
     if (!res.ok) throw new Error(`iNaturalist ${res.status}`);
     const d = await res.json();
-    d.results.forEach((r, i) => {
-      const id = byInat[r.taxon.id];
-      if (id && ranks[id] == null) ranks[id] = (page - 1) * 500 + i + 1;
-    });
+    for (const r of d.results) {
+      const b = byInat[r.taxon.id];
+      // v2.1.3: iNaturalist needs a photo, so birds heard more than seen are scaled up by
+      // their "heard" factor (bird atlas vs iNaturalist, from build_areas.py).
+      if (b && score[b.id] == null) score[b.id] = r.count * (b.heard || 1);
+    }
     total = d.total_results;
     if (page * 500 >= total) break;
   }
-  try { localStorage.setItem(NEAR_KEY, JSON.stringify({ lat: +lat.toFixed(2), lng: +lng.toFixed(2), at: Date.now(), ranks, total })); } catch { /* storage full */ }
+  const ranks = Object.fromEntries(Object.keys(score).sort((x, y) => score[y] - score[x]).map((id, i) => [id, i + 1]));
+  try { localStorage.setItem(NEAR_KEY, JSON.stringify({ v: NEAR_V, lat: +lat.toFixed(2), lng: +lng.toFixed(2), at: Date.now(), ranks, total })); } catch { /* storage full */ }
   return Object.keys(ranks).length;
 }
 
@@ -2393,7 +2397,7 @@ async function chooseArea(id) {
       save();
     }
     const n = nearArea();
-    if (!birdCount(n) || Date.now() - (n.at || 0) > 7 * 864e5) {
+    if (!birdCount(n) || n.v !== NEAR_V || Date.now() - (n.at || 0) > 7 * 864e5) {
       toast('Finding birds recorded near you…');
       try {
         const found = await locateNear();

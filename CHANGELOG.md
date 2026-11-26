@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.5 (2026-11-26)
+- How common a bird is now comes mainly from the bird atlas (SABAP2: birders' full lists, which include birds only heard), not only from iNaturalist photos. Birds heard more than seen, like warblers, cisticolas, prinias, crombecs and swifts, come in sooner; photogenic specials come in later. Levels (Common to Scarce) follow the new order. Near me uses the same correction. Credit in About.
+
 ## 2.1.4 (2026-11-26)
 - New card layout: one big main button (Show the bird / Knew it / Next bird) with smaller choices under it: Clue and Later as links, and Didn't know as a softer button below Knew it.
 
