@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.5';
+const VERSION = '2.1.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -2424,14 +2424,12 @@ const ORDERS = {
   distinct: { label: 'Easiest to tell apart first', desc: 'Common birds with distinctive calls first. Birds that sound alike are spread out and added later.' },
   common: { label: 'Most common first', desc: 'Strictly the most recorded birds in your region first, however alike they sound.' },
 };
-// Ease groups go strictly in order (1 distinctive, 2 average, 3 similar-sounding families,
-// 4 seen more than heard), commonest first within each. A distinctive bird only counts as
-// group 1 among the area's DISTINCT_CAP commonest, so rare iconic birds don't jump the queue.
-// (A rank x factor blend let common look-alikes like Cape Weaver beat Hadeda: user 2026-11-17.)
-const DISTINCT_CAP = 150;
-// Group 0 = the user's iconic sounds of their area (ICONIC in build_sound_guide.py), first of all
-// when among the area's ICONIC_CAP commonest; otherwise they count as distinctive (group 1).
-const ICONIC_CAP = 250;
+// Order = rank x ease weight (v2.1.6). Strict ease groups (v1.3.6) put every "average" bird,
+// however rare (Ostrich, rank 207 around George), before every look-alike, however common
+// (Cape Weaver rank 1 came 172nd, cisticolas ~177th): user 2026-11-26 "only getting birds I rarely
+// see". Weights keep the 2026-11-17 rule (Hadeda before Cape Weaver) with 3 and 4 for the
+// similar-sounding / seen-more-than-heard groups. 0 = the user's iconic sounds (ICONIC).
+const EASE_WEIGHT = [0.4, 0.6, 1, 3, 4];
 const SPREAD = 6; // a new bird avoids the family / sound-alikes of the last 6 added
 
 const easeOf = (id) => {
@@ -2460,12 +2458,8 @@ const inFocus = (id) => {
 function learnOrder(list) {
   const focus = (b) => (inFocus(b.id) ? 0 : 1);
   if ((S.prefs.order || 'distinct') !== 'distinct') return [...list].sort((x, y) => focus(x) - focus(y) || x.rank - y.rank);
-  const group = (b) => {
-    let e = easeOf(b.id);
-    if (e === 0 && b.rank > ICONIC_CAP) e = 1;
-    return e === 1 && b.rank > DISTINCT_CAP ? 2 : e;
-  };
-  const queue = [...list].sort((x, y) => focus(x) - focus(y) || group(x) - group(y) || x.rank - y.rank);
+  const key = (b) => b.rank * EASE_WEIGHT[easeOf(b.id)];
+  const queue = [...list].sort((x, y) => focus(x) - focus(y) || key(x) - key(y) || x.rank - y.rank);
   const alike = soundAlikes();
   const out = [];
   while (queue.length) {

@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.6 (2026-11-26)
+- "Easiest to tell apart first" now weighs how common a bird is together with how distinctive its sound is, instead of finishing every distinctive and average bird first. Common look-alikes (warblers, cisticolas, prinias, sunbirds, Cape Weaver) no longer wait behind rare birds. Hadeda still comes before Cape Weaver.
+- Birds with only a few atlas records in an area (vagrants, e.g. Dark-capped Bulbul around George) are no longer added to it.
+
 ## 2.1.5 (2026-11-26)
 - How common a bird is now comes mainly from the bird atlas (SABAP2: birders' full lists, which include birds only heard), not only from iNaturalist photos. Birds heard more than seen, like warblers, cisticolas, prinias, crombecs and swifts, come in sooner; photogenic specials come in later. Levels (Common to Scarce) follow the new order. Near me uses the same correction. Credit in About.
 

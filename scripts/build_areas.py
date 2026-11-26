@@ -104,7 +104,9 @@ CACHE = ROOT / "_cache"
 SABAP2 = "906e6978-e292-4a8b-9c39-adf6bb0f3323"  # Southern African Bird Atlas Project 2 on GBIF
 COUNTRY = {"za": "ZA", "na": "NA", "bw": "BW", "zw": "ZW", "mz": "MZ", "ls": "LS", "sz": "SZ"}
 ATLAS_K = 30000      # atlas records at which the atlas and iNaturalist weigh the same (~500 cards)
-ATLAS_MIN = 3        # atlas records needed to add a bird iNaturalist doesn't list in the area
+ATLAS_MIN = 3        # atlas records needed to add a bird iNaturalist doesn't list in the area...
+ATLAS_MIN_SHARE = 0.0002  # ...and at least this share of the area's records (George: 62 of 310k;
+                          # Dark-capped Bulbul with 3 there was a vagrant, user 2026-11-26)
 HEARD_MIN, HEARD_MAX = 0.1, 10.0
 
 # Atlas names GBIF files under an older or different species than our (eBird) name: our id -> atlas key.
@@ -396,7 +398,7 @@ def main():
         score = {}
         for b in species:
             i = b["id"]
-            if not n[i] and not (a[i] or 0) >= ATLAS_MIN:
+            if not n[i] and not (a[i] or 0) >= max(ATLAS_MIN, ATLAS_MIN_SHARE * atlas_total):
                 continue
             score[i] = nf[i] / snf if a[i] is None else w * a[i] / sa + (1 - w) * nf[i] / snf
         order = sorted(score, key=lambda i: -score[i])
