@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.5';
+const VERSION = '2.0.6';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -198,7 +198,7 @@ function renderAccount() {
         <button class="btn ghost" id="signOutBtn">Sign out</button>
       </div>
       <label class="row small" style="margin:10px 0 4px"><input type="checkbox" id="shareChk" ${S.prefs.privacy?.share ? 'checked' : ''}>
-        <span data-tip="${esc(TIPS.share)}">Add my answers to the shared totals (anonymous)</span></label>
+        <span data-tip="${esc(TIPS.share)}">Add my answers (anonymously) to the shared totals</span></label>
       <button class="link danger-link" id="deleteAccountBtn">Delete my account</button>`;
   } else {
     const typed = $('emailInput')?.value || '';
