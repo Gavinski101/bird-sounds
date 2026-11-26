@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.2.0 (2026-11-26)
+- No What's new popup for the sign-in code.
+
 ## 2.1.9 (2026-11-26)
 - Sign in with a code: enter your email, get a one-time code, type it in. No password needed; creates the account if there isn't one. Also offered after "Forgot password?".
 

@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.9';
+const VERSION = '2.2.0';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -2816,7 +2816,6 @@ const WHATS_NEW = [
   { v: '1.6.4', items: ['🎨 Choose your background and shade of green in Settings → Colours.'] },
   { v: '1.6.9', items: ['🌿 Each bird\'s usual habitats show on its cards, and the 4 choices are birds from the same habitats: the ones you\'d really mix it up with outside.'] },
   { v: '2.1.7', items: ['🗣️ Bird names in Afrikaans, isiZulu, German, Dutch or French (Settings → Bird names). English names show the other common name in brackets, like Dark-capped (Common) Bulbul, so they match Merlin either way.'] },
-  { v: '2.1.9', items: ['🔑 Sign in with a code sent to your email, no password to remember.'] },
 ];
 const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);
 
