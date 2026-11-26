@@ -1,8 +1,11 @@
 // App shell and data: network first (so updates arrive), cache as the offline fallback.
 // Photos: served from the media cache filled by "Download for offline", else network.
 // Audio is not handled here; the app plays offline audio from blob URLs itself.
-const SHELL = 'bird-sounds-shell-v2.1.0';
+const SHELL = 'bird-sounds-shell-v2.1.1';
 const MEDIA = 'bird-sounds-media';
+const PHOTOS = 'bird-sounds-photos';
+const PHOTO_HOST = 'inaturalist-open-data.s3.amazonaws.com';
+const PHOTO_MAX = 400; // oldest dropped beyond this (~40 MB at ~100 KB each)
 const FILES = [
   './',
   'index.html',
@@ -57,9 +60,37 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // Bird photos (v2.1.1): every photo seen is kept in PHOTOS, so it shows at once next time,
+  // also in later sessions. iNat's bucket sends no Cache-Control, so the browser cache alone
+  // kept them only as long as it guessed. CORS fetch: a real response, not an opaque one
+  // (opaque entries count as ~7 MB each against the storage quota in Chrome).
+  if (req.destination === 'image' && url.hostname === PHOTO_HOST) {
+    e.respondWith((async () => {
+      const hit = await caches.match(req.url);
+      if (hit) return hit;
+      try {
+        const res = await fetch(req.url, { mode: 'cors', credentials: 'omit' });
+        if (res.ok) {
+          const copy = res.clone();
+          e.waitUntil(caches.open(PHOTOS).then((c) => c.put(req.url, copy)).then(trimPhotos));
+        }
+        return res;
+      } catch {
+        return fetch(req);
+      }
+    })());
+    return;
+  }
+
   if (req.destination === 'image') {
     e.respondWith(
       caches.open(MEDIA).then((c) => c.match(req.url)).then((hit) => hit || fetch(req)),
     );
   }
 });
+
+async function trimPhotos() {
+  const c = await caches.open(PHOTOS);
+  const keys = await c.keys();
+  for (const k of keys.slice(0, Math.max(0, keys.length - PHOTO_MAX))) await c.delete(k);
+}

@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.1 (2026-11-26)
+- Bird photos you've seen are kept on the device (the newest 400), so they show at once next time, also in later sessions and offline. The likely next birds' photos load ahead too. "Delete downloads" also clears them.
+
 ## 2.1.0 (2026-11-26)
 - Photo and sound credits now look the same: who · linked number (XC… for xeno-canto, iNat … for iNaturalist) · licence. Photo credits show the photographer's name instead of iNaturalist's long text, which sometimes came in another language.
 
