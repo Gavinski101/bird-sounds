@@ -29,7 +29,9 @@ select jsonb_build_object(
   'accounts', (select jsonb_build_object(
       'total', count(*),
       'sharing', count(*) filter (where data->'prefs'->'privacy'->>'share' = 'true'),
-      'answered_privacy_v3', count(*) filter (where (data->'prefs'->'privacy'->>'v')::int >= 3),
+      'answered_privacy_v5', count(*) filter (where (data->'prefs'->'privacy'->>'v')::int >= 5), -- their flags and ratings count (v2.0.5)
+      'privacy_versions', (select coalesce(jsonb_object_agg(v, c), '{}') from (select coalesce(data->'prefs'->'privacy'->>'v', 'none') as v, count(*) as c
+                           from public.progress group by 1) pv),
       'updated_last_7_days', count(*) filter (where updated_at > now() - interval '7 days')) from everyone),
 
   'activity_per_week', (select coalesce(jsonb_agg(w order by w->>'week' desc), '[]') from (
