@@ -82,6 +82,22 @@ select jsonb_build_object(
       select jsonb_build_object('rec', rec, 'flags', flags, 'raters', raters, 'avg_stars', avg_stars, 'people_played', play_people) as x
       from scores where flags > 0 or (raters > 0 and avg_stars <= 2) order by flags desc, avg_stars nulls last limit 15) y),
 
+  -- Flags and ratings per person and per reason: accounts whose flags count (share, or privacy v5+).
+  'flags_and_ratings_per_person', (select coalesce(jsonb_agg(x order by (x->>'flags')::int desc), '[]') from (
+      select jsonb_build_object('person', left(f.user_id::text, 8),
+               'shares', coalesce(f.data->'prefs'->'privacy'->>'share' = 'true', false),
+               'flags', count(*) filter (where coalesce(r.value->>'flag', '') <> ''),
+               'ratings', count(*) filter (where r.value->>'stars' ~ '^[1-5]$'),
+               'flag_reasons', (select coalesce(jsonb_object_agg(k, c), '{}') from (
+                   select r2.value->>'flag' as k, count(*) as c
+                   from jsonb_each(case when jsonb_typeof(f.data->'recs') = 'object' then f.data->'recs' else '{}'::jsonb end) r2
+                   where jsonb_typeof(r2.value) = 'object' and coalesce(r2.value->>'flag', '') <> '' group by 1) fr)) as x
+      from public.progress f
+      cross join lateral jsonb_each(case when jsonb_typeof(f.data->'recs') = 'object' then f.data->'recs' else '{}'::jsonb end) r
+      where jsonb_typeof(r.value) = 'object'
+        and (f.data->'prefs'->'privacy'->>'share' = 'true' or coalesce(f.data->'prefs'->'privacy'->>'v', '') ~ '^([5-9]|[1-9][0-9]+)$')
+      group by f.user_id, f.data) y),
+
   'best_rated_recordings', (select coalesce(jsonb_agg(x), '[]') from (
       select jsonb_build_object('rec', rec, 'raters', raters, 'avg_stars', avg_stars) as x
       from scores where raters > 0 and avg_stars >= 4 order by avg_stars desc, raters desc limit 10) y),
