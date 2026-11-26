@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.3 (2026-11-26)
+- New button and level names: Clue, Another clue, Show the bird, Knew it / Didn't know, Later, Next bird, Test me later, No idea, next bird. Levels are now Common / Regular / Uncommon / Scarce (were Beginner / Easy / Medium / Hard).
+- The phone's top bar now matches the background colour you picked (was dark green).
+
 ## 2.1.2 (2026-11-26)
 - Small bird pictures (Birds list, compare cards, "mixed it up with") load a 240 px photo instead of the 500 px one: about a quarter of the data, same look at that size. Answer photos and bird pages stay 500 px. Offline download saves both sizes. Up to 600 seen photos are kept. Offline photos are saved in a way that takes far less of the phone's storage allowance.
 

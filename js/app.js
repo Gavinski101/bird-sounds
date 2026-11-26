@@ -5,10 +5,10 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.2';
+const VERSION = '2.1.3';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
-const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
+const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
 const PLAY_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 
@@ -678,28 +678,28 @@ function shuffle(a) {
 const TIPS = {
   order: 'The order new birds join your study set. "Easiest to tell apart first" starts with common birds that have distinctive calls and spreads out birds that sound alike.',
   memoryAid: 'A common way birders remember this call. Only shown after you answer.',
-  soundsLike: 'Birds you have taken this one for at least twice: from wrong hint choices and your answers to "What did you think it was?".',
-  mixUps: 'Pairs you have confused: from wrong picks in hints and your answers to "What did you think it was?" after a miss. Play both to compare.',
+  soundsLike: 'Birds you have taken this one for at least twice: from wrong clue choices and your answers to "What did you think it was?".',
+  mixUps: 'Pairs you have confused: from wrong picks among clue choices and your answers to "What did you think it was?" after a miss. Play both to compare.',
   hardest: 'Birds you have met and missed at least twice, with the highest share of misses first.',
-  area: 'Your home area. Beginner to Hard tiers are based on how often each bird is recorded around here.',
+  area: 'Your home area. Common to Scarce: how often birders come across each bird around here.',
   inPlay: "Birds in your study set: the ones you've met plus any waiting to be introduced. More are added as you master these.",
   met: "Birds you've been introduced to and are now being tested on (includes mastered ones).",
-  confused: 'Birds you have mixed this one up with: from wrong hint choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
-  mastered: "Mastered birds by medal: 🥉 bronze, 🥈 silver, 🥇 gold. Mastered = birds you've got right enough times to count as known (6 points: each clean right answer +2, with a hint +1, a miss -2, all in one total): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
+  confused: 'Birds you have mixed this one up with: from wrong clue choices and what you said you thought it was. Pairs you mix up 2+ times get compare cards.',
+  mastered: "Mastered birds by medal: 🥉 bronze, 🥈 silver, 🥇 gold. Mastered = birds you've got right enough times to count as known (6 points: each clean right answer +2, with a clue +1, a miss -2, all in one total): each has at least a bronze medal. They still come back now and then, with harder recordings, to earn silver and gold.",
   medal: {
     1: 'Bronze: mastered on its 1-2 study recordings (its typical sound).',
     2: "Silver: also mastered on its varied sounds: random recordings from the bird's other good ones, other calls and songs included.",
     3: 'Gold: mastered from any recording of it at all, any quality, in random order.',
   },
   level: {
-    2: 'Silver test: a random recording from this bird\'s varied sounds. 4 points earns silver: clean right +2, with a hint +1, a miss -1, all in one total. Medals are never taken away; a miss just brings it back sooner.',
-    3: 'Gold test: any recording of this bird, in random order. 4 points earns gold: clean right +2, with a hint +1, a miss -1, all in one total. Medals are never taken away.',
+    2: 'Silver test: a random recording from this bird\'s varied sounds. 4 points earns silver: clean right +2, with a clue +1, a miss -1, all in one total. Medals are never taken away; a miss just brings it back sooner.',
+    3: 'Gold test: any recording of this bird, in random order. 4 points earns gold: clean right +2, with a clue +1, a miss -1, all in one total. Medals are never taken away.',
   },
   habitat: "Where this bird is usually found. From AVONET (Tobias et al. 2022, CC BY 4.0), plus extra habitats for birds often heard elsewhere too.",
   habitats: 'Birds of the habitats you pick join your study set first, in the usual order among themselves; the other birds follow after them. Pick none to mix all habitats. Progress on every bird is kept.',
-  points: 'One total for each bird: a clean right answer adds 2 points, one with a hint adds 1; a miss takes 2 off (1 when picking from the 4 choices). 3 right in a row and it has at least 4 points. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
+  points: 'One total for each bird: a clean right answer adds 2 points, one with a clue adds 1; a miss takes 2 off (1 when picking from the 4 choices). 3 right in a row and it has at least 4 points. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
-  streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a hint still count.',
+  streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a clue still count.',
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Long recordings play only their first part (at least 15 s, longer when people tend to listen longer); tap play again when it stops to hear the rest. Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. The ‹ › arrows beside it go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
   family: 'The bird family this species belongs to.',
@@ -720,7 +720,7 @@ const TIPS = {
 };
 
 function tierTip(sp) {
-  return `${sp.tier} in ${area}: number ${sp.rank} of the ${areaTotal} birds recorded there, by how often they're recorded. Beginner = top 40, Easy = 41-100, Medium = 101-180, Hard = rarer.`;
+  return `${sp.tier} in ${area}: number ${sp.rank} of the ${areaTotal} birds recorded there, by how often they're recorded. Common = top 40, Regular = 41-100, Uncommon = 101-180, Scarce = the rest.`;
 }
 
 function chip(status) {
@@ -1483,27 +1483,27 @@ function renderCard() {
   // Buttons
   const a = $('actions');
   if (cur.stage === 'intro') {
-    a.innerHTML = '<button class="btn ghost" data-act="skip">Skip for later</button><button class="btn" data-act="introDone">Got it, next bird</button>';
+    a.innerHTML = '<button class="btn ghost" data-act="skip">Later</button><button class="btn" data-act="introDone">Next bird</button>';
   } else if (cur.stage === 'compare') {
-    a.innerHTML = '<button class="btn wide" data-act="compared">Got it, test me later</button>';
+    a.innerHTML = '<button class="btn wide" data-act="compared">Test me later</button>';
   } else if (cur.stage === 'guess' && cur.pair) {
-    a.innerHTML = '<button class="btn ghost wide" data-act="reveal">Reveal</button>';
+    a.innerHTML = '<button class="btn ghost wide" data-act="reveal">Show the bird</button>';
   } else if (cur.stage === 'thought') {
     a.innerHTML = renderThought();
   } else if (cur.stage === 'guess' && cur.hint > 0) {
     // Choices showing (v1.9.6, user feedback: the green "Reveal" looked like the listen-only card,
     // so people pressed it without seeing the choices): no green button, the choices are the answer.
-    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>More hint</button>
-      <button class="btn ghost" data-act="reveal">Show answer</button>`;
+    a.innerHTML = `<button class="btn ghost" data-act="hint" ${cur.hint >= 2 ? 'disabled' : ''}>Another clue</button>
+      <button class="btn ghost" data-act="reveal">Show the bird</button>`;
   } else if (cur.stage === 'guess') {
-    a.innerHTML = `<button class="btn ghost" data-act="hint">Hint</button>
-      <button class="btn" data-act="reveal">Reveal</button>`;
+    a.innerHTML = `<button class="btn ghost" data-act="hint">Clue</button>
+      <button class="btn" data-act="reveal">Show the bird</button>`;
   } else if (cur.stage === 'revealed') {
-    a.innerHTML = '<button class="btn bad" data-act="missed">Missed it</button><button class="btn good" data-act="got">Got it</button>';
+    a.innerHTML = '<button class="btn bad" data-act="missed">Didn&rsquo;t know</button><button class="btn good" data-act="got">Knew it</button>';
   } else {
     a.innerHTML = '<button class="btn wide" data-act="next">Next bird</button>';
   }
-  $('skipBtn').hidden = cur.stage !== 'guess'; // intro cards have it beside "Got it"
+  $('skipBtn').hidden = cur.stage !== 'guess'; // intro cards have it beside "Next bird"
 }
 
 function renderThought() {
@@ -1516,7 +1516,7 @@ function renderThought() {
     <input class="search" id="thoughtInput" type="search" placeholder="Type a few letters" autocomplete="off" value="${esc(cur.thought)}">
     <div class="choices">${hits.map((x) => `<button class="choice" data-thought="${x.id}">${esc(nm(x))}</button>`).join('')}</div>
   </div>
-  <button class="btn ghost wide" data-act="next">Skip, I had no idea</button>`;
+  <button class="btn ghost wide" data-act="next">No idea, next bird</button>`;
 }
 
 function makeChoices() {
@@ -1664,7 +1664,7 @@ $('prevRecBtn').addEventListener('click', () => stepRec(-1));
 
 function skipCard() {
   // Name it only on an intro card: on a test card the name would give the answer away.
-  toast(cur.stage === 'intro' ? `${nm(byId[cur.id])} skipped: it comes back later` : 'Skipped: this bird comes back later');
+  toast(cur.stage === 'intro' ? `${nm(byId[cur.id])} saved for later: it comes back in a while` : 'Later: this bird comes back in a while');
   L.skip(S.learn, cur.id, species);
   save();
   newCard();
@@ -2077,7 +2077,7 @@ function mixUpsHtml() {
       return `<div class="mix-row"><div class="mix-pair">${[a, b].map(mixBird).join('')}</div>
         <span class="small muted">${n}×</span></div>`;
     }).join('')
-    : '<p class="muted small">None yet. When you miss a bird, use a hint or answer "What did you think it was?" and the app learns which birds you mix up.</p>';
+    : '<p class="muted small">None yet. When you miss a bird, use a clue or answer "What did you think it was?" and the app learns which birds you mix up.</p>';
   return `<div class="panel"><h2><span data-tip="${esc(TIPS.mixUps)}">Birds you mix up</span></h2>${body}</div>`;
 }
 
@@ -2108,7 +2108,7 @@ function medalsHtml() {
 }
 
 // How far a bird is towards mastered or its next medal, in points ('' at gold or not met yet).
-// One total: clean right +2, with a hint +1.
+// One total: clean right +2, with a clue +1.
 function medalNextText(id) {
   const b = S.learn.birds[id];
   const m = medalOf(id);
@@ -2141,7 +2141,7 @@ function renderProgress() {
     if (!t) continue;
     const pct = (n) => (n / t.total) * 100;
     html += `<div class="panel">
-      <div class="tier-head" style="margin:0"><span class="tier-name" data-tip="${esc(`${tier}: how common these birds are around ${area}. Beginner = the 40 most recorded birds, Easy = 41-100, Medium = 101-180, Hard = rarer.`)}">${tier}</span><span>${t.mastered} of ${t.total} mastered</span></div>
+      <div class="tier-head" style="margin:0"><span class="tier-name" data-tip="${esc(`${tier}: how common these birds are around ${area}. Common = the 40 most often found, Regular = 41-100, Uncommon = 101-180, Scarce = the rest.`)}">${tier}</span><span>${t.mastered} of ${t.total} mastered</span></div>
       <div class="tier-bar"><div class="m" style="width:${pct(t.mastered)}%"></div><div class="l" style="width:${pct(t.learning + t.new)}%"></div></div>
       <div class="legend"><span data-tip="${esc(TIPS.status.mastered)}">Mastered ${t.mastered}</span><span data-tip="${esc(TIPS.status.learning)}">Learning ${t.learning + t.new}</span>${t.later ? `<span data-tip="${esc(TIPS.status.later)}">Later ${t.later}</span>` : ''}<span data-tip="${esc(TIPS.status.locked)}">Not yet ${t.locked}</span></div>
     </div>`;
@@ -2153,7 +2153,7 @@ function renderProgress() {
     <p class="muted small">${distinct
     ? `You start with common birds around ${esc(area)} that have distinctive calls. Birds that sound alike (one family, or pairs people often mix up) are spread out and come later.`
     : `You start with the most common birds around ${esc(area)}.`}
-    Each right answer adds points toward mastered: +2 clean, +1 with a hint, all in one total; 6 points = mastered (a miss takes 2 off). Silver and gold then need 4 points each.
+    Each right answer adds points toward mastered: +2 clean, +1 with a clue, all in one total; 6 points = mastered (a miss takes 2 off). Silver and gold then need 4 points each.
     When fewer than 8 birds are still being learned, the next 5 are added, and a new bird joins at least every 15 cards. While 3 or more birds you've met are still a struggle (score at zero or below), that slows to one every 30 cards, so you can catch up on them first.
     Missed birds come back after a few cards (a bird missed twice in a row rests a bit longer); mastered birds come back less and less often. Change the order in Settings.</p>
     ${s.inPlay < species.length ? '<button class="btn block ghost" id="unlockAll">Add all birds now</button>' : ''}
@@ -2183,12 +2183,12 @@ $('progress').addEventListener('click', (e) => {
 // always stay the original green (v1.6.4, user). Colours are in styles.css under
 // :root[data-theme]. c = swatch [light, dark], bar = browser bar [light, dark].
 const THEMES = {
-  original: { label: 'Original', c: ['#f4f1ea', '#111814'], bar: ['#1f4d3a', '#111814'] },
-  stone: { label: 'Stone', c: ['#e8e9e0', '#262b24'], bar: ['#1f4d3a', '#141713'] },
-  sand: { label: 'Sand', c: ['#e8dcc8', '#2d261f'], bar: ['#1f4d3a', '#18140f'] },
-  mist: { label: 'Mist', c: ['#e1e8ec', '#242c31'], bar: ['#1f4d3a', '#12171a'] },
-  white: { label: 'White', c: ['#ffffff', '#292d2a'], bar: ['#1f4d3a', '#161816'] },
-  black: { label: 'Black', c: ['#1c1c1c', '#000000'], bar: ['#1f4d3a', '#000000'] },
+  original: { label: 'Original', c: ['#f4f1ea', '#111814'], bar: ['#f4f1ea', '#111814'] },
+  stone: { label: 'Stone', c: ['#e8e9e0', '#262b24'], bar: ['#f3f3ee', '#141713'] },
+  sand: { label: 'Sand', c: ['#e8dcc8', '#2d261f'], bar: ['#f3ebdd', '#18140f'] },
+  mist: { label: 'Mist', c: ['#e1e8ec', '#242c31'], bar: ['#eef2f4', '#12171a'] },
+  white: { label: 'White', c: ['#ffffff', '#292d2a'], bar: ['#fafafa', '#161816'] },
+  black: { label: 'Black', c: ['#1c1c1c', '#000000'], bar: ['#ececec', '#000000'] },
 };
 // Picks from the earlier colour themes (v1.5.2-1.6.3) map to the nearest background.
 const OLD_THEMES = { forest: 'stone', fynbos: 'stone', eucalyptus: 'stone', moss: 'stone', olive: 'stone', bushveld: 'original', spring: 'original', jade: 'original', savanna: 'sand', sunset: 'sand', ocean: 'mist', granite: 'mist', dusk: 'mist' };
@@ -2480,7 +2480,7 @@ function learnOrder(list) {
 const similarTo = (id) => [...(guide.similar || []), ...community.pairs].flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : [])).filter((x) => byId[x]);
 
 function tierFor(rank) {
-  return rank <= 40 ? 'Beginner' : rank <= 100 ? 'Easy' : rank <= 180 ? 'Medium' : 'Hard';
+  return rank <= 40 ? 'Common' : rank <= 100 ? 'Regular' : rank <= 180 ? 'Uncommon' : 'Scarce';
 }
 
 // Rebuild the study list for the chosen area: its birds, ranked and tiered for that area.

@@ -11,3 +11,5 @@ GoogleAuth.txt
 client_secret*.json
 # Report outputs and other logs (user ids etc.), local only
 _logs/
+# Build-script downloads (iNaturalist / GBIF), re-fetchable
+_cache/
