@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.1.8 (2026-11-26)
+- First-open name question shows just the name set names, no Merlin hints.
+
 ## 2.1.7 (2026-11-26)
 - New name sets: Afrikaans, isiZulu (others in English), German, Dutch and French, all from eBird.
 - English names show the other common name in brackets where it really differs: Dark-capped (Common) Bulbul on South African names, Common (Dark-capped) Bulbul on US, UK or IOC names. Spelling-only differences (Grey/Gray, hyphens) are left out.

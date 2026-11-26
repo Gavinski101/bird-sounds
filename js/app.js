@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.7';
+const VERSION = '2.1.8';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -2896,7 +2896,7 @@ function renderSurvey() {
     `<button class="opt ${k === surveyPick.order ? 'on' : ''}" data-order="${k}"><b>${esc(v.label)}${k === 'distinct' ? ' (recommended)' : ''}</b><span>${esc(v.desc)}</span></button>`).join('');
   $('habOpts').innerHTML = habitatOpts(surveyPick.habitats, false);
   $('nameOpts').innerHTML = Object.entries(nameSets).map(([k, v]) =>
-    `<button class="opt ${k === surveyPick.nameSet ? 'on' : ''}" data-nameset="${k}"><b>${esc(v)}${k === 'en_ZA' ? ' (Merlin set to English (South Africa))' : k === 'en' ? ' (Merlin&rsquo;s default English)' : ''}</b></button>`).join('');
+    `<button class="opt ${k === surveyPick.nameSet ? 'on' : ''}" data-nameset="${k}"><b>${esc(v)}</b></button>`).join('');
   renderAreaPicker();
 }
 
