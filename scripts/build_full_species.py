@@ -31,6 +31,12 @@ NAME_SETS = {
     "en_IOC": "English (IOC)",
     "en": "English (US)",
     "en_UK": "English (UK)",
+    # v2.1.7: other languages from the same eBird taxonomy (user asked for Afrikaans; the rest for visitors).
+    "af": "Afrikaans",
+    "zu": "isiZulu (others in English)",
+    "de": "Deutsch (German)",
+    "nl": "Nederlands (Dutch)",
+    "fr": "Français (French)",
 }
 
 # iNaturalist name -> eBird name, where the two taxonomies differ and English names don't help.

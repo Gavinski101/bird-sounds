@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.1.6';
+const VERSION = '2.1.7';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -348,7 +348,38 @@ $('account').addEventListener('click', async (e) => {
 
 // ---------- helpers ----------
 
-const nm = (sp) => sp.names[S.prefs.nameSet] || sp.names.en_ZA;
+// Names (v2.1.7, user's idea): English sets show the other common English name in brackets where
+// it differs, so the name matches Merlin either way: South African set -> the US (Merlin default)
+// name, other English sets -> the South African name. Shared ending words stay outside:
+// "Dark-capped (Common) Bulbul" / "Common (Dark-capped) Bulbul"; a name that already has
+// brackets (eBird's "Cape Turtle (Ring-necked) Dove") is left alone.
+const ENGLISH_SETS = ['en_ZA', 'en_IOC', 'en', 'en_UK'];
+// Words compared without case, hyphens or Grey/Gray spelling, so spelling-only differences
+// ("Fish-Eagle" / "Fish Eagle", "Grey" / "Gray") don't get brackets.
+const nameWords = (s) => [...s.matchAll(/[^\s-]+/g)].map((m) => ({ w: m[0].toLowerCase().replace(/^gray$/, 'grey'), at: m.index }));
+function withAlt(main, alt) {
+  if (!alt || main.includes('(')) return main;
+  alt = alt.replace(/\s*\([^)]*\)/g, '').trim(); // the other name's own brackets
+  const a = nameWords(main);
+  const b = nameWords(alt);
+  if (a.map((x) => x.w).join('') === b.map((x) => x.w).join('')) return main; // also Wood-hoopoe / Woodhoopoe
+  let k = 0;
+  while (k < a.length && k < b.length && a[a.length - 1 - k].w === b[b.length - 1 - k].w) k++;
+  // No shared ending, or it starts inside a hyphenated word ("Shrike-flycatcher"): whole name.
+  if (!k || main[a[a.length - k].at - 1] === '-' || alt[b[b.length - k].at - 1] === '-') return `${main} (${alt})`;
+  const altHead = alt.slice(0, b[b.length - k].at).replace(/[\s-]+$/, '');
+  if (!altHead) return main; // the other name is just a shorter form of this one
+  const cut = a[a.length - k].at;
+  const head = main.slice(0, cut).replace(/[\s-]+$/, '');
+  const tail = main.slice(cut);
+  return head ? `${head} (${altHead}) ${tail}` : `(${altHead}) ${tail}`;
+}
+const nm = (sp) => {
+  const set = S.prefs.nameSet;
+  const main = sp.names[set] || sp.names.en_ZA;
+  if (!ENGLISH_SETS.includes(set)) return main;
+  return withAlt(main, set === 'en_ZA' ? sp.names.en : sp.names.en_ZA);
+};
 // Ratings and flags are keyed by the recording: the XC number, or "inat-<id>" for iNaturalist.
 const recKey = (r) => (r.xc != null ? String(r.xc) : r.key);
 const recPref = (r) => S.recs[recKey(r)] || {};
@@ -2715,6 +2746,7 @@ const WHATS_NEW = [
   { v: '1.5.1', items: ['🌳 Pick habitats to focus on (forest, coast, fynbos…) in Settings: their birds come first.'] },
   { v: '1.6.4', items: ['🎨 Choose your background and shade of green in Settings → Colours.'] },
   { v: '1.6.9', items: ['🌿 Each bird\'s usual habitats show on its cards, and the 4 choices are birds from the same habitats: the ones you\'d really mix it up with outside.'] },
+  { v: '2.1.7', items: ['🗣️ Bird names in Afrikaans, isiZulu, German, Dutch or French (Settings → Bird names). English names show the other common name in brackets, like Dark-capped (Common) Bulbul, so they match Merlin either way.'] },
 ];
 const verNum = (v) => v.split('.').reduce((n, x) => n * 1000 + (+x || 0), 0);
 
@@ -2864,7 +2896,7 @@ function renderSurvey() {
     `<button class="opt ${k === surveyPick.order ? 'on' : ''}" data-order="${k}"><b>${esc(v.label)}${k === 'distinct' ? ' (recommended)' : ''}</b><span>${esc(v.desc)}</span></button>`).join('');
   $('habOpts').innerHTML = habitatOpts(surveyPick.habitats, false);
   $('nameOpts').innerHTML = Object.entries(nameSets).map(([k, v]) =>
-    `<button class="opt ${k === surveyPick.nameSet ? 'on' : ''}" data-nameset="${k}"><b>${esc(v)}${k === 'en_ZA' ? ' (as in Merlin set to South Africa)' : ''}</b></button>`).join('');
+    `<button class="opt ${k === surveyPick.nameSet ? 'on' : ''}" data-nameset="${k}"><b>${esc(v)}${k === 'en_ZA' ? ' (Merlin set to English (South Africa))' : k === 'en' ? ' (Merlin&rsquo;s default English)' : ''}</b></button>`).join('');
   renderAreaPicker();
 }
 
