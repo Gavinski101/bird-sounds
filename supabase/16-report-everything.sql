@@ -3,6 +3,7 @@
 -- only shows the last result, so it is all in one). No emails or names. Apart from the account
 -- counts, only accounts that share (prefs.privacy.share). Bird names from public.bird_names
 -- (snippet 4). Uses the shared-totals functions (snippets 9 and 15).
+-- Includes medal checks (v2.0.3): how often mastered birds are missed at the next medal's level.
 -- Tip: click the json cell and copy it, or paste it to Claude to read.
 with
 everyone as (select * from public.progress),
@@ -45,7 +46,12 @@ select jsonb_build_object(
         'bronze', (select count(*) from birds b where b.user_id = p.user_id and b.v->>'medal' = '1'),
         'silver', (select count(*) from birds b where b.user_id = p.user_id and b.v->>'medal' = '2'),
         'gold', (select count(*) from birds b where b.user_id = p.user_id and b.v->>'medal' = '3'),
-        'best_streak', p.data->'streak'->'best',
+        'best_streak', p.data->'streak'->'best', 'streak_now', p.data->'streak'->'run',
+        'other_recording_presses', (select sum(coalesce((b.v->>'oth')::int, 0)) from birds b where b.user_id = p.user_id),
+        'skipped_new_birds_waiting', (select count(*) from birds b where b.user_id = p.user_id
+                                      and (b.v->>'skipTo')::int > coalesce((p.data->'learn'->>'n')::int, 0)),
+        'mix_ups_left', (select coalesce(sum(m2.value::int), 0) from jsonb_each(coalesce(p.data->'learn'->'mix', '{}')) m1
+                         cross join lateral jsonb_each_text(m1.value) m2),
         'level', p.data->'prefs'->>'level', 'region', p.data->'prefs'->>'area', 'habitats', p.data->'prefs'->'habitats',
         'background', p.data->'prefs'->>'theme', 'green', p.data->'prefs'->>'accent',
         'auto_choices_off', p.data->'prefs'->>'autoChoices' = 'false', 'autoplay', p.data->'prefs'->'autoplay') as x
@@ -94,6 +100,26 @@ select jsonb_build_object(
       having sum(coalesce((b.v->>'right')::int, 0) + coalesce((b.v->>'wrong')::int, 0)) >= 5
       order by sum(coalesce((b.v->>'wrong')::int, 0))::numeric / nullif(sum(coalesce((b.v->>'right')::int, 0) + coalesce((b.v->>'wrong')::int, 0)), 0) desc
       limit 15) y),
+
+  -- Checks on mastered birds (answers at the next medal's level: birds.ur right / uw wrong).
+  -- Bronze row = silver checks on bronze birds: if many are missed, bronze comes too easily.
+  'medal_checks', (select coalesce(jsonb_agg(x order by x->>'medal_now'), '[]') from (
+      select jsonb_build_object(
+               'medal_now', case (b.v->>'medal')::int when 1 then 'bronze' when 2 then 'silver' else 'gold' end,
+               'birds', count(*), 'birds_checked', count(*) filter (where coalesce((b.v->>'ur')::int, 0) + coalesce((b.v->>'uw')::int, 0) > 0),
+               'right', sum(coalesce((b.v->>'ur')::int, 0)), 'wrong', sum(coalesce((b.v->>'uw')::int, 0)),
+               'percent_wrong', round(100.0 * sum(coalesce((b.v->>'uw')::int, 0)) / nullif(sum(coalesce((b.v->>'ur')::int, 0) + coalesce((b.v->>'uw')::int, 0)), 0), 1),
+               'avg_cards_to_master', round(avg((b.v->>'firstM')::numeric), 1)) as x
+      from birds b
+      where coalesce((b.v->>'m')::boolean, false) and b.v->>'medal' ~ '^[1-3]$'
+      group by (b.v->>'medal')::int) y),
+
+  'medal_checks_most_missed', (select coalesce(jsonb_agg(x), '[]') from (
+      select jsonb_build_object('bird', coalesce(n.name, b.bird), 'medal', b.v->'medal', 'right', b.v->'ur', 'wrong', b.v->'uw',
+                                'cards_to_master', b.v->'firstM', 'person', left(b.user_id::text, 8)) as x
+      from birds b left join nm n on n.id = b.bird
+      where coalesce((b.v->>'uw')::int, 0) > 0
+      order by (b.v->>'uw')::int desc, coalesce((b.v->>'ur')::int, 0) limit 15) y),
 
   'slowest_to_master', (select coalesce(jsonb_agg(x), '[]') from (
       select jsonb_build_object('bird', coalesce(n.name, b.bird), 'points', b.v->'s', 'right', b.v->'right', 'wrong', b.v->'wrong', 'person', left(b.user_id::text, 8)) as x
