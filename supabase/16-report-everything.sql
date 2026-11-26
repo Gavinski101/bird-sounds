@@ -98,6 +98,19 @@ select jsonb_build_object(
         and (f.data->'prefs'->'privacy'->>'share' = 'true' or coalesce(f.data->'prefs'->'privacy'->>'v', '') ~ '^([5-9]|[1-9][0-9]+)$')
       group by f.user_id, f.data) y),
 
+  -- Every flagged or rated recording, with reasons and stars (to tune how recordings are picked).
+  'all_flags_and_ratings', (select coalesce(jsonb_agg(x order by x->>'rec'), '[]') from (
+      select jsonb_build_object('rec', r.key,
+               'flags', jsonb_agg(r.value->>'flag') filter (where coalesce(r.value->>'flag', '') <> ''),
+               'stars', jsonb_agg(r.value->'stars') filter (where r.value->>'stars' ~ '^[1-5]$'),
+               'kept', bool_or(coalesce((r.value->>'keep')::boolean, false))) as x
+      from public.progress f
+      cross join lateral jsonb_each(case when jsonb_typeof(f.data->'recs') = 'object' then f.data->'recs' else '{}'::jsonb end) r
+      where jsonb_typeof(r.value) = 'object'
+        and (coalesce(r.value->>'flag', '') <> '' or r.value->>'stars' ~ '^[1-5]$')
+        and (f.data->'prefs'->'privacy'->>'share' = 'true' or coalesce(f.data->'prefs'->'privacy'->>'v', '') ~ '^([5-9]|[1-9][0-9]+)$')
+      group by r.key) y),
+
   'best_rated_recordings', (select coalesce(jsonb_agg(x), '[]') from (
       select jsonb_build_object('rec', rec, 'raters', raters, 'avg_stars', avg_stars) as x
       from scores where raters > 0 and avg_stars >= 4 order by avg_stars desc, raters desc limit 10) y),
