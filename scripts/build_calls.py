@@ -78,7 +78,10 @@ def km(lat, lon):
 
 def short_license(url):
     m = re.search(r"licenses/([a-z-]+)/([\d.]+)", url or "")
-    return f"CC {m.group(1).upper()} {m.group(2)}" if m else "CC"
+    if m:
+        return f"CC {m.group(1).upper()} {m.group(2)}"
+    z = re.search(r"publicdomain/zero/([\d.]+)", url or "")
+    return f"CC0 {z.group(1)}" if z else "CC"
 
 
 def kind(raw):

@@ -1,0 +1,45 @@
+# Monthly: re-check every bird photo's licence on iNaturalist (scripts/check_photos.py) and
+# commit data/species.json if a photo was replaced, lost its open licence or was deleted.
+# Metadata only, throttled (about 30 requests). Can also be started by hand from the Actions tab.
+name: Check photo licences
+
+on:
+  schedule:
+    - cron: "17 3 1 * *" # 03:17 UTC on the 1st of each month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check licences
+        run: python scripts/check_photos.py --write
+      - name: Commit changes
+        run: |
+          # The "checked" dates change every run; only commit when a photo itself changed.
+          if git diff --quiet data/species.json; then echo "no changes"; exit 0; fi
+          if python - <<'PY'
+          import json, subprocess, sys
+          old = json.loads(subprocess.check_output(["git", "show", "HEAD:data/species.json"]))
+          new = json.load(open("data/species.json", encoding="utf-8"))
+          key = lambda d: {s["id"]: (s.get("photo") or {}).get("url") for s in d["species"]}
+          changed = [i for i, u in key(new).items() if key(old).get(i) != u]
+          print("photos changed:", changed)
+          sys.exit(0 if changed else 1)
+          PY
+          then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/species.json
+            git commit -m "Monthly photo licence check: replace photos we may no longer use"
+            git push
+          else
+            echo "only the checked dates changed: nothing to commit"
+          fi
