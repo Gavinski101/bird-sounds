@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.0.4';
+const VERSION = '2.0.5';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Beginner', 'Easy', 'Medium', 'Hard'];
@@ -687,7 +687,7 @@ const TIPS = {
   recInfo: "Long recordings play only their first part (at least 15 s, longer when people tend to listen longer); tap play again when it stops to hear the rest. Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. The ‹ › arrows beside it go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
   family: 'The bird family this species belongs to.',
   autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2), a wrong pick costs 1, and 3 right in a row move you on. Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
-  share: 'Optional. When on, your answers, recording ratings and flags, how long recordings took to start, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
+  share: 'Optional. When on, your answers, how long recordings took to start and how long you listened, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. Flags and star ratings you give always count (also anonymous), as you give them on purpose. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Enough of the people who heard this recording flagged it or rated it low that it is no longer used (one person alone only moves it to the back). "Use anyway" brings it back for you.',
   rightRate: 'How often people got this bird right when this recording was the one playing. Recordings people often get right are used first; one most people get wrong (under about 30%, counting every answer and weighing more answers more) is no longer used.',
@@ -2730,9 +2730,10 @@ $('newsOk').addEventListener('click', () => {
 // (supabase/10-only-count-people-who-share.sql). Location isn't asked here: "Near me" asks when
 // it's picked (prefs.nearOk). When the policy changes in a way that affects accounts, bump
 // PRIVACY_VERSION and say what changed in PRIVACY_CHANGES: everyone signed in is asked again.
-const PRIVACY_VERSION = 4; // v2 (v1.6.5): choices instead of one "I agree"; v3 (v1.7.3): load times shared too;
-// v4 (v2.0.4): asked again, ticked, because the v2 box started unticked and most people just saved it.
-const PRIVACY_CHANGES = 'Please check your choice. When you were last asked, the box to help improve the app started unticked, so many people left it off without meaning to. Helping is anonymous: no name and no email. You can change this any time in Settings → Account.';
+const PRIVACY_VERSION = 5; // v2 (v1.6.5): choices instead of one "I agree"; v3 (v1.7.3): load times shared too;
+// v4 (v2.0.4): asked again, ticked, because the v2 box started unticked and most people just saved it;
+// v5 (v2.0.5): flags and star ratings always count in the shared totals (given on purpose; SQL 18).
+const PRIVACY_CHANGES = 'Please check your choices. Flags and star ratings you give now always count towards the shared totals, anonymously, so a bad recording gets replaced for everyone. When you were last asked, the box to add your answers started unticked, so many people left it off without meaning to. You can change this any time in Settings → Account.';
 const SHARE_KEPT_FROM = 4; // earlier choices made from this version on are shown as they were
 
 function setPrivacy(share) {

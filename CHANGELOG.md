@@ -2,6 +2,9 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.0.5 (2026-11-26)
+- Flags and star ratings now count in the shared recording scores for everyone signed in (they're given on purpose), anonymously, also when "add my answers" is unticked. Everything else still only counts people who share. Signed-in users are asked once more (privacy version 5). Supabase snippet 18.
+
 ## 2.0.4 (2026-11-26)
 - Signed-in users are asked about their data once more, with "help improve the app" ticked: the earlier sheet started with it unticked, so most people left it off without choosing to. They can untick it before saving.
 
