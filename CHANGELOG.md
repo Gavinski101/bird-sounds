@@ -2,6 +2,10 @@
 
 Each release adds 0.0.1 (1.0.8, 1.0.9, then 1.1.0). 1.0.0 is the first public version.
 
+## 2.2.3 (2026-11-28)
+- Version number sits inside the tab bar, so it no longer lies over the card on phones with big text.
+- On short screens (browser tab, big text) the card's buttons scroll with the card instead of covering the bird's photo.
+
 ## 2.2.2 (2026-11-26)
 - After signing out (or deleting the account), reloading the app shows the sign-in screen again instead of the study page. Choosing "Continue without an account" is still remembered.
 

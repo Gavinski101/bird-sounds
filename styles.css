@@ -555,7 +555,7 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 #areaBtn { width: 100%; }
 #areaBtn .change { float: right; color: var(--accent); font-size: 14px; font-weight: 600; }
 .tabs .build {
-  position: absolute; left: 0; right: 0; bottom: calc(100% + 3px); /* just above the tab bar */
+  position: absolute; left: 0; right: 0; bottom: calc(2px + env(safe-area-inset-bottom)); /* inside the tab bar, so it never covers the card (big-text phones) */
   text-align: center; font-size: 9px; line-height: 1; color: var(--muted); opacity: 0.4; pointer-events: none;
 }
 .area-toggle, .area-toggle-space { flex: none; width: 32px; }
@@ -575,3 +575,9 @@ span[data-tip]:not(.chip), .stat[data-tip] b, .streak-line[data-tip] {
 #account .code-input { font-size: 22px; letter-spacing: 0.3em; text-align: center; }
 #account .link-row { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 4px 0; }
 .welcome-ver { margin: 18px 0 0; font-size: 11px; opacity: 0.45; color: var(--muted, inherit); }
+
+/* Short screens (browser tab with address bar, or big text): sticky answer buttons covered the
+   intro photo, so let them scroll with the card instead. */
+@media (max-height: 700px) {
+  #card .actions { position: static; margin-top: 12px; }
+}
