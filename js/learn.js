@@ -28,6 +28,7 @@ export const MISS_REST = 8;      // a bird missed twice in a row rests this many
 export const PAIR_EVERY = 8;   // at most one compare card per this many cards
 export const PAIR_MIN = 2;     // mix-ups (either direction) before a pair gets compare cards
 export const PAIR_REST = 25;   // cards before the same pair comes up again
+export const PAIR_REST_ONE_MASTERED = 75; // once one of the two is mastered (v2.2.4, user: not that often)
 export const MEDALS = 3;        // bronze, silver, gold
 export const CLIMB_MAX = 60;    // while working towards the next medal, checks come at least this often
 // Points for silver and gold (v1.5.5, user: took too long). Like mastering, every right answer
@@ -102,7 +103,8 @@ export function ensurePool(state, species, { all = false } = {}) {
 }
 
 export const NEARLY_SCORE = MASTER_SCORE - 2; // one clean answer from mastered
-export const RUN_TO_NEARLY = 3; // right answers in a row that make a bird nearly mastered
+export const RUN_TO_NEARLY = 2; // right answers in a row that make a bird nearly mastered (no more choices)
+export const RUN_TO_MASTER = 3; // right in a row, the last from memory, = mastered (v2.2.4, user's rule)
 export const MISS_SOFT_RUN = 2; // a miss after this many right in a row costs 1, not 2
 
 // Re-line-up: when the order changes (iconic first, shared difficulty, another region) the
@@ -336,6 +338,9 @@ export function answer(state, species, id, { correct, hinted = false, pair = nul
     // choices, one right answer from memory masters it (v1.9.8, user: a bird at 20 right / 8
     // wrong was still not mastered).
     if (b.rightRun >= RUN_TO_NEARLY && b.s < NEARLY_SCORE) b.s = NEARLY_SCORE;
+    // v2.2.4 (user: "if I get 3 right in a row I think we can count it as bronze"; Half-collared
+    // Kingfisher took 44 answers): 3 right in a row with the last one from memory masters it.
+    if (b.rightRun >= RUN_TO_MASTER && !hinted) b.s = Math.max(b.s, MASTER_SCORE);
     if (b.s >= MASTER_SCORE) {
       b.m = true;
       b.medal = Math.max(medalOf(b), level); // bronze (silver when learnt on varied sounds)
@@ -415,8 +420,10 @@ function duePair(state, inArea) {
       // Both mastered: you can tell them apart now, so no more compare cards (a miss on
       // either puts it back in learning and the pair can return).
       if (state.birds[heard]?.m && state.birds[other]?.m) continue;
+      // One of them mastered: the pair still comes up, but much less often.
+      const rest = state.birds[heard]?.m || state.birds[other]?.m ? PAIR_REST_ONE_MASTERED : PAIR_REST;
       const shown = state.pairShown?.[pairKey(heard, other)];
-      if (shown !== undefined && state.n - shown < PAIR_REST) continue;
+      if (shown !== undefined && state.n - shown < rest) continue;
       if (!best || count > best.count) best = { pair: [heard, other], count };
     }
   }

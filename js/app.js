@@ -5,7 +5,7 @@ import { OWNER_HASHES } from './config.js';
 // Version shown faintly at the bottom of the screen. Bump it with SHELL in sw.js on every release
 // and add a line to CHANGELOG.md. Each release adds 0.0.1; after x.y.9 comes x.(y+1).0.
 // 1.0.0 = first public version (2026-11-12).
-const VERSION = '2.2.3';
+const VERSION = '2.2.4';
 const STORE_KEY = 'bird-sounds-v1';
 const MEDIA_CACHE = 'bird-sounds-media';
 const TIER_ORDER = ['Common', 'Regular', 'Uncommon', 'Scarce']; // v2.1.3: was Beginner/Easy/Medium/Hard
@@ -803,13 +803,13 @@ const TIPS = {
   },
   habitat: "Where this bird is usually found. From AVONET (Tobias et al. 2022, CC BY 4.0), plus extra habitats for birds often heard elsewhere too.",
   habitats: 'Birds of the habitats you pick join your study set first, in the usual order among themselves; the other birds follow after them. Pick none to mix all habitats. Progress on every bird is kept.',
-  points: 'One total for each bird: a clean right answer adds 2 points, one with a clue adds 1; a miss takes 2 off (1 when picking from the 4 choices). 3 right in a row and it has at least 4 points. 6 points = mastered. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
+  points: 'One total for each bird: a clean right answer adds 2 points, one with a clue adds 1; a miss takes 2 off (1 when picking from the 4 choices). 2 right in a row and it has at least 4 points; 3 right in a row with the last from memory = mastered. 6 points = mastered too. Hinted and clean answers count together, so e.g. 2 clean + 2 with hints is enough.',
   medalAnswers: 'Answers on silver and gold cards. Counted apart, so the harder recordings do not make this bird look hard for others.',
   streak: 'Birds right in a row: now / your record. A miss starts the current run again from 0. Answers with a clue still count.',
   accuracy: 'How many of your last 20 answers were right.',
   recInfo: "Long recordings play only their first part (at least 15 s, longer when people tend to listen longer); tap play again when it stops to hear the rest. Which recording is playing and what kind of sound it is. The first 1-2 are your study recordings. The ‹ › arrows beside it go through every xeno-canto recording of this bird made in Africa, nearest to your region and best quality first. Rate one 4-5 stars to make it a study recording. ★ 3.8 (5) = everyone's average rating of this recording and how many people rated it.",
   family: 'The bird family this species belongs to.',
-  autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2), a wrong pick costs 1, and 3 right in a row move you on. Once it has 4 of its 6 points you name it from memory to master it; after a miss the choices come back. Turn this off in Settings → Playback.',
+  autoChoices: 'While a bird is new to you or you are still getting to know it, you pick it from 4. A right pick earns 1 point (naming it yourself earns 2), a wrong pick costs 1, and 2 right in a row move you on. Then you name it from memory: right, and it&rsquo;s mastered; after a miss the choices come back. Turn this off in Settings → Playback.',
   share: 'Optional. When on, your answers, how long recordings took to start and how long you listened, and the birds you mix up are added (with no name and no email) to totals that help everyone: the best recordings are picked, hard birds come later for new learners, and sound-alikes are kept apart. Flags and star ratings you give always count (also anonymous), as you give them on purpose. You still get the benefit of the totals either way. Your progress itself is always saved with your account.',
   soundClue: "A description of this bird's sound. Words from the birds' names are hidden (…) so it doesn't give the answer away.",
   sharedOff: 'Enough of the people who heard this recording flagged it or rated it low that it is no longer used (one person alone only moves it to the back). "Use anyway" brings it back for you.',
